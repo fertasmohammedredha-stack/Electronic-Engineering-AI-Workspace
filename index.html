@@ -15,7 +15,8 @@
   .hero h1 span{color:var(--green);}
   .hero p{font-size:17px; color:var(--ink-soft); max-width:46ch; margin-bottom:30px;}
   .hero-ctas{display:flex; gap:14px; flex-wrap:wrap;}
-  .circuit{width:100%; height:auto;}
+  .circuit-card{background:radial-gradient(circle at 30% 25%, #16241D, #060807 72%); border:1px solid #1E2220; border-radius:20px; padding:18px; box-shadow:0 30px 70px -30px rgba(0,0,0,.6), inset 0 0 40px rgba(79,168,125,.05);}
+  .circuit{width:100%; height:auto; display:block;}
   .stats{border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:22px 0;}
   .stats .wrap{display:flex; justify-content:space-between; flex-wrap:wrap; gap:16px;}
   .stat b{font-size:22px; font-family:'JetBrains Mono',monospace; color:var(--green); display:block;}
@@ -55,7 +56,7 @@
 <section class="hero">
   <div class="wrap">
     <div>
-      <div class="eyebrow mono">مخصص لطلبة وتقنيي الإلكترونيك 🇩🇿</div>
+      <div class="eyebrow mono" id="eyebrow"></div>
       <h1 id="heroH1"></h1>
       <p id="heroP"></p>
       <div class="hero-ctas">
@@ -63,25 +64,47 @@
         <a href="#features" class="btn-ghost" id="btn2"></a>
       </div>
     </div>
-    <svg class="circuit" viewBox="0 0 420 340" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M40 60H140M140 60V150M140 150H80M80 150V230M140 150H220M220 150V90M220 90H300M300 90V180M300 180H370M300 180V260M220 260H300M60 230H140M60 230V290M220 260H140M220 260V310" stroke="#C87F3B" stroke-width="2" stroke-linecap="round"/>
-      <circle cx="40" cy="60" r="5" fill="#2F6B4F"/><circle cx="370" cy="180" r="5" fill="#2F6B4F"/>
-      <circle cx="60" cy="290" r="5" fill="#2F6B4F"/><circle cx="220" cy="310" r="5" fill="#2F6B4F"/>
-      <rect x="60" y="200" width="40" height="60" rx="4" stroke="currentColor" stroke-width="2" fill="var(--surface)"/>
-      <path d="M62 220H98M62 240H98" stroke="currentColor" stroke-width="1.5"/>
-      <rect x="255" y="60" width="90" height="60" rx="6" stroke="currentColor" stroke-width="2" fill="var(--surface)"/>
-      <path d="M270 60V48M290 60V48M310 60V48M330 60V48M270 120V132M290 120V132M310 120V132M330 120V132" stroke="currentColor" stroke-width="1.5"/>
-      <text x="278" y="95" font-family="JetBrains Mono" font-size="13" fill="currentColor">IC</text>
-      <path d="M120 150 L140 130 L160 150 L140 170 Z" stroke="currentColor" stroke-width="2" fill="var(--surface)"/>
-      <text x="105" y="115" font-family="JetBrains Mono" font-size="11" fill="currentColor">5V</text>
-      <text x="335" y="205" font-family="JetBrains Mono" font-size="11" fill="currentColor">10kΩ</text>
-    </svg>
+    <div class="circuit-card">
+      <svg class="circuit" viewBox="0 0 420 380" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <radialGradient id="bokeh1" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#4FA87D" stop-opacity=".55"/>
+            <stop offset="100%" stop-color="#4FA87D" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="bokeh2" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#E0954F" stop-opacity=".5"/>
+            <stop offset="100%" stop-color="#E0954F" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="90" cy="90" r="46" fill="url(#bokeh1)"/>
+        <circle cx="340" cy="300" r="60" fill="url(#bokeh2)"/>
+        <circle cx="330" cy="70" r="30" fill="url(#bokeh1)"/>
+        <g filter="url(#glow)" stroke-linecap="round">
+          <path d="M40 60H140M140 60V150M140 150H80M80 150V230M140 150H220M220 150V90M220 90H300M300 90V180M300 180H370M300 180V260M220 260H300M60 230H140M60 230V290M220 260H140M220 260V330M300 260V330" stroke="#E0954F" stroke-width="1.6" opacity=".9"/>
+          <path d="M370 180V90M370 90H300" stroke="#4FA87D" stroke-width="1.6" opacity=".9"/>
+          <circle cx="40" cy="60" r="4.5" fill="#4FA87D"/><circle cx="370" cy="180" r="4.5" fill="#4FA87D"/>
+          <circle cx="60" cy="290" r="4.5" fill="#E0954F"/><circle cx="220" cy="330" r="4.5" fill="#E0954F"/>
+          <circle cx="300" cy="330" r="4.5" fill="#4FA87D"/><circle cx="370" cy="90" r="4.5" fill="#4FA87D"/>
+        </g>
+        <rect x="255" y="60" width="90" height="60" rx="6" stroke="#EFEFED" stroke-width="1.5" fill="#111413" filter="url(#glow)"/>
+        <path d="M270 60V48M290 60V48M310 60V48M330 60V48M270 120V132M290 120V132M310 120V132M330 120V132" stroke="#8D9490" stroke-width="1.2"/>
+        <text x="276" y="96" font-family="JetBrains Mono" font-size="13" fill="#E0954F">IC</text>
+        <rect x="60" y="200" width="40" height="60" rx="4" stroke="#EFEFED" stroke-width="1.5" fill="#111413"/>
+        <path d="M62 220H98M62 240H98" stroke="#8D9490" stroke-width="1.2"/>
+        <path d="M120 150 L140 130 L160 150 L140 170 Z" stroke="#EFEFED" stroke-width="1.5" fill="#111413"/>
+        <text x="103" y="115" font-family="JetBrains Mono" font-size="11" fill="#9FB0A8">5V</text>
+        <text x="333" y="205" font-family="JetBrains Mono" font-size="11" fill="#9FB0A8">10kΩ</text>
+      </svg>
+    </div>
   </div>
 </section>
 
 <div class="stats">
   <div class="wrap">
-    <div class="stat"><b>24/7</b><span>إجابات فورية</span></div>
     <div class="stat"><b class="mono">AR / EN</b><span>بلغتين</span></div>
     <div class="stat"><b>100%</b><span>مجاني</span></div>
     <div class="stat"><b class="mono">3+</b><span>سنوات دراسية مدعومة</span></div>
@@ -103,7 +126,8 @@
 <script src="assets/lang.js"></script>
 <script>
 const CONTENT = {
-  ar:{ h1:'مساعدك الذكي في <span>الإلكترونيك</span>',
+  ar:{ eyebrow:"مخصص لطلبة وتقنيي الإلكترونيك 🇩🇿",
+    h1:'مساعدك الذكي في <span>الإلكترونيك</span>',
     p:"اشرح دروسك، حلّ تمارينك، وافهم مشاريعك — مساعد ذكاء اصطناعي مبني خصيصًا لمناهج الإلكترونيك، بالعربية والإنجليزية.",
     btn1:"جرّب المساعد", btn2:"كيف يعمل", fh:"مبني لطريقة تفكيرك، لا لطريقة تفكير الآلة",
     fp:"كل ميزة مصمّمة حول احتياج حقيقي لطالب إلكترونيك، من أول سنة لحد التخرج.",
@@ -111,7 +135,8 @@ const CONTENT = {
       ["رفع الصور والملفات","صوّر مخطط دارة أو مسألة مكتوبة بخط اليد، ويحللها لك مباشرة."],
       ["مبني على المنهج الجزائري","إجابات مرتبطة بما تدرسه فعليًا في الجامعة."],
       ["محاكاة تفاعلية داخل المحادثة","جرّب قانون أوم أو دارة RC مباشرة بسلايدرات تفاعلية."]]},
-  en:{ h1:'Your AI tutor for <span>electronics</span>',
+  en:{ eyebrow:"Built for electronics students & engineers",
+    h1:'Your AI tutor for <span>electronics</span>',
     p:"Explain your lessons, solve exercises, and understand your projects — built specifically for electronics curricula, in Arabic and English.",
     btn1:"Try the assistant", btn2:"How it works", fh:"Built around how you think, not how a model thinks",
     fp:"Every feature answers a real need for an electronics student, from year one to graduation.",
@@ -122,6 +147,7 @@ const CONTENT = {
 };
 function renderContent(){
   const c = CONTENT[getLang()];
+  document.getElementById('eyebrow').textContent = c.eyebrow;
   document.getElementById('heroH1').innerHTML = c.h1;
   document.getElementById('heroP').textContent = c.p;
   document.getElementById('btn1').textContent = c.btn1;
