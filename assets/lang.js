@@ -8,6 +8,7 @@ const DICT = {
     welcomeTitle: "أهلاً، كيف يمكنني مساعدتك اليوم؟",
     welcomeSub: "اسأل عن أي مفهوم، مسألة، أو مشروع في الإلكترونيك.",
     placeholder: "اكتب رسالتك...",
+    disclaimer: "دارة قد يخطئ أحيانًا — تحقق من المعلومات المهمة.",
   },
   en: {
     brand: "Dara", dir: "ltr",
@@ -17,6 +18,7 @@ const DICT = {
     welcomeTitle: "Hi, how can I help you today?",
     welcomeSub: "Ask about any electronics concept, problem, or project.",
     placeholder: "Type your message...",
+    disclaimer: "Dara can make mistakes — double-check important info.",
   }
 };
 
@@ -38,13 +40,21 @@ function applyLang(){
   const toggle = document.getElementById('langToggle');
   if(toggle) toggle.textContent = l === 'ar' ? 'EN' : 'AR';
 }
-function initTheme(){
-  const saved = localStorage.getItem('theme'); // 'light' | 'dark' | null(=system)
-  if(saved) document.documentElement.setAttribute('data-theme', saved);
+function getTheme(){
+  return localStorage.getItem('theme') ||
+    (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+}
+function setTheme(t){
+  localStorage.setItem('theme', t);
+  document.documentElement.setAttribute('data-theme', t);
+  const btn = document.getElementById('themeToggle');
+  if(btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
 }
 document.addEventListener('DOMContentLoaded', ()=>{
-  initTheme();
+  setTheme(getTheme());
   applyLang();
   const toggle = document.getElementById('langToggle');
   if(toggle) toggle.addEventListener('click', ()=> setLang(getLang()==='ar' ? 'en' : 'ar'));
+  const themeBtn = document.getElementById('themeToggle');
+  if(themeBtn) themeBtn.addEventListener('click', ()=> setTheme(getTheme()==='dark' ? 'light' : 'dark'));
 });
