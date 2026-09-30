@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>دارة — المحادثة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="chat-app">
+  <aside class="sidebar" id="sidebar">
+    <button class="btn-primary new-chat" data-i="startChat" onclick="newChat()"></button>
+    <input class="search" data-i-ph="search" oninput="filterChats(this.value)">
+    <div class="section-label" data-i="projects"></div>
+    <div class="chat-item">⚡ مشروع تخرج</div>
+    <div class="section-label" data-i="recent"></div>
+    <div id="chatList"></div>
+    <div class="sidebar-footer" onclick="location.href='settings.html'">
+      <div class="avatar" id="avatarLetter">?</div>
+      <div>
+        <div style="font-size:14px; font-weight:600;" id="userName">—</div>
+        <div style="font-size:12px; color:var(--ink-soft);" data-i="settings"></div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="chat-main">
+    <div class="chat-topbar">
+      <button class="icon-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div style="display:flex; gap:8px;">
+        <button class="theme-btn" id="themeToggle">🌙</button>
+        <button class="lang-btn" id="langToggle">EN</button>
+      </div>
+    </div>
+    <div class="chat-scroll" id="chatScroll">
+      <div class="chat-inner" id="chatInner">
+        <div class="welcome" id="welcome">
+          <h2 id="welcomeTitle" data-i="welcomeTitle"></h2>
+          <p id="welcomeSub" data-i="welcomeSub"></p>
+        </div>
+      </div>
+    </div>
+    <div class="composer">
+      <div class="composer-inner">
+        <textarea id="msgInput" rows="1" data-i-ph="placeholder" oninput="autoGrow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+        <button class="icon-round send" onclick="sendMessage()">➤</button>
+      </div>
+      <div class="hint" id="disclaimer" data-i="disclaimer"></div>
+    </div>
+    <footer style="text-align:center; padding:6px 0 12px; font-size:11.5px;">
+      <span class="dev-credit">Developed by <b>Fertas Mohammed Redha</b></span>
+    </footer>
+  </main>
+</div>
+
+<script src="assets/lang.js"></script>
+<script>
+// ---- placeholder session (replace with real Firebase auth state) ----
+const session = JSON.parse(localStorage.getItem('session') || '{"name":"طالب","chats":[]}');
+document.getElementById('userName').textContent = session.name;
+document.getElementById('avatarLetter').textContent = session.name.charAt(0).toUpperCase();
+
+function autoGrow(el){ el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
+
+function newChat(){
+  document.getElementById('chatInner').innerHTML = `
+    <div class="welcome" id="welcome"><h2 id="welcomeTitle" data-i="welcomeTitle"></h2><p id="welcomeSub" data-i="welcomeSub"></p></div>`;
+  applyLang();
+}
+
+function renderChatList(){
+  const list = document.getElementById('chatList');
+  list.innerHTML = session.chats.map((c,i)=>
+    `<div class="chat-item ${i===0?'active':''}">${c}</div>`).join('') ||
+    '<div class="chat-item" style="opacity:.5">—</div>';
+}
+function filterChats(q){
+  document.querySelectorAll('.chat-item').forEach(el=>{
+    el.style.display = el.textContent.includes(q) ? '' : 'none';
+  });
+}
+
+function addBubble(role, text){
+  const inner = document.getElementById('chatInner');
+  const welcome = document.getElementById('welcome');
+  if(welcome) welcome.remove();
+  const b = document.createElement('div');
+  b.className = 'bubble ' + role;
+  b.textContent = text;
+  inner.appendChild(b);
+  document.getElementById('chatScroll').scrollTop = 999999;
+  return b;
+}
+
+// Streams the reply token-by-token from /api/chat (Server-Sent Events / chunked response).
+// The API route (api/chat.js) is responsible for picking a provider (Groq/Gemini),
+// rotating keys, and forwarding the stream — this file just renders it.
+async function sendMessage(){
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if(!text) return;
+  addBubble('user', text);
+  input.value = ''; autoGrow(input);
+
+  const botBubble = addBubble('bot', '');
+  botBubble.innerHTML = '<span class="cursor-blink"></span>';
+
+  try{
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ message: text, lang: getLang() })
+    });
+    if(!res.body){ botBubble.textContent = 'Error: no response stream.'; return; }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let full = '';
+    while(true){
+      const {done, value} = await reader.read();
+      if(done) break;
+      full += decoder.decode(value, {stream:true});
+      botBubble.textContent = full;
+      document.getElementById('chatScroll').scrollTop = 999999;
+    }
+  } catch(e){
+    botBubble.textContent = '⚠️ تعذر الاتصال بالمساعد. (api/chat.js غير موصول بعد)';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', renderChatList);
+</script>
+</body>
+</html>
