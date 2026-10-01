@@ -10,6 +10,12 @@ const DICT = {
     placeholder: "اكتب رسالتك...",
     disclaimer: "دارة قد يخطئ أحيانًا — تحقق من المعلومات المهمة.",
     signIn: "تسجيل الدخول بحساب Google",
+    authTagline: "مساعدك الذكي في الإلكترونيك — خاص بطلبة وتقنيي الإلكترونيك",
+    authFoot: "محادثاتك تُحفظ تلقائياً في حسابك",
+    settingsTitle: "الإعدادات", prefs: "التفضيلات", language: "اللغة", theme: "المظهر",
+    light: "فاتح", dark: "داكن", system: "تلقائي", about: "حول",
+    tos: "شروط الاستخدام", privacy: "سياسة الخصوصية", aboutUs: "عن دارة", contact: "تواصل معنا",
+    account: "الحساب", deleteChats: "حذف كل المحادثات", logout: "تسجيل الخروج",
   },
   en: {
     brand: "Dara", dir: "ltr",
@@ -21,6 +27,12 @@ const DICT = {
     placeholder: "Type your message...",
     disclaimer: "Dara can make mistakes — double-check important info.",
     signIn: "Sign in with Google",
+    authTagline: "Your AI tutor for electronics — built for students & engineers",
+    authFoot: "Your chats are saved automatically to your account",
+    settingsTitle: "Settings", prefs: "Preferences", language: "Language", theme: "Theme",
+    light: "Light", dark: "Dark", system: "System", about: "About",
+    tos: "Terms of Service", privacy: "Privacy Policy", aboutUs: "About Dara", contact: "Contact us",
+    account: "Account", deleteChats: "Delete all chats", logout: "Log out",
   }
 };
 
