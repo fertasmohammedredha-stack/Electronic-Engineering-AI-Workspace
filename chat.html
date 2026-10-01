@@ -7,7 +7,25 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
+  .bubble.bot{text-align:start;}
+  .bubble.bot :is(h1,h2,h3){margin:14px 0 6px; font-size:16px;}
+  .bubble.bot p{margin:0 0 10px;}
+  .bubble.bot p:last-child{margin-bottom:0;}
+  .bubble.bot ul,.bubble.bot ol{margin:0 0 10px; padding-inline-start:22px;}
+  .bubble.bot li{margin-bottom:4px;}
+  .bubble.bot strong{color:var(--copper);}
+  .bubble.bot code{font-family:'JetBrains Mono',monospace; font-size:13px;}
+  .bubble.bot pre{background:#0B0D0C; border:1px solid var(--line); border-radius:8px; padding:12px 14px; overflow-x:auto; margin:0 0 10px; direction:ltr; text-align:left;}
+  .bubble.bot pre code{background:none; color:#EDEFEA; padding:0;}
+  .bubble.bot .katex{font-size:1.02em;}
+  .bubble.bot hr{border:none; border-top:1px solid var(--line); margin:12px 0;}
   .auth-gate{position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center;
     background:
       radial-gradient(circle at 20% 20%, rgba(79,168,125,.10), transparent 40%),
@@ -161,13 +179,28 @@ function openChat(chatId){
   });
 }
 
+function renderBotContent(el, text){
+  el.innerHTML = window.marked ? marked.parse(text || '', { breaks: true }) : (text || '');
+  if(window.renderMathInElement){
+    renderMathInElement(el, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '\\(', right: '\\)', display: false },
+        { left: '$', right: '$', display: false }
+      ],
+      throwOnError: false
+    });
+  }
+  if(window.hljs) el.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+}
+
 function addBubble(role, text, scroll = true){
   const inner = document.getElementById('chatInner');
   const welcome = document.getElementById('welcome');
   if(welcome) welcome.remove();
   const b = document.createElement('div');
   b.className = 'bubble ' + role;
-  b.textContent = text;
+  if(role === 'bot') renderBotContent(b, text); else b.textContent = text;
   inner.appendChild(b);
   if(scroll) document.getElementById('chatScroll').scrollTop = 999999;
   return b;
@@ -205,7 +238,7 @@ window.sendMessage = async function(){
       const {done, value} = await reader.read();
       if(done) break;
       full += decoder.decode(value, {stream:true});
-      botBubble.textContent = full;
+      renderBotContent(botBubble, full);
       document.getElementById('chatScroll').scrollTop = 999999;
     }
     await addMessage(currentChatId, 'bot', full);
