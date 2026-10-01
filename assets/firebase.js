@@ -6,7 +6,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
   getFirestore, doc, setDoc, getDoc, collection, addDoc, query,
-  where, orderBy, onSnapshot, serverTimestamp, updateDoc
+  where, orderBy, onSnapshot, serverTimestamp, updateDoc, getDocs, deleteDoc, writeBatch
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const app = initializeApp(firebaseConfig);
@@ -51,10 +51,14 @@ export async function createChat(uid, firstMessage) {
 }
 
 export function watchUserChats(uid, callback) {
-  const q = query(collection(db, "chats"), where("uid", "==", uid), orderBy("updatedAt", "desc"));
+  // NOTE: filtering by uid only (no orderBy) avoids needing a Firestore
+  // composite index — we sort by updatedAt on the client instead.
+  const q = query(collection(db, "chats"), where("uid", "==", uid));
   return onSnapshot(q, snap => {
-    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-  });
+    const chats = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    chats.sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
+    callback(chats);
+  }, err => console.error("watchUserChats error:", err));
 }
 
 export function watchMessages(chatId, callback) {
@@ -69,4 +73,15 @@ export async function addMessage(chatId, role, text) {
     role, text, createdAt: serverTimestamp()
   });
   await updateDoc(doc(db, "chats", chatId), { updatedAt: serverTimestamp() });
+}
+
+export async function deleteAllChats(uid) {
+  const snap = await getDocs(query(collection(db, "chats"), where("uid", "==", uid)));
+  for (const chatDoc of snap.docs) {
+    const msgsSnap = await getDocs(collection(db, "chats", chatDoc.id, "messages"));
+    const batch = writeBatch(db);
+    msgsSnap.forEach(m => batch.delete(m.ref));
+    if (!msgsSnap.empty) await batch.commit();
+    await deleteDoc(chatDoc.ref);
+  }
 }
