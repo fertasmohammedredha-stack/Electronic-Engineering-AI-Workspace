@@ -54,7 +54,11 @@ header.site .wrap{display:flex; align-items:center; justify-content:space-betwee
 .btn-ghost:hover{border-color:var(--ink);}
 
 /* ---- chat layout ---- */
-.chat-app{display:grid; grid-template-columns:280px 1fr; height:100vh; height:100dvh; transition:grid-template-columns .22s ease;}
+body.chat-page{height:100vh; height:100dvh; overflow:hidden;}
+.chat-app{display:grid; grid-template-columns:280px 1fr; height:100vh; height:100dvh; min-height:0; transition:grid-template-columns .22s ease;}
+.chat-main{min-height:0;}
+.chat-scroll{min-height:0;}
+.sidebar{min-height:0;}
 .chat-app.sidebar-collapsed{grid-template-columns:0px 1fr;}
 .chat-app.sidebar-collapsed .sidebar{padding:16px 0; overflow:hidden;}
 .chat-app.sidebar-collapsed .sidebar > *{opacity:0; pointer-events:none;}
