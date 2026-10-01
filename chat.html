@@ -8,22 +8,36 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 <style>
-  .auth-gate{position:fixed; inset:0; background:var(--bg); z-index:50; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:18px;}
+  .auth-gate{position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(79,168,125,.10), transparent 40%),
+      radial-gradient(circle at 80% 75%, rgba(224,149,79,.10), transparent 40%),
+      var(--bg);}
   .auth-gate.hidden{display:none;}
-  .auth-gate .logo{font-size:22px; margin-bottom:6px;}
-  .google-btn{display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line); padding:12px 22px; border-radius:9px; cursor:pointer; font-family:inherit; font-size:15px; color:var(--ink); box-shadow:var(--shadow);}
+  .auth-card{text-align:center; padding:46px 42px; background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:0 30px 70px -30px rgba(0,0,0,.5); max-width:360px; width:92%;}
+  .auth-card .mark{width:52px; height:52px; margin:0 auto 18px;}
+  .auth-card .logo{font-size:24px; margin-bottom:6px;}
+  .auth-card .tagline{color:var(--ink-soft); font-size:14px; margin-bottom:28px;}
+  .google-btn{display:flex; align-items:center; gap:10px; justify-content:center; width:100%; background:var(--bg); border:1px solid var(--line); padding:13px 22px; border-radius:10px; cursor:pointer; font-family:inherit; font-size:15px; color:var(--ink); transition:border-color .15s, transform .1s;}
   .google-btn:hover{border-color:var(--copper);}
+  .google-btn:active{transform:scale(.98);}
   .google-btn svg{width:18px; height:18px;}
+  .auth-foot{margin-top:22px; font-size:12px; color:var(--ink-soft);}
   body.loading .chat-app{visibility:hidden;}
 </style>
 </head>
 <body class="loading">
 <div class="auth-gate" id="authGate">
-  <div class="logo">دارة</div>
-  <button class="google-btn" id="googleSignIn">
-    <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.5 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-1.8 13.9-5l-6.4-5.4C29.4 35.4 26.8 36 24 36c-5.2 0-9.6-3.5-11.2-8.3l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.6l6.4 5.4C41.5 35.6 44 30.2 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
-    <span id="signInLabel" data-i="signIn">تسجيل الدخول بحساب Google</span>
-  </button>
+  <div class="auth-card">
+    <svg class="mark" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="2.4" fill="#E0954F"/><path d="M12 2v5.2M12 16.8V22M2 12h5.2M16.8 12H22M5 5l3.7 3.7M15.3 15.3L19 19M19 5l-3.7 3.7M8.7 15.3L5 19" stroke="var(--ink-soft)" stroke-width="1.4" stroke-linecap="round"/></svg>
+    <div class="logo">دارة</div>
+    <div class="tagline" data-i="authTagline"></div>
+    <button class="google-btn" id="googleSignIn">
+      <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.5 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-1.8 13.9-5l-6.4-5.4C29.4 35.4 26.8 36 24 36c-5.2 0-9.6-3.5-11.2-8.3l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.6l6.4 5.4C41.5 35.6 44 30.2 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+      <span data-i="signIn">تسجيل الدخول بحساب Google</span>
+    </button>
+    <div class="auth-foot" data-i="authFoot"></div>
+  </div>
 </div>
 <div class="chat-app">
   <aside class="sidebar" id="sidebar">
@@ -71,7 +85,7 @@
 
 <script src="assets/lang.js"></script>
 <script type="module">
-import { auth, signInWithGoogle, signOutUser, watchAuth, createChat, watchUserChats, watchMessages, addMessage } from './assets/firebase.js';
+import { signInWithGoogle, watchAuth, createChat, watchUserChats, watchMessages, addMessage } from './assets/firebase.js';
 
 let currentUser = null;
 let currentChatId = null;
@@ -96,14 +110,6 @@ watchAuth(user => {
     gate.classList.remove('hidden');
     if(unsubChats) unsubChats();
   }
-});
-
-document.querySelector('.sidebar-footer').addEventListener('click', (e)=>{
-  // Left click -> settings page (default anchor behavior below still applies via location.href set in HTML normally)
-});
-// Simple sign-out affordance: long-press-free, just expose on the avatar via double-click for now.
-document.querySelector('.sidebar-footer').addEventListener('dblclick', async ()=>{
-  if(confirm('تسجيل الخروج؟')) await signOutUser();
 });
 
 window.autoGrow = function(el){ el.style.height='auto'; el.style.height=el.scrollHeight+'px'; };
