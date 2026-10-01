@@ -45,8 +45,8 @@ async function* streamGroq(key, message) {
       ]
     })
   });
-  if (res.status === 429 || res.status === 401) { burned.add(key); throw new Error(`groq_${res.status}`); }
-  if (!res.ok) throw new Error(`groq_${res.status}`);
+  if (res.status === 429 || res.status === 401) burned.add(key);
+  if (!res.ok) throw new Error(`groq_${res.status}_${(await res.text()).slice(0, 200)}`);
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -80,8 +80,8 @@ async function* streamGemini(key, message) {
       contents: [{ role: "user", parts: [{ text: message }] }]
     })
   });
-  if (res.status === 429 || res.status === 401) { burned.add(key); throw new Error(`gemini_${res.status}`); }
-  if (!res.ok) throw new Error(`gemini_${res.status}`);
+  if (res.status === 429 || res.status === 401) burned.add(key);
+  if (!res.ok) throw new Error(`gemini_${res.status}_${(await res.text()).slice(0, 200)}`);
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -120,18 +120,23 @@ export default async function handler(req, res) {
 
   // Try every Groq key, then every Gemini key, before giving up.
   const attempts = [
-    ...groqKeys.filter(k => !burned.has(k)).map(k => () => streamGroq(k, message)),
-    ...geminiKeys.filter(k => !burned.has(k)).map(k => () => streamGemini(k, message))
+    ...groqKeys.filter(k => !burned.has(k)).map(k => ["groq", k]),
+    ...geminiKeys.filter(k => !burned.has(k)).map(k => ["gemini", k])
   ];
 
-  for (const attempt of attempts) {
+  const errors = [];
+  for (const [provider, key] of attempts) {
     try {
-      for await (const token of attempt()) res.write(token);
+      const gen = provider === "groq" ? streamGroq(key, message) : streamGemini(key, message);
+      for await (const token of gen) res.write(token);
       return res.end();
     } catch (e) {
+      console.error(`[${provider}] failed:`, e.message); // visible in Vercel → Deployments → Functions logs
+      errors.push(`${provider}: ${e.message}`);
       continue; // try the next key/provider
     }
   }
-  res.write("⚠️ All providers are currently unavailable. Try again shortly.");
+  console.error("All providers failed:", errors);
+  res.write(`⚠️ All providers are currently unavailable.\n(debug: ${errors.join(" | ") || "no API keys matched"})`);
   res.end();
 }
