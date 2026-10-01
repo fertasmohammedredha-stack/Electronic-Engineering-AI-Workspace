@@ -4,7 +4,8 @@
 //   GEMINI_API_KEY_1 ... GEMINI_API_KEY_5 (https://aistudio.google.com/apikey — free)
 // Groq is tried first (fastest); Gemini is the fallback once all Groq keys hit a 429.
 
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+const GROQ_MODEL = "openai/gpt-oss-120b"; // Groq's own recommended replacement after
+// llama-3.3-70b-versatile was shut down (16 Aug 2026) — see console.groq.com/docs/deprecations
 const GEMINI_MODEL = "gemini-flash-latest"; // always points at Google's current GA Flash model
 
 const SYSTEM_PROMPT = `You are Dara, an AI tutor strictly specialized in electronics
@@ -126,14 +127,18 @@ export default async function handler(req, res) {
 
   const errors = [];
   for (const [provider, key] of attempts) {
-    try {
-      const gen = provider === "groq" ? streamGroq(key, message) : streamGemini(key, message);
-      for await (const token of gen) res.write(token);
-      return res.end();
-    } catch (e) {
-      console.error(`[${provider}] failed:`, e.message); // visible in Vercel → Deployments → Functions logs
-      errors.push(`${provider}: ${e.message}`);
-      continue; // try the next key/provider
+    for (let retry = 0; retry <= 1; retry++) { // one retry for transient 503/overload errors
+      try {
+        const gen = provider === "groq" ? streamGroq(key, message) : streamGemini(key, message);
+        for await (const token of gen) res.write(token);
+        return res.end();
+      } catch (e) {
+        const transient = /_503|_overloaded/i.test(e.message);
+        console.error(`[${provider}] failed (retry ${retry}):`, e.message);
+        if (transient && retry === 0) { await new Promise(r => setTimeout(r, 900)); continue; }
+        errors.push(`${provider}: ${e.message}`);
+        break;
+      }
     }
   }
   console.error("All providers failed:", errors);
