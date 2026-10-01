@@ -9,6 +9,7 @@ const DICT = {
     welcomeSub: "اسأل عن أي مفهوم، مسألة، أو مشروع في الإلكترونيك.",
     placeholder: "اكتب رسالتك...",
     disclaimer: "دارة قد يخطئ أحيانًا — تحقق من المعلومات المهمة.",
+    signIn: "تسجيل الدخول بحساب Google",
   },
   en: {
     brand: "Dara", dir: "ltr",
@@ -19,6 +20,7 @@ const DICT = {
     welcomeSub: "Ask about any electronics concept, problem, or project.",
     placeholder: "Type your message...",
     disclaimer: "Dara can make mistakes — double-check important info.",
+    signIn: "Sign in with Google",
   }
 };
 
