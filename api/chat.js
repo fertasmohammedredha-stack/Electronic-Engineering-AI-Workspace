@@ -1,10 +1,11 @@
 // /api/chat.js — Vercel serverless function
-// Reads API keys from environment variables (set them in Vercel → Project → Settings → Environment Variables):
-//   GROQ_API_KEY_1, GROQ_API_KEY_2, ... GROQ_API_KEY_5
-//   GEMINI_API_KEY_1, GEMINI_API_KEY_2, ...
-//
-// This is a STARTING POINT: it shows the key-rotation shape and streaming response.
-// It does not yet call the real Groq/Gemini endpoints — wire that in once you're ready.
+// Env vars needed (Vercel → Project → Settings → Environment Variables):
+//   GROQ_API_KEY_1 ... GROQ_API_KEY_5     (https://console.groq.com/keys — free)
+//   GEMINI_API_KEY_1 ... GEMINI_API_KEY_5 (https://aistudio.google.com/apikey — free)
+// Groq is tried first (fastest); Gemini is the fallback once all Groq keys hit a 429.
+
+const GROQ_MODEL = "llama-3.3-70b-versatile";
+const GEMINI_MODEL = "gemini-flash-latest"; // always points at Google's current GA Flash model
 
 const SYSTEM_PROMPT = `You are Dara, an AI tutor strictly specialized in electronics
 (analog/digital circuits, signals, microcontrollers, power electronics, measurement).
@@ -27,75 +28,110 @@ function getKeyPool(prefix) {
   return keys;
 }
 
-// In-memory "burned key" tracker. NOTE: on Vercel this resets per cold start —
-// for real quota tracking across invocations, store state in a small DB
-// (e.g. Firestore, same one used for chat history) instead.
+// In-memory burned-key tracker — resets on cold start. Fine for now; move to
+// Firestore if you need quota state to survive across serverless instances.
 const burned = new Set();
 
-function pickKey(pool) {
-  for (const key of pool) {
-    if (!burned.has(key)) return key;
+async function* streamGroq(key, message) {
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      stream: true,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: message }
+      ]
+    })
+  });
+  if (res.status === 429 || res.status === 401) { burned.add(key); throw new Error(`groq_${res.status}`); }
+  if (!res.ok) throw new Error(`groq_${res.status}`);
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const payload = line.slice(6);
+      if (payload === "[DONE]") return;
+      try {
+        const json = JSON.parse(payload);
+        const token = json.choices?.[0]?.delta?.content;
+        if (token) yield token;
+      } catch {}
+    }
   }
-  burned.clear(); // all keys exhausted this cycle — retry from the top
-  return pool[0];
+}
+
+async function* streamGemini(key, message) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "x-goog-api-key": key, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents: [{ role: "user", parts: [{ text: message }] }]
+    })
+  });
+  if (res.status === 429 || res.status === 401) { burned.add(key); throw new Error(`gemini_${res.status}`); }
+  if (!res.ok) throw new Error(`gemini_${res.status}`);
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      try {
+        const json = JSON.parse(line.slice(6));
+        const token = json.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (token) yield token;
+      } catch {}
+    }
+  }
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const { message } = req.body || {};
+  if (!message) return res.status(400).json({ error: "Missing message" });
+
+  const groqKeys = getKeyPool("GROQ_API_KEY");
+  const geminiKeys = getKeyPool("GEMINI_API_KEY");
+  if (!groqKeys.length && !geminiKeys.length) {
+    return res.status(500).json({ error: "No API keys configured on the server." });
   }
 
-  const { message, lang } = req.body || {};
-  if (!message) {
-    res.status(400).json({ error: 'Missing message' });
-    return;
-  }
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.setHeader("Transfer-Encoding", "chunked");
 
-  const groqKeys = getKeyPool('GROQ_API_KEY');
-  const geminiKeys = getKeyPool('GEMINI_API_KEY');
+  // Try every Groq key, then every Gemini key, before giving up.
+  const attempts = [
+    ...groqKeys.filter(k => !burned.has(k)).map(k => () => streamGroq(k, message)),
+    ...geminiKeys.filter(k => !burned.has(k)).map(k => () => streamGemini(k, message))
+  ];
 
-  if (groqKeys.length === 0 && geminiKeys.length === 0) {
-    res.status(500).json({ error: 'No API keys configured on the server.' });
-    return;
-  }
-
-  const provider = groqKeys.length ? 'groq' : 'gemini';
-  const key = pickKey(provider === 'groq' ? groqKeys : geminiKeys);
-
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.setHeader('Transfer-Encoding', 'chunked');
-
-  try {
-    // --- TODO: replace this block with a real streaming call ---
-    // Example shape for Groq (OpenAI-compatible chat completions, stream: true):
-    //
-    // const upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    //   method: 'POST',
-    //   headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     model: 'llama-3.3-70b-versatile',
-    //     stream: true,
-    //     messages: [
-    //       { role: 'system', content: SYSTEM_PROMPT },
-    //       { role: 'user', content: message }
-    //     ]
-    //   })
-    // });
-    // if (upstream.status === 429) { burned.add(key); /* retry with next key */ }
-    // pipe upstream.body chunks into res.write(...) here, parsing SSE deltas.
-
-    const placeholder =
-      lang === 'en'
-        ? '(This is a placeholder reply — connect api/chat.js to Groq/Gemini to get real answers.)'
-        : '(هذا رد تجريبي — اربط api/chat.js بـ Groq أو Gemini للحصول على إجابات حقيقية.)';
-    for (const word of placeholder.split(' ')) {
-      res.write(word + ' ');
-      await new Promise(r => setTimeout(r, 40));
+  for (const attempt of attempts) {
+    try {
+      for await (const token of attempt()) res.write(token);
+      return res.end();
+    } catch (e) {
+      continue; // try the next key/provider
     }
-    res.end();
-  } catch (err) {
-    burned.add(key);
-    res.status(500).end('Error contacting the AI provider.');
   }
+  res.write("⚠️ All providers are currently unavailable. Try again shortly.");
+  res.end();
 }
