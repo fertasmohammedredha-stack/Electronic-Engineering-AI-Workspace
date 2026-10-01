@@ -7,8 +7,24 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
+<style>
+  .auth-gate{position:fixed; inset:0; background:var(--bg); z-index:50; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:18px;}
+  .auth-gate.hidden{display:none;}
+  .auth-gate .logo{font-size:22px; margin-bottom:6px;}
+  .google-btn{display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line); padding:12px 22px; border-radius:9px; cursor:pointer; font-family:inherit; font-size:15px; color:var(--ink); box-shadow:var(--shadow);}
+  .google-btn:hover{border-color:var(--copper);}
+  .google-btn svg{width:18px; height:18px;}
+  body.loading .chat-app{visibility:hidden;}
+</style>
 </head>
-<body>
+<body class="loading">
+<div class="auth-gate" id="authGate">
+  <div class="logo mono">دارة</div>
+  <button class="google-btn" id="googleSignIn">
+    <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.5 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-1.8 13.9-5l-6.4-5.4C29.4 35.4 26.8 36 24 36c-5.2 0-9.6-3.5-11.2-8.3l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.6l6.4 5.4C41.5 35.6 44 30.2 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+    <span id="signInLabel" data-i="signIn">تسجيل الدخول بحساب Google</span>
+  </button>
+</div>
 <div class="chat-app">
   <aside class="sidebar" id="sidebar">
     <button class="btn-primary new-chat" data-i="startChat" onclick="newChat()"></button>
@@ -54,13 +70,43 @@
 </div>
 
 <script src="assets/lang.js"></script>
-<script>
-// ---- placeholder session (replace with real Firebase auth state) ----
-const session = JSON.parse(localStorage.getItem('session') || '{"name":"طالب","chats":[]}');
-document.getElementById('userName').textContent = session.name;
-document.getElementById('avatarLetter').textContent = session.name.charAt(0).toUpperCase();
+<script type="module">
+import { auth, signInWithGoogle, signOutUser, watchAuth, createChat, watchUserChats, watchMessages, addMessage } from './assets/firebase.js';
 
-function autoGrow(el){ el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
+let currentUser = null;
+let currentChatId = null;
+let unsubChats = null;
+let unsubMessages = null;
+
+document.getElementById('googleSignIn').addEventListener('click', async ()=>{
+  try { await signInWithGoogle(); } catch(e){ alert('فشل تسجيل الدخول: ' + e.message); }
+});
+
+watchAuth(user => {
+  currentUser = user;
+  document.body.classList.remove('loading');
+  const gate = document.getElementById('authGate');
+  if(user){
+    gate.classList.add('hidden');
+    document.getElementById('userName').textContent = user.displayName || user.email;
+    document.getElementById('avatarLetter').textContent = (user.displayName || user.email || '?').charAt(0).toUpperCase();
+    if(unsubChats) unsubChats();
+    unsubChats = watchUserChats(user.uid, renderChatList);
+  } else {
+    gate.classList.remove('hidden');
+    if(unsubChats) unsubChats();
+  }
+});
+
+document.querySelector('.sidebar-footer').addEventListener('click', (e)=>{
+  // Left click -> settings page (default anchor behavior below still applies via location.href set in HTML normally)
+});
+// Simple sign-out affordance: long-press-free, just expose on the avatar via double-click for now.
+document.querySelector('.sidebar-footer').addEventListener('dblclick', async ()=>{
+  if(confirm('تسجيل الخروج؟')) await signOutUser();
+});
+
+window.autoGrow = function(el){ el.style.height='auto'; el.style.height=el.scrollHeight+'px'; };
 
 document.getElementById('sidebarToggle').addEventListener('click', ()=>{
   if(window.innerWidth <= 820){
@@ -70,25 +116,46 @@ document.getElementById('sidebarToggle').addEventListener('click', ()=>{
   }
 });
 
-function newChat(){
+window.newChat = function(){
+  currentChatId = null;
+  if(unsubMessages) unsubMessages();
   document.getElementById('chatInner').innerHTML = `
     <div class="welcome" id="welcome"><h2 id="welcomeTitle" data-i="welcomeTitle"></h2><p id="welcomeSub" data-i="welcomeSub"></p></div>`;
   applyLang();
-}
+  document.querySelectorAll('.chat-item').forEach(el=>el.classList.remove('active'));
+};
 
-function renderChatList(){
+let lastChats = [];
+function renderChatList(chats){
+  lastChats = chats;
   const list = document.getElementById('chatList');
-  list.innerHTML = session.chats.map((c,i)=>
-    `<div class="chat-item ${i===0?'active':''}">${c}</div>`).join('') ||
+  list.innerHTML = chats.map(c =>
+    `<div class="chat-item ${c.id===currentChatId?'active':''}" data-id="${c.id}">${c.title}</div>`).join('') ||
     '<div class="chat-item" style="opacity:.5">—</div>';
+  list.querySelectorAll('.chat-item').forEach(el=>{
+    el.addEventListener('click', ()=> openChat(el.dataset.id));
+  });
 }
-function filterChats(q){
+window.filterChats = function(q){
   document.querySelectorAll('.chat-item').forEach(el=>{
     el.style.display = el.textContent.includes(q) ? '' : 'none';
   });
+};
+
+function openChat(chatId){
+  currentChatId = chatId;
+  renderChatList(lastChats);
+  const inner = document.getElementById('chatInner');
+  inner.innerHTML = '';
+  if(unsubMessages) unsubMessages();
+  unsubMessages = watchMessages(chatId, msgs=>{
+    inner.innerHTML = '';
+    msgs.forEach(m => addBubble(m.role, m.text, false));
+    document.getElementById('chatScroll').scrollTop = 999999;
+  });
 }
 
-function addBubble(role, text){
+function addBubble(role, text, scroll = true){
   const inner = document.getElementById('chatInner');
   const welcome = document.getElementById('welcome');
   if(welcome) welcome.remove();
@@ -96,19 +163,24 @@ function addBubble(role, text){
   b.className = 'bubble ' + role;
   b.textContent = text;
   inner.appendChild(b);
-  document.getElementById('chatScroll').scrollTop = 999999;
+  if(scroll) document.getElementById('chatScroll').scrollTop = 999999;
   return b;
 }
 
 // Streams the reply token-by-token from /api/chat (Server-Sent Events / chunked response).
 // The API route (api/chat.js) is responsible for picking a provider (Groq/Gemini),
 // rotating keys, and forwarding the stream — this file just renders it.
-async function sendMessage(){
+window.sendMessage = async function(){
   const input = document.getElementById('msgInput');
   const text = input.value.trim();
-  if(!text) return;
-  addBubble('user', text);
+  if(!text || !currentUser) return;
   input.value = ''; autoGrow(input);
+
+  if(!currentChatId){
+    currentChatId = await createChat(currentUser.uid, text);
+    openChat(currentChatId);
+  }
+  await addMessage(currentChatId, 'user', text);
 
   const botBubble = addBubble('bot', '');
   botBubble.innerHTML = '<span class="cursor-blink"></span>';
@@ -119,7 +191,7 @@ async function sendMessage(){
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ message: text, lang: getLang() })
     });
-    if(!res.body){ botBubble.textContent = 'Error: no response stream.'; return; }
+    if(!res.body) throw new Error('no stream');
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let full = '';
@@ -130,12 +202,11 @@ async function sendMessage(){
       botBubble.textContent = full;
       document.getElementById('chatScroll').scrollTop = 999999;
     }
+    await addMessage(currentChatId, 'bot', full);
   } catch(e){
     botBubble.textContent = '⚠️ تعذر الاتصال بالمساعد. (api/chat.js غير موصول بعد)';
   }
-}
-
-document.addEventListener('DOMContentLoaded', renderChatList);
+};
 </script>
 </body>
 </html>
