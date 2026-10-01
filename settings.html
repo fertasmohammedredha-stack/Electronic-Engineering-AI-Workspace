@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>دارة — الإعدادات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .s-wrap{max-width:620px; margin:0 auto; padding:28px 20px 60px;}
+  .s-top{display:flex; align-items:center; gap:14px; margin-bottom:28px;}
+  .s-back{width:38px; height:38px; border-radius:9px; border:1px solid var(--line); background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--ink); text-decoration:none; flex-shrink:0;}
+  .s-top h1{font-size:21px;}
+  .profile-card{display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:24px;}
+  .profile-card .avatar{width:52px; height:52px; font-size:19px;}
+  .profile-card .name{font-size:16px; font-weight:600;}
+  .profile-card .email{font-size:13px; color:var(--ink-soft);}
+  .s-section{margin-bottom:26px;}
+  .s-label{font-size:12px; color:var(--ink-soft); font-family:'JetBrains Mono',monospace; margin-bottom:10px;}
+  .s-group{background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden;}
+  .s-row{display:flex; align-items:center; justify-content:space-between; padding:15px 16px; border-bottom:1px solid var(--line); font-size:14.5px;}
+  .s-group .s-row:last-child{border-bottom:none;}
+  .s-row.link{cursor:pointer; color:inherit; text-decoration:none; display:flex;}
+  .s-row.link:hover{background:var(--bg);}
+  .s-row .chev{color:var(--ink-soft);}
+  .seg{display:flex; background:var(--bg); border-radius:8px; padding:3px; gap:2px;}
+  .seg button{border:none; background:transparent; padding:7px 14px; border-radius:6px; font-size:13.5px; cursor:pointer; color:var(--ink-soft); font-family:inherit;}
+  .seg button.active{background:var(--surface); color:var(--ink); box-shadow:var(--shadow);}
+  .danger{color:#D9544A;}
+</style>
+</head>
+<body>
+<div class="s-wrap">
+  <div class="s-top">
+    <a href="chat.html" class="s-back">→</a>
+    <h1 data-i="settingsTitle"></h1>
+  </div>
+
+  <div class="profile-card">
+    <div class="avatar" id="avatarLetter" style="border-radius:50%; background:var(--green); color:#fff; display:flex; align-items:center; justify-content:center;">?</div>
+    <div>
+      <div class="name" id="userName">—</div>
+      <div class="email" id="userEmail">—</div>
+    </div>
+  </div>
+
+  <div class="s-section">
+    <div class="s-label" data-i="prefs"></div>
+    <div class="s-group">
+      <div class="s-row">
+        <span data-i="language"></span>
+        <div class="seg">
+          <button id="langAr">AR</button>
+          <button id="langEn">EN</button>
+        </div>
+      </div>
+      <div class="s-row">
+        <span data-i="theme"></span>
+        <div class="seg">
+          <button id="themeLight" data-i="light"></button>
+          <button id="themeDark" data-i="dark"></button>
+          <button id="themeSystem" data-i="system"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="s-section">
+    <div class="s-label" data-i="about"></div>
+    <div class="s-group">
+      <div class="s-row link" id="tosLink"><span data-i="tos"></span><span class="chev">›</span></div>
+      <div class="s-row link" id="privacyLink"><span data-i="privacy"></span><span class="chev">›</span></div>
+      <div class="s-row link" id="aboutLink"><span data-i="aboutUs"></span><span class="chev">›</span></div>
+      <div class="s-row link" id="contactLink"><span data-i="contact"></span><span class="chev">›</span></div>
+    </div>
+  </div>
+
+  <div class="s-section">
+    <div class="s-label" data-i="account"></div>
+    <div class="s-group">
+      <div class="s-row link" id="deleteChatsBtn"><span class="danger" data-i="deleteChats"></span></div>
+      <div class="s-row link" id="logoutBtn"><span class="danger" data-i="logout"></span></div>
+    </div>
+  </div>
+
+  <div style="text-align:center; margin-top:30px;">
+    <span class="dev-credit">Developed by <b>Fertas Mohammed Redha</b></span>
+  </div>
+</div>
+
+<script src="assets/lang.js"></script>
+<script type="module">
+import { watchAuth, signOutUser, deleteAllChats } from './assets/firebase.js';
+
+watchAuth(user => {
+  if(!user){ location.href = 'chat.html'; return; }
+  document.getElementById('userName').textContent = user.displayName || '—';
+  document.getElementById('userEmail').textContent = user.email || '—';
+  document.getElementById('avatarLetter').textContent = (user.displayName || user.email || '?').charAt(0).toUpperCase();
+
+  document.getElementById('deleteChatsBtn').addEventListener('click', async ()=>{
+    if(confirm(getLang()==='ar' ? 'حذف كل المحادثات نهائيًا؟' : 'Permanently delete all chats?')){
+      await deleteAllChats(user.uid);
+      alert(getLang()==='ar' ? 'تم الحذف.' : 'Deleted.');
+    }
+  });
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+  await signOutUser();
+  location.href = 'chat.html';
+});
+
+// language segmented control
+function syncLangUI(){
+  const l = getLang();
+  document.getElementById('langAr').classList.toggle('active', l==='ar');
+  document.getElementById('langEn').classList.toggle('active', l==='en');
+}
+document.getElementById('langAr').addEventListener('click', ()=>{ setLang('ar'); syncLangUI(); });
+document.getElementById('langEn').addEventListener('click', ()=>{ setLang('en'); syncLangUI(); });
+
+// theme segmented control
+function syncThemeUI(){
+  const saved = localStorage.getItem('theme');
+  document.getElementById('themeLight').classList.toggle('active', saved==='light');
+  document.getElementById('themeDark').classList.toggle('active', saved==='dark');
+  document.getElementById('themeSystem').classList.toggle('active', !saved);
+}
+document.getElementById('themeLight').addEventListener('click', ()=>{ setTheme('light'); syncThemeUI(); });
+document.getElementById('themeDark').addEventListener('click', ()=>{ setTheme('dark'); syncThemeUI(); });
+document.getElementById('themeSystem').addEventListener('click', ()=>{
+  localStorage.removeItem('theme');
+  setTheme(window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  syncThemeUI();
+});
+
+const placeholderLinks = {
+  tosLink: 'tos', privacyLink: 'privacy', aboutLink: 'aboutUs', contactLink: 'contact'
+};
+Object.keys(placeholderLinks).forEach(id=>{
+  document.getElementById(id).addEventListener('click', ()=>{
+    alert(getLang()==='ar' ? 'هذه الصفحة قيد الإعداد.' : 'This page is coming soon.');
+  });
+});
+
+document.addEventListener('DOMContentLoaded', ()=>{ syncLangUI(); syncThemeUI(); });
+</script>
+</body>
+</html>
