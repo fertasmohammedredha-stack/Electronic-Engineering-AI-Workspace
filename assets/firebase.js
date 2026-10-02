@@ -2,7 +2,9 @@ import { firebaseConfig } from "./firebase-config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut,
-  onAuthStateChanged, browserLocalPersistence, setPersistence
+  onAuthStateChanged, browserLocalPersistence, setPersistence,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  updateProfile, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
   getFirestore, doc, setDoc, getDoc, collection, addDoc, query,
@@ -29,6 +31,24 @@ export async function signInWithGoogle() {
     lastLogin: serverTimestamp()
   }, { merge: true });
   return u;
+}
+
+export async function signUpWithEmail(name, email, password) {
+  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  await updateProfile(cred.user, { displayName: name });
+  await setDoc(doc(db, "users", cred.user.uid), {
+    name, email, createdAt: serverTimestamp()
+  }, { merge: true });
+  return cred.user;
+}
+
+export async function signInWithEmail(email, password) {
+  const cred = await signInWithEmailAndPassword(auth, email, password);
+  return cred.user;
+}
+
+export function resetPassword(email) {
+  return sendPasswordResetEmail(auth, email);
 }
 
 export function signOutUser() {
