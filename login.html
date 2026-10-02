@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>دارة — تسجيل الدخول</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .center-page{min-height:100vh; min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:24px;
+    background: radial-gradient(circle at 20% 20%, rgba(79,168,125,.10), transparent 40%),
+                radial-gradient(circle at 80% 75%, rgba(224,149,79,.10), transparent 40%), var(--bg);}
+  .auth-box{width:100%; max-width:400px; background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:0 30px 70px -30px rgba(0,0,0,.5); padding:36px 32px;}
+  .auth-box .logo{text-align:center; font-size:22px; margin-bottom:22px;}
+  .tabs{display:flex; background:var(--bg); border-radius:9px; padding:4px; margin-bottom:24px;}
+  .tabs button{flex:1; border:none; background:transparent; padding:10px; border-radius:7px; font-family:inherit; font-size:14px; font-weight:600; color:var(--ink-soft); cursor:pointer;}
+  .tabs button.active{background:var(--surface); color:var(--ink); box-shadow:var(--shadow);}
+  .google-btn{display:flex; align-items:center; gap:10px; justify-content:center; width:100%; background:var(--bg); border:1px solid var(--line); padding:12px 18px; border-radius:10px; cursor:pointer; font-family:inherit; font-size:14.5px; color:var(--ink);}
+  .google-btn:hover{border-color:var(--copper);}
+  .google-btn svg{width:18px; height:18px;}
+  .divider{display:flex; align-items:center; gap:10px; margin:20px 0; font-size:12.5px; color:var(--ink-soft);}
+  .divider::before,.divider::after{content:""; flex:1; height:1px; background:var(--line);}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:13px; color:var(--ink-soft); margin-bottom:6px;}
+  .field input{width:100%; border:1px solid var(--line); background:var(--bg); border-radius:9px; padding:11px 13px; font-family:inherit; font-size:14.5px; color:var(--ink); outline:none;}
+  .field input:focus{border-color:var(--copper);}
+  .submit-btn{width:100%; background:var(--ink); color:var(--bg); border:none; padding:12px; border-radius:10px; font-family:inherit; font-size:15px; font-weight:600; cursor:pointer; margin-top:4px;}
+  .submit-btn:hover{background:var(--green); color:#fff;}
+  .form-foot{display:flex; justify-content:space-between; align-items:center; margin-top:16px; font-size:13px;}
+  .form-foot a,.form-foot span{color:var(--copper); cursor:pointer; text-decoration:none;}
+  .err-msg{color:#D9544A; font-size:13px; margin-top:10px; display:none;}
+  .ok-msg{color:var(--green); font-size:13px; margin-top:10px; display:none;}
+  .back-link{display:block; text-align:center; margin-top:18px; font-size:13px; color:var(--ink-soft); text-decoration:none;}
+  [hidden]{display:none !important;}
+</style>
+</head>
+<body>
+<div class="center-page">
+  <div class="auth-box">
+    <div class="logo">دارة</div>
+    <div class="tabs">
+      <button id="tabLogin" class="active" data-i="loginTab"></button>
+      <button id="tabSignup" data-i="signupTab"></button>
+    </div>
+
+    <button class="google-btn" id="googleBtn">
+      <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.5 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-1.8 13.9-5l-6.4-5.4C29.4 35.4 26.8 36 24 36c-5.2 0-9.6-3.5-11.2-8.3l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.6l6.4 5.4C41.5 35.6 44 30.2 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+      <span data-i="signIn"></span>
+    </button>
+    <div class="divider"><span data-i="orEmail"></span></div>
+
+    <form id="loginForm">
+      <div class="field"><label data-i="email"></label><input type="email" id="loginEmail" required></div>
+      <div class="field"><label data-i="password"></label><input type="password" id="loginPassword" required></div>
+      <button type="submit" class="submit-btn" data-i="loginBtn"></button>
+      <div class="form-foot">
+        <span data-i="forgotPass" id="forgotBtn"></span>
+        <span><span data-i="noAccount"></span> <a href="#" id="toSignup" data-i="signupTab"></a></span>
+      </div>
+    </form>
+
+    <form id="signupForm" hidden>
+      <div class="field"><label data-i="fullName"></label><input type="text" id="signupName" required></div>
+      <div class="field"><label data-i="email"></label><input type="email" id="signupEmail" required></div>
+      <div class="field"><label data-i="password"></label><input type="password" id="signupPassword" required minlength="6"></div>
+      <button type="submit" class="submit-btn" data-i="signupBtn"></button>
+      <div class="form-foot">
+        <span></span>
+        <span><span data-i="haveAccount"></span> <a href="#" id="toLogin" data-i="loginTab"></a></span>
+      </div>
+    </form>
+
+    <div class="err-msg" id="errMsg"></div>
+    <div class="ok-msg" id="okMsg"></div>
+    <a href="auth.html" class="back-link" data-i="backHome"></a>
+  </div>
+</div>
+
+<script src="assets/lang.js"></script>
+<script type="module">
+import { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } from './assets/firebase.js';
+
+function showTab(tab){
+  document.getElementById('tabLogin').classList.toggle('active', tab==='login');
+  document.getElementById('tabSignup').classList.toggle('active', tab==='signup');
+  document.getElementById('loginForm').hidden = tab!=='login';
+  document.getElementById('signupForm').hidden = tab!=='signup';
+  hideMsgs();
+}
+document.getElementById('tabLogin').onclick = ()=> showTab('login');
+document.getElementById('tabSignup').onclick = ()=> showTab('signup');
+document.getElementById('toSignup').onclick = (e)=>{ e.preventDefault(); showTab('signup'); };
+document.getElementById('toLogin').onclick = (e)=>{ e.preventDefault(); showTab('login'); };
+
+function hideMsgs(){
+  document.getElementById('errMsg').style.display='none';
+  document.getElementById('okMsg').style.display='none';
+}
+function showErr(msg){
+  const el = document.getElementById('errMsg');
+  el.textContent = msg; el.style.display='block';
+  document.getElementById('okMsg').style.display='none';
+}
+function showOk(msg){
+  const el = document.getElementById('okMsg');
+  el.textContent = msg; el.style.display='block';
+  document.getElementById('errMsg').style.display='none';
+}
+function friendlyError(e){
+  const map = {
+    'auth/invalid-email': getLang()==='ar' ? 'البريد الإلكتروني غير صالح.' : 'Invalid email address.',
+    'auth/user-not-found': getLang()==='ar' ? 'لا يوجد حساب بهذا البريد.' : 'No account found with this email.',
+    'auth/wrong-password': getLang()==='ar' ? 'كلمة السر غير صحيحة.' : 'Incorrect password.',
+    'auth/email-already-in-use': getLang()==='ar' ? 'هذا البريد مستخدم بالفعل.' : 'This email is already in use.',
+    'auth/weak-password': getLang()==='ar' ? 'كلمة السر ضعيفة (6 أحرف على الأقل).' : 'Password should be at least 6 characters.',
+  };
+  const code = e.code || '';
+  return map[code] || e.message;
+}
+
+document.getElementById('googleBtn').addEventListener('click', async ()=>{
+  try { await signInWithGoogle(); location.href = 'chat.html'; }
+  catch(e){ showErr(friendlyError(e)); }
+});
+
+document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+  e.preventDefault(); hideMsgs();
+  try {
+    await signInWithEmail(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
+    location.href = 'chat.html';
+  } catch(err){ showErr(friendlyError(err)); }
+});
+
+document.getElementById('signupForm').addEventListener('submit', async (e)=>{
+  e.preventDefault(); hideMsgs();
+  try {
+    await signUpWithEmail(
+      document.getElementById('signupName').value,
+      document.getElementById('signupEmail').value,
+      document.getElementById('signupPassword').value
+    );
+    location.href = 'chat.html';
+  } catch(err){ showErr(friendlyError(err)); }
+});
+
+document.getElementById('forgotBtn').addEventListener('click', async ()=>{
+  const email = document.getElementById('loginEmail').value;
+  if(!email){ showErr(getLang()==='ar' ? 'اكتب بريدك أولاً.' : 'Enter your email first.'); return; }
+  try { await resetPassword(email); showOk(getLang()==='ar' ? 'تم إرسال رابط إعادة التعيين لبريدك.' : 'Password reset link sent to your email.'); }
+  catch(err){ showErr(friendlyError(err)); }
+});
+</script>
+</body>
+</html>
