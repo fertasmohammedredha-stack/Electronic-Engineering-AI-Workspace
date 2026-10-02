@@ -17,6 +17,12 @@ const DICT = {
     tos: "شروط الاستخدام", privacy: "سياسة الخصوصية", aboutUs: "عن دارة", contact: "تواصل معنا",
     account: "الحساب", deleteChats: "حذف كل المحادثات", logout: "تسجيل الخروج",
     guestSaveHint: "سجل دخول لحفظ محادثاتك", guestLimitMsg: "وصلت للحد الأقصى كزائر (15 سؤال) — سجل دخول للمتابعة من نفس المحادثة.",
+    goLogin: "تسجيل الدخول / إنشاء حساب", goGuest: "المتابعة كضيف", backHome: "← رجوع للصفحة الرئيسية",
+    loginTab: "تسجيل الدخول", signupTab: "إنشاء حساب", orEmail: "أو عبر البريد الإلكتروني",
+    fullName: "الاسم الكامل", email: "البريد الإلكتروني", password: "كلمة السر",
+    loginBtn: "تسجيل الدخول", signupBtn: "إنشاء حساب", forgotPass: "نسيت كلمة السر؟",
+    noAccount: "ليس لديك حساب؟", haveAccount: "لديك حساب بالفعل؟", resetSent: "تم إرسال رابط إعادة التعيين لبريدك.",
+    guestBack: "الصفحة الرئيسية",
   },
   en: {
     brand: "Dara", dir: "ltr",
@@ -35,6 +41,12 @@ const DICT = {
     tos: "Terms of Service", privacy: "Privacy Policy", aboutUs: "About Dara", contact: "Contact us",
     account: "Account", deleteChats: "Delete all chats", logout: "Log out",
     guestSaveHint: "Sign in to save your chats", guestLimitMsg: "You've reached the guest limit (15 questions) — sign in to continue this same conversation.",
+    goLogin: "Sign in / Create account", goGuest: "Continue as guest", backHome: "← Back to home",
+    loginTab: "Sign In", signupTab: "Sign Up", orEmail: "or continue with email",
+    fullName: "Full name", email: "Email address", password: "Password",
+    loginBtn: "Sign in", signupBtn: "Create account", forgotPass: "Forgot password?",
+    noAccount: "Don't have an account?", haveAccount: "Already have an account?", resetSent: "Password reset link sent to your email.",
+    guestBack: "Home",
   }
 };
 
