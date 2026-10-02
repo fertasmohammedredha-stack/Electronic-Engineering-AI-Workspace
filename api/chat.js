@@ -18,7 +18,10 @@ Rules:
 - Structure answers as: brief definition → key relation/formula (if any) → step-by-step
   reasoning → a short applied example.
 - Match the user's language (Arabic or English) and keep explanations exam-relevant
-  for an Algerian electronics licence curriculum.`;
+  for an Algerian electronics licence curriculum.
+- Math formatting: write ALL math using dollar-sign delimiters ONLY — $...$ for
+  inline math and $$...$$ on their own lines for display equations. NEVER use
+  \\( \\) or \\[ \\] — those break when passed through this app's Markdown renderer.`;
 
 function getKeyPool(prefix) {
   const keys = [];
