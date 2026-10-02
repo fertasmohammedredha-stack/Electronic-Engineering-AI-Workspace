@@ -28,6 +28,7 @@
   .seg button{border:none; background:transparent; padding:7px 14px; border-radius:6px; font-size:13.5px; cursor:pointer; color:var(--ink-soft); font-family:inherit;}
   .seg button.active{background:var(--surface); color:var(--ink); box-shadow:var(--shadow);}
   .danger{color:#D9544A;}
+  html[dir="ltr"] .s-back{transform:scaleX(-1);}
 </style>
 </head>
 <body>
@@ -109,7 +110,7 @@ watchAuth(user => {
 
 document.getElementById('logoutBtn').addEventListener('click', async ()=>{
   await signOutUser();
-  location.href = 'chat.html';
+  location.href = 'index.html';
 });
 
 // language segmented control
@@ -130,11 +131,7 @@ function syncThemeUI(){
 }
 document.getElementById('themeLight').addEventListener('click', ()=>{ setTheme('light'); syncThemeUI(); });
 document.getElementById('themeDark').addEventListener('click', ()=>{ setTheme('dark'); syncThemeUI(); });
-document.getElementById('themeSystem').addEventListener('click', ()=>{
-  localStorage.removeItem('theme');
-  setTheme(window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-  syncThemeUI();
-});
+document.getElementById('themeSystem').addEventListener('click', ()=>{ setTheme('system'); syncThemeUI(); });
 
 const placeholderLinks = {
   tosLink: 'tos', privacyLink: 'privacy', aboutLink: 'aboutUs', contactLink: 'contact'
