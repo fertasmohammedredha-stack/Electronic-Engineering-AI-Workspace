@@ -42,6 +42,14 @@
   .google-btn svg{width:18px; height:18px;}
   .auth-foot{margin-top:22px; font-size:12px; color:var(--ink-soft);}
   body.loading .chat-app{visibility:hidden;}
+  .guest-row{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; cursor:pointer; color:var(--ink-soft); font-size:13.5px;}
+  .guest-row:hover{background:var(--bg); color:var(--ink);}
+  .locked-hint{font-size:11px; color:var(--ink-soft); text-align:center; margin-top:2px;}
+  .guest-banner{max-width:760px; margin:0 auto 12px; background:var(--surface); border:1px solid var(--copper); border-radius:12px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .guest-banner p{font-size:13.5px; color:var(--ink-soft);}
+  .guest-banner.hidden{display:none;}
+  textarea:disabled{opacity:.5;}
+  .icon-round:disabled{opacity:.35; cursor:not-allowed;}
 </style>
 </head>
 <body class="loading chat-page">
@@ -63,14 +71,19 @@
     <input class="search" data-i-ph="search" oninput="filterChats(this.value)">
     <div class="section-label" data-i="projects"></div>
     <div class="chat-item">⚡ مشروع تخرج</div>
-    <div class="section-label" data-i="recent"></div>
+    <div class="section-label" data-i="recent" id="recentLabel"></div>
     <div id="chatList"></div>
-    <div class="sidebar-footer" onclick="location.href='settings.html'">
+    <div id="guestNotice" class="locked-hint" data-i="guestSaveHint" style="display:none; padding:0 4px;"></div>
+    <div class="sidebar-footer" id="footerLoggedIn" style="display:none;" onclick="location.href='settings.html'">
       <div class="avatar" id="avatarLetter">?</div>
       <div>
         <div style="font-size:14px; font-weight:600;" id="userName">—</div>
         <div style="font-size:12px; color:var(--ink-soft);" data-i="settings"></div>
       </div>
+    </div>
+    <div class="guest-row" id="footerGuest" style="display:none;" onclick="doSignIn()">
+      <div class="avatar" style="background:var(--copper);">G</div>
+      <span data-i="signIn"></span>
     </div>
   </aside>
 
@@ -87,9 +100,13 @@
       </div>
     </div>
     <div class="composer">
+      <div class="guest-banner hidden" id="guestBanner">
+        <p data-i="guestLimitMsg"></p>
+        <button class="btn-primary" style="padding:9px 18px; font-size:14px;" onclick="doSignIn()" data-i="signIn"></button>
+      </div>
       <div class="composer-inner">
         <div class="composer-actions">
-          <button class="icon-round" title="upload file" onclick="document.getElementById('fileInput').click()">📎</button>
+          <button class="icon-round" id="fileBtn" title="upload file" onclick="document.getElementById('fileInput').click()">📎</button>
           <input type="file" id="fileInput" style="display:none">
           <button class="icon-round" title="voice input" id="micBtn">🎤</button>
         </div>
@@ -105,28 +122,79 @@
 <script type="module">
 import { signInWithGoogle, watchAuth, createChat, watchUserChats, watchMessages, addMessage } from './assets/firebase.js';
 
+const GUEST_LIMIT = 15;
 let currentUser = null;
 let currentChatId = null;
 let unsubChats = null;
 let unsubMessages = null;
 
-document.getElementById('googleSignIn').addEventListener('click', async ()=>{
-  try { await signInWithGoogle(); } catch(e){ alert('فشل تسجيل الدخول: ' + e.message); }
-});
+function getGuestChat(){ return JSON.parse(localStorage.getItem('guestChat') || '[]'); }
+function saveGuestChat(arr){ localStorage.setItem('guestChat', JSON.stringify(arr)); }
+function guestQuestionCount(){ return getGuestChat().filter(m => m.role === 'user').length; }
 
-watchAuth(user => {
+window.doSignIn = async function(){
+  try { await signInWithGoogle(); } catch(e){ alert('فشل تسجيل الدخول: ' + e.message); }
+};
+document.getElementById('googleSignIn').addEventListener('click', doSignIn);
+
+function applyGuestUI(){
+  document.getElementById('footerLoggedIn').style.display = 'none';
+  document.getElementById('footerGuest').style.display = 'flex';
+  document.getElementById('recentLabel').style.display = 'none';
+  document.getElementById('chatList').style.display = 'none';
+  document.getElementById('guestNotice').style.display = 'block';
+  document.getElementById('fileBtn').disabled = true;
+  document.getElementById('micBtn').disabled = true;
+  const atLimit = guestQuestionCount() >= GUEST_LIMIT;
+  document.getElementById('guestBanner').classList.toggle('hidden', !atLimit);
+  document.getElementById('msgInput').disabled = atLimit;
+}
+function applyAuthedUI(user){
+  document.getElementById('footerLoggedIn').style.display = 'flex';
+  document.getElementById('footerGuest').style.display = 'none';
+  document.getElementById('recentLabel').style.display = '';
+  document.getElementById('chatList').style.display = '';
+  document.getElementById('guestNotice').style.display = 'none';
+  document.getElementById('fileBtn').disabled = false;
+  document.getElementById('micBtn').disabled = false;
+  document.getElementById('guestBanner').classList.add('hidden');
+  document.getElementById('msgInput').disabled = false;
+  document.getElementById('userName').textContent = user.displayName || user.email;
+  document.getElementById('avatarLetter').textContent = (user.displayName || user.email || '?').charAt(0).toUpperCase();
+}
+
+async function migrateGuestChatIfAny(uid){
+  const guest = getGuestChat();
+  if(!guest.length) return null;
+  const firstUserMsg = guest.find(m => m.role === 'user')?.text || '';
+  const newId = await createChat(uid, firstUserMsg);
+  for(const m of guest) await addMessage(newId, m.role, m.text);
+  saveGuestChat([]);
+  return newId;
+}
+
+watchAuth(async user => {
   currentUser = user;
   document.body.classList.remove('loading');
-  const gate = document.getElementById('authGate');
+  document.getElementById('authGate').classList.add('hidden');
+
   if(user){
-    gate.classList.add('hidden');
-    document.getElementById('userName').textContent = user.displayName || user.email;
-    document.getElementById('avatarLetter').textContent = (user.displayName || user.email || '?').charAt(0).toUpperCase();
+    const migratedId = await migrateGuestChatIfAny(user.uid);
+    applyAuthedUI(user);
     if(unsubChats) unsubChats();
-    unsubChats = watchUserChats(user.uid, renderChatList);
+    unsubChats = watchUserChats(user.uid, chats=>{
+      renderChatList(chats);
+      if(migratedId && !currentChatId) openChat(migratedId);
+    });
   } else {
-    gate.classList.remove('hidden');
     if(unsubChats) unsubChats();
+    applyGuestUI();
+    const guest = getGuestChat();
+    if(guest.length){
+      document.getElementById('chatInner').innerHTML = '';
+      guest.forEach(m => addBubble(m.role, m.text, false));
+      document.getElementById('chatScroll').scrollTop = 999999;
+    }
   }
 });
 
@@ -143,10 +211,12 @@ document.getElementById('sidebarToggle').addEventListener('click', ()=>{
 window.newChat = function(){
   currentChatId = null;
   if(unsubMessages) unsubMessages();
+  if(!currentUser) saveGuestChat([]);
   document.getElementById('chatInner').innerHTML = `
     <div class="welcome" id="welcome"><h2 id="welcomeTitle" data-i="welcomeTitle"></h2><p id="welcomeSub" data-i="welcomeSub"></p></div>`;
   applyLang();
   document.querySelectorAll('.chat-item').forEach(el=>el.classList.remove('active'));
+  if(!currentUser) applyGuestUI();
 };
 
 let lastChats = [];
@@ -212,14 +282,18 @@ function addBubble(role, text, scroll = true){
 window.sendMessage = async function(){
   const input = document.getElementById('msgInput');
   const text = input.value.trim();
-  if(!text || !currentUser) return;
-  input.value = ''; autoGrow(input);
+  if(!text || input.disabled) return;
+  if(!currentUser && guestQuestionCount() >= GUEST_LIMIT) return;
 
-  if(!currentChatId){
-    currentChatId = await createChat(currentUser.uid, text);
-    openChat(currentChatId);
+  input.value = ''; autoGrow(input);
+  addBubble('user', text);
+
+  if(currentUser){
+    if(!currentChatId){ currentChatId = await createChat(currentUser.uid, text); openChat(currentChatId); }
+    await addMessage(currentChatId, 'user', text);
+  } else {
+    const g = getGuestChat(); g.push({role:'user', text}); saveGuestChat(g);
   }
-  await addMessage(currentChatId, 'user', text);
 
   const botBubble = addBubble('bot', '');
   botBubble.innerHTML = '<span class="cursor-blink"></span>';
@@ -241,9 +315,14 @@ window.sendMessage = async function(){
       renderBotContent(botBubble, full);
       document.getElementById('chatScroll').scrollTop = 999999;
     }
-    await addMessage(currentChatId, 'bot', full);
+    if(currentUser){
+      await addMessage(currentChatId, 'bot', full);
+    } else {
+      const g = getGuestChat(); g.push({role:'bot', text: full}); saveGuestChat(g);
+      if(guestQuestionCount() >= GUEST_LIMIT) applyGuestUI();
+    }
   } catch(e){
-    botBubble.textContent = '⚠️ تعذر الاتصال بالمساعد. (api/chat.js غير موصول بعد)';
+    botBubble.textContent = '⚠️ تعذر الاتصال بالمساعد.';
   }
 };
 </script>
