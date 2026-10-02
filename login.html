@@ -31,11 +31,20 @@
   .form-foot a,.form-foot span{color:var(--copper); cursor:pointer; text-decoration:none;}
   .err-msg{color:#D9544A; font-size:13px; margin-top:10px; display:none;}
   .ok-msg{color:var(--green); font-size:13px; margin-top:10px; display:none;}
-  .back-link{display:block; text-align:center; margin-top:18px; font-size:13px; color:var(--ink-soft); text-decoration:none;}
   [hidden]{display:none !important;}
+  .top-nav{position:fixed; top:0; inset-inline:0; display:flex; justify-content:space-between; padding:18px 20px; z-index:5;}
+  .nav-btn{width:38px; height:38px; border-radius:9px; border:1px solid var(--line); background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--ink); text-decoration:none;}
+  html[dir="rtl"] #backBtn svg{transform:scaleX(-1);}
+  .toggle-link{background:none; border:none; padding:0; font: inherit; color:var(--copper); cursor:pointer; text-decoration:none;}
+  .pw-field{position:relative;}
+  .pw-toggle{position:absolute; inset-inline-end:12px; top:34px; background:none; border:none; cursor:pointer; font-size:15px; color:var(--ink-soft); padding:4px;}
 </style>
 </head>
 <body>
+<div class="top-nav">
+  <a href="auth.html" class="nav-btn" id="backBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></a>
+  <a href="index.html" class="nav-btn" title="Home">🏠</a>
+</div>
 <div class="center-page">
   <div class="auth-box">
     <div class="logo">دارة</div>
@@ -52,28 +61,27 @@
 
     <form id="loginForm">
       <div class="field"><label data-i="email"></label><input type="email" id="loginEmail" required></div>
-      <div class="field"><label data-i="password"></label><input type="password" id="loginPassword" required></div>
+      <div class="field pw-field"><label data-i="password"></label><input type="password" id="loginPassword" required><button type="button" class="pw-toggle" data-for="loginPassword">👁️</button></div>
       <button type="submit" class="submit-btn" data-i="loginBtn"></button>
       <div class="form-foot">
         <span data-i="forgotPass" id="forgotBtn"></span>
-        <span><span data-i="noAccount"></span> <a href="#" id="toSignup" data-i="signupTab"></a></span>
+        <span><span data-i="noAccount"></span> <button type="button" class="toggle-link" id="toSignup" data-i="signupTab"></button></span>
       </div>
     </form>
 
     <form id="signupForm" hidden>
       <div class="field"><label data-i="fullName"></label><input type="text" id="signupName" required></div>
       <div class="field"><label data-i="email"></label><input type="email" id="signupEmail" required></div>
-      <div class="field"><label data-i="password"></label><input type="password" id="signupPassword" required minlength="6"></div>
+      <div class="field pw-field"><label data-i="password"></label><input type="password" id="signupPassword" required minlength="6"><button type="button" class="pw-toggle" data-for="signupPassword">👁️</button></div>
       <button type="submit" class="submit-btn" data-i="signupBtn"></button>
       <div class="form-foot">
         <span></span>
-        <span><span data-i="haveAccount"></span> <a href="#" id="toLogin" data-i="loginTab"></a></span>
+        <span><span data-i="haveAccount"></span> <button type="button" class="toggle-link" id="toLogin" data-i="loginTab"></button></span>
       </div>
     </form>
 
     <div class="err-msg" id="errMsg"></div>
     <div class="ok-msg" id="okMsg"></div>
-    <a href="auth.html" class="back-link" data-i="backHome"></a>
   </div>
 </div>
 
@@ -88,10 +96,19 @@ function showTab(tab){
   document.getElementById('signupForm').hidden = tab!=='signup';
   hideMsgs();
 }
-document.getElementById('tabLogin').onclick = ()=> showTab('login');
-document.getElementById('tabSignup').onclick = ()=> showTab('signup');
-document.getElementById('toSignup').onclick = (e)=>{ e.preventDefault(); showTab('signup'); };
-document.getElementById('toLogin').onclick = (e)=>{ e.preventDefault(); showTab('login'); };
+document.getElementById('tabLogin').addEventListener('click', ()=> showTab('login'));
+document.getElementById('tabSignup').addEventListener('click', ()=> showTab('signup'));
+document.getElementById('toSignup').addEventListener('click', ()=> showTab('signup'));
+document.getElementById('toLogin').addEventListener('click', ()=> showTab('login'));
+
+document.querySelectorAll('.pw-toggle').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const input = document.getElementById(btn.dataset.for);
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.textContent = show ? '🙈' : '👁️';
+  });
+});
 
 function hideMsgs(){
   document.getElementById('errMsg').style.display='none';
