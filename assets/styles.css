@@ -107,5 +107,9 @@ html[dir="rtl"] .composer-inner{padding:8px 14px 8px 8px;}
   .sidebar > *{opacity:1; pointer-events:auto;}
   html[dir="rtl"] .sidebar{transform:translateX(100%);}
   .sidebar.open{transform:translateX(0);}
+  html[dir="rtl"] .sidebar.open{transform:translateX(0);} /* must win over the html[dir=rtl] .sidebar rule above */
+  #sidebarToggle{position:relative; z-index:35;} /* stays clickable even when the sidebar overlay is on top of it */
+  .sidebar-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:25; opacity:0; pointer-events:none; transition:opacity .2s;}
+  .sidebar-backdrop.show{opacity:1; pointer-events:auto;}
   .bubble{max-width:88%;}
 }
