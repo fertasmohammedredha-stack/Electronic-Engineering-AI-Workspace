@@ -23,6 +23,8 @@ const DICT = {
     loginBtn: "تسجيل الدخول", signupBtn: "إنشاء حساب", forgotPass: "نسيت كلمة السر؟",
     noAccount: "ليس لديك حساب؟", haveAccount: "لديك حساب بالفعل؟", resetSent: "تم إرسال رابط إعادة التعيين لبريدك.",
     guestBack: "الصفحة الرئيسية",
+    statBilingual: "بلغتين", statFree: "مجاني", statYears: "سنوات دراسية مدعومة",
+    showPassword: "إظهار كلمة السر",
   },
   en: {
     brand: "Dara", dir: "ltr",
@@ -47,6 +49,8 @@ const DICT = {
     loginBtn: "Sign in", signupBtn: "Create account", forgotPass: "Forgot password?",
     noAccount: "Don't have an account?", haveAccount: "Already have an account?", resetSent: "Password reset link sent to your email.",
     guestBack: "Home",
+    statBilingual: "bilingual", statFree: "free", statYears: "years of study covered",
+    showPassword: "Show password",
   }
 };
 
@@ -68,21 +72,30 @@ function applyLang(){
   const toggle = document.getElementById('langToggle');
   if(toggle) toggle.textContent = l === 'ar' ? 'EN' : 'AR';
 }
+function systemPrefersLight(){ return window.matchMedia('(prefers-color-scheme: light)').matches; }
+// Returns the ACTIVE visual theme ('light'/'dark') — a saved choice, or the system value if 'system'.
 function getTheme(){
-  return localStorage.getItem('theme') ||
-    (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  const saved = localStorage.getItem('theme');
+  if(saved === 'light' || saved === 'dark') return saved;
+  return systemPrefersLight() ? 'light' : 'dark';
 }
+// t: 'light' | 'dark' | 'system'. 'system' clears the saved choice so it keeps following the OS.
 function setTheme(t){
-  localStorage.setItem('theme', t);
-  document.documentElement.setAttribute('data-theme', t);
+  if(t === 'system') localStorage.removeItem('theme');
+  else localStorage.setItem('theme', t);
+  document.documentElement.setAttribute('data-theme', getTheme());
   const btn = document.getElementById('themeToggle');
-  if(btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
+  if(btn) btn.textContent = getTheme() === 'dark' ? '☀️' : '🌙';
 }
 document.addEventListener('DOMContentLoaded', ()=>{
-  setTheme(getTheme());
+  document.documentElement.setAttribute('data-theme', getTheme());
   applyLang();
   const toggle = document.getElementById('langToggle');
   if(toggle) toggle.addEventListener('click', ()=> setLang(getLang()==='ar' ? 'en' : 'ar'));
   const themeBtn = document.getElementById('themeToggle');
   if(themeBtn) themeBtn.addEventListener('click', ()=> setTheme(getTheme()==='dark' ? 'light' : 'dark'));
+  // Follow OS changes live when the user hasn't pinned a manual choice.
+  window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', ()=>{
+    if(!localStorage.getItem('theme')) document.documentElement.setAttribute('data-theme', getTheme());
+  });
 });
