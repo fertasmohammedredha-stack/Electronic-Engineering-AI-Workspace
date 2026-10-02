@@ -16,6 +16,7 @@ const DICT = {
     light: "فاتح", dark: "داكن", system: "تلقائي", about: "حول",
     tos: "شروط الاستخدام", privacy: "سياسة الخصوصية", aboutUs: "عن دارة", contact: "تواصل معنا",
     account: "الحساب", deleteChats: "حذف كل المحادثات", logout: "تسجيل الخروج",
+    guestSaveHint: "سجل دخول لحفظ محادثاتك", guestLimitMsg: "وصلت للحد الأقصى كزائر (15 سؤال) — سجل دخول للمتابعة من نفس المحادثة.",
   },
   en: {
     brand: "Dara", dir: "ltr",
@@ -33,6 +34,7 @@ const DICT = {
     light: "Light", dark: "Dark", system: "System", about: "About",
     tos: "Terms of Service", privacy: "Privacy Policy", aboutUs: "About Dara", contact: "Contact us",
     account: "Account", deleteChats: "Delete all chats", logout: "Log out",
+    guestSaveHint: "Sign in to save your chats", guestLimitMsg: "You've reached the guest limit (15 questions) — sign in to continue this same conversation.",
   }
 };
 
