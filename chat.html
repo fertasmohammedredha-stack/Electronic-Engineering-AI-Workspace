@@ -108,7 +108,7 @@
 
 <script src="assets/lang.js"></script>
 <script type="module">
-import { watchAuth, createChat, watchUserChats, watchMessages, addMessage } from './assets/firebase.js';
+import { watchAuth, createChat, watchUserChats, watchMessages, addMessage, trackEvent } from './assets/firebase.js';
 
 const GUEST_LIMIT = 15;
 let currentUser = null;
@@ -307,6 +307,7 @@ window.sendMessage = async function(){
 
   input.value = ''; autoGrow(input);
   addBubble('user', text);
+  trackEvent('message_sent');
 
   if(currentUser){
     if(!currentChatId){ currentChatId = await createChat(currentUser.uid, text); openChat(currentChatId); }
@@ -343,8 +344,10 @@ window.sendMessage = async function(){
       const g = getGuestChat(); g.push({role:'bot', text: full}); saveGuestChat(g);
     }
     addMessageActions(botBubble, full);
+    trackEvent('ai_response_success');
   } catch(e){
     botBubble.textContent = '⚠️ تعذر الاتصال بالمساعد.';
+    trackEvent('ai_response_error', { error: String(e.message || e).slice(0, 100) });
   }
 };
 </script>
