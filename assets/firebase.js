@@ -10,11 +10,19 @@ import {
   getFirestore, doc, setDoc, getDoc, collection, addDoc, query,
   where, orderBy, onSnapshot, serverTimestamp, updateDoc, getDocs, deleteDoc, writeBatch
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-analytics.js";
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
+
+const analytics = getAnalytics(app);
+export function trackEvent(name, params = {}) {
+  try { logEvent(analytics, name, params); } catch (e) { /* analytics should never break the app */ }
+}
+// Explicit page_view so every .html file (this is a multi-page, not single-page, app) is counted.
+trackEvent('page_view', { page_title: document.title, page_path: location.pathname });
 
 // Keeps the user signed in across visits/tabs — this is what makes login "stick"
 // instead of asking again every time they open the site.
@@ -30,6 +38,7 @@ export async function signInWithGoogle() {
     photoURL: u.photoURL,
     lastLogin: serverTimestamp()
   }, { merge: true });
+  trackEvent('login_success', { method: 'google' });
   return u;
 }
 
@@ -39,11 +48,13 @@ export async function signUpWithEmail(name, email, password) {
   await setDoc(doc(db, "users", cred.user.uid), {
     name, email, createdAt: serverTimestamp()
   }, { merge: true });
+  trackEvent('login_success', { method: 'email_signup' });
   return cred.user;
 }
 
 export async function signInWithEmail(email, password) {
   const cred = await signInWithEmailAndPassword(auth, email, password);
+  trackEvent('login_success', { method: 'email' });
   return cred.user;
 }
 
@@ -52,6 +63,7 @@ export function resetPassword(email) {
 }
 
 export function signOutUser() {
+  trackEvent('logout');
   return signOut(auth);
 }
 
@@ -67,6 +79,7 @@ export async function createChat(uid, firstMessage) {
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   });
+  trackEvent('chat_created');
   return ref.id;
 }
 
