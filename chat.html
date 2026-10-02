@@ -49,6 +49,7 @@
 </head>
 <body class="loading chat-page">
 <div class="chat-app">
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="document.getElementById('sidebar').classList.remove('open'); this.classList.remove('show');"></div>
   <aside class="sidebar" id="sidebar">
     <button class="btn-primary new-chat" data-i="startChat" onclick="newChat()"></button>
     <input class="search" data-i-ph="search" oninput="filterChats(this.value)">
@@ -196,7 +197,8 @@ window.autoGrow = function(el){ el.style.height='auto'; el.style.height=el.scrol
 
 document.getElementById('sidebarToggle').addEventListener('click', ()=>{
   if(window.innerWidth <= 820){
-    document.getElementById('sidebar').classList.toggle('open');
+    const isOpen = document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarBackdrop').classList.toggle('show', isOpen);
   } else {
     document.querySelector('.chat-app').classList.toggle('sidebar-collapsed');
   }
