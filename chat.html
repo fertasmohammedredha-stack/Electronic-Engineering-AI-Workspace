@@ -45,6 +45,11 @@
   .action-btn{border:none; background:transparent; font-size:13px; padding:4px 7px; border-radius:6px; cursor:pointer; opacity:.6; line-height:1;}
   .action-btn:hover{opacity:1; background:var(--surface);}
   .action-btn.active{opacity:1; background:var(--surface);}
+  .image-preview{max-width:760px; margin:0 auto 10px; display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:8px 10px;}
+  .image-preview.hidden{display:none;}
+  .image-preview img{width:44px; height:44px; object-fit:cover; border-radius:6px;}
+  .image-preview button{margin-inline-start:auto; background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:16px;}
+  .bubble img.msg-img{max-width:100%; border-radius:8px; display:block; margin-bottom:8px;}
 </style>
 </head>
 <body class="loading chat-page">
@@ -93,10 +98,14 @@
         <p data-i="guestLimitMsg"></p>
         <button class="btn-primary" style="padding:9px 18px; font-size:14px;" onclick="doSignIn()" data-i="goLogin"></button>
       </div>
+      <div class="image-preview hidden" id="imagePreview">
+        <img id="previewImg" alt="">
+        <button type="button" id="removeImage">✕</button>
+      </div>
       <div class="composer-inner">
         <div class="composer-actions">
-          <button class="icon-round" id="fileBtn" title="upload file" onclick="document.getElementById('fileInput').click()">📎</button>
-          <input type="file" id="fileInput" style="display:none">
+          <button class="icon-round" id="fileBtn" title="upload image" onclick="document.getElementById('fileInput').click()">📎</button>
+          <input type="file" id="fileInput" accept="image/*" style="display:none">
           <button class="icon-round" title="voice input" id="micBtn">🎤</button>
         </div>
         <textarea id="msgInput" rows="1" data-i-ph="placeholder" oninput="autoGrow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
@@ -287,7 +296,7 @@ function openChat(chatId){
   unsubMessages = watchMessages(chatId, msgs=>{
     inner.innerHTML = '';
     msgs.forEach(m => {
-      const el = addBubble(m.role, m.text, false);
+      const el = addBubble(m.role, m.text, false, m.image || null);
       if(m.role === 'bot') addMessageActions(el, m.text);
     });
     document.getElementById('chatScroll').scrollTop = 999999;
@@ -332,17 +341,56 @@ function toggleFeedback(btn, row, kind){
   btn.classList.toggle('active', !isActive);
 }
 
-function addBubble(role, text, scroll = true){
+function addBubble(role, text, scroll = true, imageUrl = null){
   const inner = document.getElementById('chatInner');
   const welcome = document.getElementById('welcome');
   if(welcome) welcome.remove();
   const b = document.createElement('div');
   b.className = 'bubble ' + role;
-  if(role === 'bot') renderBotContent(b, text); else b.textContent = text;
+  if(role === 'bot'){
+    renderBotContent(b, text);
+  } else {
+    if(imageUrl){ const img = document.createElement('img'); img.src = imageUrl; img.className = 'msg-img'; b.appendChild(img); }
+    if(text){ const t = document.createElement('div'); t.textContent = text; b.appendChild(t); }
+  }
   inner.appendChild(b);
   if(scroll) document.getElementById('chatScroll').scrollTop = 999999;
   return b;
 }
+
+// ---- Image upload (logged-in users only; the composer button is disabled for guests) ----
+let pendingImage = null; // { dataUrl, base64, mimeType }
+
+document.getElementById('fileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const maxDim = 1024;
+      let { width, height } = img;
+      if(width > maxDim || height > maxDim){
+        const scale = maxDim / Math.max(width, height);
+        width = Math.round(width * scale); height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      pendingImage = { dataUrl, base64: dataUrl.split(',')[1], mimeType: 'image/jpeg' };
+      document.getElementById('previewImg').src = dataUrl;
+      document.getElementById('imagePreview').classList.remove('hidden');
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+});
+document.getElementById('removeImage').addEventListener('click', ()=>{
+  pendingImage = null;
+  document.getElementById('imagePreview').classList.add('hidden');
+});
 
 // Streams the reply token-by-token from /api/chat (Server-Sent Events / chunked response).
 // The API route (api/chat.js) is responsible for picking a provider (Groq/Gemini),
@@ -350,16 +398,20 @@ function addBubble(role, text, scroll = true){
 window.sendMessage = async function(){
   const input = document.getElementById('msgInput');
   const text = input.value.trim();
-  if(!text || input.disabled) return;
+  const image = pendingImage; // snapshot — cleared below before the request goes out
+  if((!text && !image) || input.disabled) return;
   if(!currentUser && guestQuestionCount() >= GUEST_LIMIT) return;
 
   input.value = ''; autoGrow(input);
-  addBubble('user', text);
+  pendingImage = null;
+  document.getElementById('imagePreview').classList.add('hidden');
+  addBubble('user', text, true, image ? image.dataUrl : null);
   trackEvent('message_sent');
 
+  const titleText = text || 'صورة 📎';
   if(currentUser){
-    if(!currentChatId){ currentChatId = await createChat(currentUser.uid, text); openChat(currentChatId); }
-    await addMessage(currentChatId, 'user', text);
+    if(!currentChatId){ currentChatId = await createChat(currentUser.uid, titleText); openChat(currentChatId); }
+    await addMessage(currentChatId, 'user', text, image ? image.dataUrl : null);
   } else {
     const g = getGuestChat(); g.push({role:'user', text}); saveGuestChat(g);
     incGuestTotal();
@@ -373,7 +425,10 @@ window.sendMessage = async function(){
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ message: text, lang: getLang() })
+      body: JSON.stringify({
+        message: text, lang: getLang(),
+        image: image ? { data: image.base64, mimeType: image.mimeType } : undefined
+      })
     });
     if(!res.body) throw new Error('no stream');
     const reader = res.body.getReader();
