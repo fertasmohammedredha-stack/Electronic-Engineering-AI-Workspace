@@ -100,10 +100,14 @@ export function watchMessages(chatId, callback) {
   });
 }
 
-export async function addMessage(chatId, role, text) {
-  await addDoc(collection(db, "chats", chatId, "messages"), {
-    role, text, createdAt: serverTimestamp()
-  });
+// image: an optional data URL string (already compressed client-side before
+// this is called) — stored inline on the message doc. Fine for MVP since
+// compressed images stay well under Firestore's 1MB document limit; a
+// Storage-bucket approach would be the move once images get heavier use.
+export async function addMessage(chatId, role, text, image = null) {
+  const data = { role, text: text || '', createdAt: serverTimestamp() };
+  if (image) data.image = image;
+  await addDoc(collection(db, "chats", chatId, "messages"), data);
   await updateDoc(doc(db, "chats", chatId), { updatedAt: serverTimestamp() });
 }
 
