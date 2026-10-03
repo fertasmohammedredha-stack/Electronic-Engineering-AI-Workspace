@@ -1,7 +1,7 @@
 import { firebaseConfig } from "./firebase-config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut,
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut,
   onAuthStateChanged, browserLocalPersistence, setPersistence,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   updateProfile, sendPasswordResetEmail
@@ -28,12 +28,9 @@ trackEvent('page_view', { page_title: document.title, page_path: location.pathna
 // instead of asking again every time they open the site.
 setPersistence(auth, browserLocalPersistence);
 
-function isMobileUA() {
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-}
-
-async function finalizeGoogleUser(u) {
-  // Create/refresh the user's profile doc on every sign-in.
+export async function signInWithGoogle() {
+  const result = await signInWithPopup(auth, provider);
+  const u = result.user;
   await setDoc(doc(db, "users", u.uid), {
     name: u.displayName,
     email: u.email,
@@ -42,29 +39,6 @@ async function finalizeGoogleUser(u) {
   }, { merge: true });
   trackEvent('login_success', { method: 'google' });
   return u;
-}
-
-// Desktop: popup (resolves immediately with the user).
-// Mobile: redirect — popups are unreliable in mobile browsers/in-app webviews
-// and were causing the "back button signs you out" bug. Redirect navigates
-// away to Google and back; the result is picked up by handleRedirectResult()
-// below on the page the user lands back on (login.html calls it on load).
-export async function signInWithGoogle() {
-  if (isMobileUA()) {
-    await signInWithRedirect(auth, provider);
-    return null; // execution won't actually continue past this on mobile — the page navigates away
-  }
-  const result = await signInWithPopup(auth, provider);
-  return finalizeGoogleUser(result.user);
-}
-
-// Call this once on page load (e.g. login.html) to complete a pending
-// mobile redirect sign-in. Resolves to the user if one just signed in via
-// redirect, or null otherwise.
-export async function handleRedirectResult() {
-  const result = await getRedirectResult(auth);
-  if (result && result.user) return finalizeGoogleUser(result.user);
-  return null;
 }
 
 export async function signUpWithEmail(name, email, password) {
