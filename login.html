@@ -87,11 +87,12 @@
 
 <script src="assets/lang.js"></script>
 <script type="module">
-import { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, handleRedirectResult } from './assets/firebase.js';
+import { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, watchAuth } from './assets/firebase.js';
 
-// Completes a mobile Google sign-in that used signInWithRedirect (the user
-// just landed back here from Google) — a no-op (resolves null) otherwise.
-handleRedirectResult().then(user => { if (user) location.href = 'chat.html'; });
+// If the user is already signed in (e.g. they pressed the phone's back
+// button after a successful login) bounce them straight to chat.html
+// instead of showing a confusing login form again.
+watchAuth(user => { if (user) location.href = 'chat.html'; });
 
 function showTab(tab){
   document.getElementById('tabLogin').classList.toggle('active', tab==='login');
@@ -141,10 +142,8 @@ function friendlyError(e){
 }
 
 document.getElementById('googleBtn').addEventListener('click', async ()=>{
-  try {
-    const user = await signInWithGoogle();
-    if (user) location.href = 'chat.html'; // desktop (popup) path — mobile redirects away before this line runs
-  } catch(e){ showErr(friendlyError(e)); }
+  try { await signInWithGoogle(); location.href = 'chat.html'; }
+  catch(e){ showErr(friendlyError(e)); }
 });
 
 document.getElementById('loginForm').addEventListener('submit', async (e)=>{
