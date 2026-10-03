@@ -49,7 +49,7 @@
 </head>
 <body class="loading chat-page">
 <div class="chat-app">
-  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="document.getElementById('sidebar').classList.remove('open'); this.classList.remove('show');"></div>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="setSidebarOpen(false)"></div>
   <aside class="sidebar" id="sidebar">
     <button class="btn-primary new-chat" data-i="startChat" onclick="newChat()"></button>
     <input class="search" data-i-ph="search" oninput="filterChats(this.value)">
@@ -195,14 +195,60 @@ watchAuth(async user => {
 
 window.autoGrow = function(el){ el.style.height='auto'; el.style.height=el.scrollHeight+'px'; };
 
+window.setSidebarOpen = function(open){
+  document.getElementById('sidebar').classList.toggle('open', open);
+  document.getElementById('sidebarBackdrop').classList.toggle('show', open);
+};
+
 document.getElementById('sidebarToggle').addEventListener('click', ()=>{
   if(window.innerWidth <= 820){
-    const isOpen = document.getElementById('sidebar').classList.toggle('open');
-    document.getElementById('sidebarBackdrop').classList.toggle('show', isOpen);
+    setSidebarOpen(!document.getElementById('sidebar').classList.contains('open'));
   } else {
     document.querySelector('.chat-app').classList.toggle('sidebar-collapsed');
   }
 });
+
+// Touch gestures (mobile only): swipe the open sidebar sideways to close it,
+// and swipe inward from the screen edge to open it — same as ChatGPT's app.
+(function(){
+  const sidebar = document.getElementById('sidebar');
+  let startX = null, lastX = null, draggingSidebar = false, edgeStartX = null;
+  const isRTL = ()=> document.documentElement.dir === 'rtl';
+
+  sidebar.addEventListener('touchstart', e=>{
+    if(window.innerWidth > 820) return;
+    draggingSidebar = true; startX = lastX = e.touches[0].clientX;
+    sidebar.style.transition = 'none';
+  }, {passive:true});
+  sidebar.addEventListener('touchmove', e=>{
+    if(!draggingSidebar) return;
+    lastX = e.touches[0].clientX;
+    let delta = lastX - startX;
+    delta = isRTL() ? Math.max(0, delta) : Math.min(0, delta); // only allow dragging toward "closed"
+    sidebar.style.transform = `translateX(${delta}px)`;
+  }, {passive:true});
+  sidebar.addEventListener('touchend', ()=>{
+    if(!draggingSidebar) return;
+    draggingSidebar = false;
+    sidebar.style.transition = '';
+    sidebar.style.transform = '';
+    const delta = lastX - startX;
+    if(isRTL() ? delta > 60 : delta < -60) setSidebarOpen(false);
+    startX = lastX = null;
+  });
+
+  document.addEventListener('touchstart', e=>{
+    if(window.innerWidth > 820 || sidebar.classList.contains('open')) { edgeStartX = null; return; }
+    const x = e.touches[0].clientX;
+    const fromEdge = isRTL() ? x > window.innerWidth - 24 : x < 24;
+    edgeStartX = fromEdge ? x : null;
+  }, {passive:true});
+  document.addEventListener('touchmove', e=>{
+    if(edgeStartX === null) return;
+    const delta = e.touches[0].clientX - edgeStartX;
+    if(Math.abs(delta) > 40){ setSidebarOpen(true); edgeStartX = null; }
+  }, {passive:true});
+})();
 
 window.newChat = function(){
   currentChatId = null;
