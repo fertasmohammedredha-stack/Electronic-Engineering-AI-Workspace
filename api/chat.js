@@ -6,7 +6,10 @@
 
 const GROQ_MODEL = "openai/gpt-oss-120b"; // Groq's own recommended replacement after
 // llama-3.3-70b-versatile was shut down (16 Aug 2026) — see console.groq.com/docs/deprecations
-const GEMINI_MODEL = "gemini-flash-latest"; // always points at Google's current GA Flash model
+// Pinned (not "-latest") on purpose: the floating alias often points at a newer,
+// heavier preview model that hits 503 "overloaded" far more often. 2.5-flash is
+// a stable, lighter-weight model with noticeably better free-tier availability.
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 const SYSTEM_PROMPT = `You are Dara, an AI tutor strictly specialized in electronics
 (analog/digital circuits, signals, microcontrollers, power electronics, measurement).
