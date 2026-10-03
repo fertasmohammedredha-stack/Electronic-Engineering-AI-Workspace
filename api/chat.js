@@ -19,6 +19,10 @@ Rules:
   reasoning → a short applied example.
 - Match the user's language (Arabic or English) and keep explanations exam-relevant
   for an Algerian electronics licence curriculum.
+- When an image is attached (a circuit diagram, a handwritten problem, a component
+  photo, a datasheet page), read it carefully and ground your answer in what's
+  actually shown — component values, connections, handwritten numbers — rather
+  than giving a generic answer.
 - Math formatting: write ALL math using dollar-sign delimiters ONLY — $...$ for
   inline math and $$...$$ on their own lines for display equations. NEVER use
   \\( \\) or \\[ \\] — those break when passed through this app's Markdown renderer.`;
@@ -74,14 +78,16 @@ async function* streamGroq(key, message) {
   }
 }
 
-async function* streamGemini(key, message) {
+async function* streamGemini(key, message, image) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse`;
+  const parts = [{ text: message }];
+  if (image) parts.push({ inlineData: { mimeType: image.mimeType, data: image.data } });
   const res = await fetch(url, {
     method: "POST",
     headers: { "x-goog-api-key": key, "Content-Type": "application/json" },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      contents: [{ role: "user", parts: [{ text: message }] }]
+      contents: [{ role: "user", parts }]
     })
   });
   if (res.status === 429 || res.status === 401) burned.add(key);
@@ -110,29 +116,35 @@ async function* streamGemini(key, message) {
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { message } = req.body || {};
-  if (!message) return res.status(400).json({ error: "Missing message" });
+  const { message, image } = req.body || {}; // image: { data: base64, mimeType } | undefined
+  if (!message && !image) return res.status(400).json({ error: "Missing message" });
+  const effectiveMessage = message || "صف هذه الصورة بالتفصيل من منظور إلكتروني (دارة، مكونات، قيم، مسائل مكتوبة...) وساعد الطالب فيها.";
 
   const groqKeys = getKeyPool("GROQ_API_KEY");
   const geminiKeys = getKeyPool("GEMINI_API_KEY");
   if (!groqKeys.length && !geminiKeys.length) {
     return res.status(500).json({ error: "No API keys configured on the server." });
   }
+  if (image && !geminiKeys.length) {
+    return res.status(500).json({ error: "Image analysis needs at least one GEMINI_API_KEY — Groq's models here don't support images." });
+  }
 
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
   res.setHeader("Transfer-Encoding", "chunked");
 
-  // Try every Groq key, then every Gemini key, before giving up.
-  const attempts = [
-    ...groqKeys.filter(k => !burned.has(k)).map(k => ["groq", k]),
-    ...geminiKeys.filter(k => !burned.has(k)).map(k => ["gemini", k])
-  ];
+  // Images can only go through Gemini (vision-capable); Groq's text models here can't read them.
+  const attempts = image
+    ? geminiKeys.filter(k => !burned.has(k)).map(k => ["gemini", k])
+    : [
+        ...groqKeys.filter(k => !burned.has(k)).map(k => ["groq", k]),
+        ...geminiKeys.filter(k => !burned.has(k)).map(k => ["gemini", k])
+      ];
 
   const errors = [];
   for (const [provider, key] of attempts) {
     for (let retry = 0; retry <= 1; retry++) { // one retry for transient 503/overload errors
       try {
-        const gen = provider === "groq" ? streamGroq(key, message) : streamGemini(key, message);
+        const gen = provider === "groq" ? streamGroq(key, effectiveMessage) : streamGemini(key, effectiveMessage, image);
         for await (const token of gen) res.write(token);
         return res.end();
       } catch (e) {
