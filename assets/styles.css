@@ -54,6 +54,7 @@ header.site .wrap{display:flex; align-items:center; justify-content:space-betwee
 .btn-ghost:hover{border-color:var(--ink);}
 
 /* ---- chat layout ---- */
+.sidebar-backdrop{display:none;} /* must stay none outside mobile, or it becomes a stray grid item and wrecks the desktop layout */
 body.chat-page{height:100vh; height:100dvh; overflow:hidden;}
 .chat-app{display:grid; grid-template-columns:280px 1fr; height:100vh; height:100dvh; min-height:0; transition:grid-template-columns .22s ease;}
 .chat-main{min-height:0;}
@@ -109,7 +110,7 @@ html[dir="rtl"] .composer-inner{padding:8px 14px 8px 8px;}
   .sidebar.open{transform:translateX(0);}
   html[dir="rtl"] .sidebar.open{transform:translateX(0);} /* must win over the html[dir=rtl] .sidebar rule above */
   #sidebarToggle{position:relative; z-index:35;} /* stays clickable even when the sidebar overlay is on top of it */
-  .sidebar-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:25; opacity:0; pointer-events:none; transition:opacity .2s;}
+  .sidebar-backdrop{display:block; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:25; opacity:0; pointer-events:none; transition:opacity .2s;}
   .sidebar-backdrop.show{opacity:1; pointer-events:auto;}
   .bubble{max-width:88%;}
 }
