@@ -140,9 +140,13 @@ export default async function handler(req, res) {
         ...geminiKeys.filter(k => !burned.has(k)).map(k => ["gemini", k])
       ];
 
+  // Kept short on purpose: Vercel's free (Hobby) plan caps serverless functions
+  // at ~10s total, so we can't just retry forever — a couple of quick retries,
+  // then fail fast and let the user tap send again.
+  const RETRY_DELAYS_MS = [700, 1500];
   const errors = [];
   for (const [provider, key] of attempts) {
-    for (let retry = 0; retry <= 1; retry++) { // one retry for transient 503/overload errors
+    for (let retry = 0; retry <= RETRY_DELAYS_MS.length; retry++) { // a few retries for transient 503/overload errors
       try {
         const gen = provider === "groq" ? streamGroq(key, effectiveMessage) : streamGemini(key, effectiveMessage, image);
         for await (const token of gen) res.write(token);
@@ -150,7 +154,7 @@ export default async function handler(req, res) {
       } catch (e) {
         const transient = /_503|_overloaded/i.test(e.message);
         console.error(`[${provider}] failed (retry ${retry}):`, e.message);
-        if (transient && retry === 0) { await new Promise(r => setTimeout(r, 900)); continue; }
+        if (transient && retry < RETRY_DELAYS_MS.length) { await new Promise(r => setTimeout(r, RETRY_DELAYS_MS[retry])); continue; }
         errors.push(`${provider}: ${e.message}`);
         break;
       }
