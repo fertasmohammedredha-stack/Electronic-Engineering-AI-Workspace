@@ -100,13 +100,18 @@ export function watchMessages(chatId, callback) {
   });
 }
 
-// image: an optional data URL string (already compressed client-side before
-// this is called) — stored inline on the message doc. Fine for MVP since
-// compressed images stay well under Firestore's 1MB document limit; a
-// Storage-bucket approach would be the move once images get heavier use.
-export async function addMessage(chatId, role, text, image = null) {
+// attachment: optional { kind:'image'|'pdf'|'text', dataUrl?, name? } — stored
+// inline on the message doc for display on reload. For 'text' attachments we
+// only keep the name (the file's content isn't persisted here, only sent to
+// the AI for that one turn) to keep documents small; image/pdf dataUrls stay
+// comfortably under Firestore's 1MB limit at the sizes this app sends.
+export async function addMessage(chatId, role, text, attachment = null) {
   const data = { role, text: text || '', createdAt: serverTimestamp() };
-  if (image) data.image = image;
+  if (attachment) {
+    data.attachment = attachment.kind === 'text'
+      ? { kind: 'text', name: attachment.name }
+      : attachment;
+  }
   await addDoc(collection(db, "chats", chatId, "messages"), data);
   await updateDoc(doc(db, "chats", chatId), { updatedAt: serverTimestamp() });
 }
