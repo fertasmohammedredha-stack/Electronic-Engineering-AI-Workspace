@@ -2,8 +2,9 @@
 // Env vars needed (Vercel → Project → Settings → Environment Variables):
 //   GROQ_API_KEY_1 ... GROQ_API_KEY_5     (https://console.groq.com/keys — free)
 //   GEMINI_API_KEY_1 ... GEMINI_API_KEY_5 (https://aistudio.google.com/apikey — free)
-// Text: Groq first (fastest), Gemini fallback.
-// Images: Gemini first (quality), Groq's vision-preview model as fallback.
+// Text (incl. TXT/CSV content folded into the prompt): Groq first, Gemini fallback.
+// Images: Gemini first, Groq's vision-preview model as fallback.
+// PDFs: Gemini only (sent as inlineData — Groq has no PDF-capable endpoint here).
 
 const GROQ_MODEL = "openai/gpt-oss-120b"; // Groq's own recommended replacement after
 // llama-3.3-70b-versatile was shut down (16 Aug 2026) — see console.groq.com/docs/deprecations
@@ -24,9 +25,9 @@ Rules:
   reasoning → a short applied example.
 - Match the user's language (Arabic or English) and keep explanations exam-relevant
   for an Algerian electronics licence curriculum.
-- When an image is attached (a circuit diagram, a handwritten problem, a component
-  photo, a datasheet page), read it carefully and ground your answer in what's
-  actually shown — component values, connections, handwritten numbers — rather
+- When an image, PDF, or text/CSV file is attached (a circuit diagram, a handwritten
+  problem, a datasheet, lecture notes, a data table), read it carefully and ground
+  your answer in what's actually there — values, connections, numbers — rather
   than giving a generic answer.
 - Math formatting: write ALL math using dollar-sign delimiters ONLY — $...$ for
   inline math and $$...$$ on their own lines for display equations. NEVER use
@@ -92,10 +93,10 @@ async function* streamGroq(key, history, message) {
   }
 }
 
-// ---- Groq vision (image fallback) — same OpenAI-style API, image as a content part ----
-async function* streamGroqVision(key, history, message, image) {
+// ---- Groq vision (image fallback only — Groq's image_url part doesn't accept PDFs) ----
+async function* streamGroqVision(key, history, message, visual) {
   const content = [{ type: "text", text: message }];
-  if (image) content.push({ type: "image_url", image_url: { url: `data:${image.mimeType};base64,${image.data}` } });
+  if (visual) content.push({ type: "image_url", image_url: { url: `data:${visual.mimeType};base64,${visual.data}` } });
   const messages = [
     { role: "system", content: SYSTEM_PROMPT },
     ...history.map(h => ({ role: h.role === "bot" ? "assistant" : "user", content: h.text })),
@@ -112,10 +113,10 @@ async function* streamGroqVision(key, history, message, image) {
   }
 }
 
-// ---- Gemini (text + vision) ----
-async function* streamGemini(key, history, message, image) {
+// ---- Gemini (text + vision + PDF — inlineData works generically for any supported mimeType) ----
+async function* streamGemini(key, history, message, visual) {
   const parts = [{ text: message }];
-  if (image) parts.push({ inlineData: { mimeType: image.mimeType, data: image.data } });
+  if (visual) parts.push({ inlineData: { mimeType: visual.mimeType, data: visual.data } });
   const contents = [
     ...history.map(h => ({ role: h.role === "bot" ? "model" : "user", parts: [{ text: h.text }] })),
     { role: "user", parts }
@@ -135,10 +136,29 @@ async function* streamGemini(key, history, message, image) {
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { message, image, history } = req.body || {}; // image: { data: base64, mimeType } | undefined
-  if (!message && !image) return res.status(400).json({ error: "Missing message" });
-  const effectiveMessage = message || "صف هذه الصورة بالتفصيل من منظور إلكتروني (دارة، مكونات، قيم، مسائل مكتوبة...) وساعد الطالب فيها.";
+  // attachment: { kind:'image'|'pdf'|'text', data?(base64), mimeType?, text?, name? } | undefined
+  const { message, attachment, history } = req.body || {};
   const ctx = cleanHistory(history);
+
+  let effectiveMessage = message || "";
+  let visual = null; // { mimeType, data } — sent as inlineData/image_url to vision-capable calls
+
+  if (attachment?.kind === "text") {
+    // Plain text/CSV just gets folded into the prompt — no special routing needed,
+    // so it still benefits from the normal Groq-first key rotation below.
+    const content = (attachment.text || "").slice(0, 20000); // keep token usage sane
+    effectiveMessage = (effectiveMessage ? effectiveMessage + "\n\n" : "") +
+      `--- Attached file: ${attachment.name || "file"} ---\n${content}`;
+  } else if (attachment?.kind === "image" || attachment?.kind === "pdf") {
+    visual = { mimeType: attachment.mimeType, data: attachment.data };
+  }
+
+  if (!effectiveMessage && !visual) return res.status(400).json({ error: "Missing message" });
+  if (!effectiveMessage) {
+    effectiveMessage = attachment.kind === "pdf"
+      ? "لخّص هذا الملف واشرح أهم النقاط من منظور إلكتروني، وساعد الطالب فيه."
+      : "صف هذه الصورة بالتفصيل من منظور إلكتروني (دارة، مكونات، قيم، مسائل مكتوبة...) وساعد الطالب فيها.";
+  }
 
   const groqKeys = getKeyPool("GROQ_API_KEY");
   const geminiKeys = getKeyPool("GEMINI_API_KEY");
@@ -149,16 +169,19 @@ export default async function handler(req, res) {
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
   res.setHeader("Transfer-Encoding", "chunked");
 
-  // Text: Groq first, Gemini fallback. Images: Gemini first (quality), Groq's
-  // vision-preview model as a second opinion if Gemini is overloaded.
-  const attempts = image
+  // Text (incl. text-file content already folded in above): Groq first, Gemini fallback.
+  // Images: Gemini first (quality), Groq's vision-preview model as a second opinion.
+  // PDFs: Gemini only — Groq's vision endpoint doesn't accept PDFs via image_url.
+  const attempts = !visual
     ? [
-        ...geminiKeys.filter(k => !burned.has(k)).map(k => ["gemini", k]),
-        ...groqKeys.filter(k => !burned.has(k)).map(k => ["groq_vision", k])
-      ]
-    : [
         ...groqKeys.filter(k => !burned.has(k)).map(k => ["groq", k]),
         ...geminiKeys.filter(k => !burned.has(k)).map(k => ["gemini", k])
+      ]
+    : attachment.kind === "pdf"
+    ? geminiKeys.filter(k => !burned.has(k)).map(k => ["gemini", k])
+    : [
+        ...geminiKeys.filter(k => !burned.has(k)).map(k => ["gemini", k]),
+        ...groqKeys.filter(k => !burned.has(k)).map(k => ["groq_vision", k])
       ];
 
   // Kept short on purpose: Vercel's free (Hobby) plan caps serverless functions
@@ -171,8 +194,8 @@ export default async function handler(req, res) {
       try {
         const gen =
           provider === "groq" ? streamGroq(key, ctx, effectiveMessage)
-          : provider === "groq_vision" ? streamGroqVision(key, ctx, effectiveMessage, image)
-          : streamGemini(key, ctx, effectiveMessage, image);
+          : provider === "groq_vision" ? streamGroqVision(key, ctx, effectiveMessage, visual)
+          : streamGemini(key, ctx, effectiveMessage, visual);
         for await (const token of gen) res.write(token);
         return res.end();
       } catch (e) {
