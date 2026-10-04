@@ -7,7 +7,7 @@
 
 const GROQ_MODEL = "openai/gpt-oss-120b"; // Groq's own recommended replacement after
 // llama-3.3-70b-versatile was shut down (16 Aug 2026) — see console.groq.com/docs/deprecations
-const GROQ_VISION_MODEL = "qwen/qwen3.6-27b"; // Groq's vision-capable preview model (Aug 2026)
+const GROQ_VISION_MODEL = "qwen/qwen3.8-27b"; // Groq's vision-capable model — confirmed against console.groq.com/docs/vision
 // gemini-2.5-flash returned 404 "no longer available to new users" — Google's own
 // error pointed us at this replacement directly.
 const GEMINI_MODEL = "gemini-3.8-flash";
