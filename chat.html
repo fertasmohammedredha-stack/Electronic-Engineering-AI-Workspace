@@ -52,6 +52,7 @@
   .image-preview img{width:44px; height:44px; object-fit:cover; border-radius:6px;}
   .image-preview button{margin-inline-start:auto; background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:16px;}
   .bubble img.msg-img{max-width:100%; border-radius:8px; display:block; margin-bottom:8px;}
+  .file-chip{display:inline-flex; align-items:center; gap:6px; background:color-mix(in srgb, var(--ink) 8%, transparent); border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-size:13px; margin-bottom:8px;}
 </style>
 </head>
 <body class="loading chat-page">
@@ -101,13 +102,14 @@
         <button class="btn-primary" style="padding:9px 18px; font-size:14px;" onclick="doSignIn()" data-i="goLogin"></button>
       </div>
       <div class="image-preview hidden" id="imagePreview">
-        <img id="previewImg" alt="">
+        <img id="previewImg" alt="" style="display:none;">
+        <span id="previewName" style="display:none; font-size:13.5px;"></span>
         <button type="button" id="removeImage">✕</button>
       </div>
       <div class="composer-inner">
         <div class="composer-actions">
-          <button class="icon-round" id="fileBtn" title="upload image" onclick="document.getElementById('fileInput').click()">📎</button>
-          <input type="file" id="fileInput" accept="image/*" style="display:none">
+          <button class="icon-round" id="fileBtn" title="upload file" onclick="document.getElementById('fileInput').click()">📎</button>
+          <input type="file" id="fileInput" accept="image/*,application/pdf,.pdf,text/plain,.txt,text/csv,.csv" style="display:none">
           <button class="icon-round" title="voice input" id="micBtn">🎤</button>
         </div>
         <textarea id="msgInput" rows="1" data-i-ph="placeholder" oninput="autoGrow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
@@ -301,7 +303,8 @@ function openChat(chatId){
   unsubMessages = watchMessages(chatId, msgs=>{
     inner.innerHTML = '';
     msgs.forEach(m => {
-      const el = addBubble(m.role, m.text, false, m.image || null);
+      const att = m.attachment || (m.image ? { kind:'image', dataUrl: m.image } : null);
+      const el = addBubble(m.role, m.text, false, att);
       if(m.role === 'bot') addMessageActions(el, m.text);
     });
     historyForApi = msgs.map(m => ({ role: m.role, text: m.text }));
@@ -347,7 +350,7 @@ function toggleFeedback(btn, row, kind){
   btn.classList.toggle('active', !isActive);
 }
 
-function addBubble(role, text, scroll = true, imageUrl = null){
+function addBubble(role, text, scroll = true, attachment = null){
   const inner = document.getElementById('chatInner');
   const welcome = document.getElementById('welcome');
   if(welcome) welcome.remove();
@@ -356,7 +359,15 @@ function addBubble(role, text, scroll = true, imageUrl = null){
   if(role === 'bot'){
     renderBotContent(b, text);
   } else {
-    if(imageUrl){ const img = document.createElement('img'); img.src = imageUrl; img.className = 'msg-img'; b.appendChild(img); }
+    if(attachment){
+      if(attachment.kind === 'image'){
+        const img = document.createElement('img'); img.src = attachment.dataUrl; img.className = 'msg-img'; b.appendChild(img);
+      } else {
+        const chip = document.createElement('div'); chip.className = 'file-chip';
+        chip.textContent = (attachment.kind === 'pdf' ? '📄 ' : '📝 ') + (attachment.name || '');
+        b.appendChild(chip);
+      }
+    }
     if(text){ const t = document.createElement('div'); t.textContent = text; b.appendChild(t); }
   }
   inner.appendChild(b);
@@ -364,37 +375,75 @@ function addBubble(role, text, scroll = true, imageUrl = null){
   return b;
 }
 
-// ---- Image upload (logged-in users only; the composer button is disabled for guests) ----
-let pendingImage = null; // { dataUrl, base64, mimeType }
+// ---- File upload (logged-in users only; the composer button is disabled for guests) ----
+// pendingAttachment: { kind:'image'|'pdf'|'text', dataUrl?, data?(base64), mimeType?, text?, name }
+let pendingAttachment = null;
+
+function showAttachmentPreview(){
+  const img = document.getElementById('previewImg');
+  const nameEl = document.getElementById('previewName');
+  document.getElementById('imagePreview').classList.remove('hidden');
+  if(pendingAttachment.kind === 'image'){
+    img.style.display = ''; img.src = pendingAttachment.dataUrl;
+    nameEl.style.display = 'none';
+  } else {
+    img.style.display = 'none';
+    nameEl.style.display = '';
+    nameEl.textContent = (pendingAttachment.kind === 'pdf' ? '📄 ' : '📝 ') + pendingAttachment.name;
+  }
+}
 
 document.getElementById('fileInput').addEventListener('change', (e)=>{
   const file = e.target.files[0];
   e.target.value = '';
   if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    const img = new Image();
-    img.onload = ()=>{
-      const maxDim = 1024;
-      let { width, height } = img;
-      if(width > maxDim || height > maxDim){
-        const scale = maxDim / Math.max(width, height);
-        width = Math.round(width * scale); height = Math.round(height * scale);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width; canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-      pendingImage = { dataUrl, base64: dataUrl.split(',')[1], mimeType: 'image/jpeg' };
-      document.getElementById('previewImg').src = dataUrl;
-      document.getElementById('imagePreview').classList.remove('hidden');
+  const isImage = file.type.startsWith('image/');
+  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+  const isText = file.type === 'text/plain' || file.type === 'text/csv' || /\.(txt|csv)$/i.test(file.name);
+
+  if(isImage){
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const maxDim = 1024;
+        let { width, height } = img;
+        if(width > maxDim || height > maxDim){
+          const scale = maxDim / Math.max(width, height);
+          width = Math.round(width * scale); height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        pendingAttachment = { kind: 'image', dataUrl, data: dataUrl.split(',')[1], mimeType: 'image/jpeg', name: file.name };
+        showAttachmentPreview();
+      };
+      img.src = reader.result;
     };
-    img.src = reader.result;
-  };
-  reader.readAsDataURL(file);
+    reader.readAsDataURL(file);
+  } else if(isPdf){
+    if(file.size > 8 * 1024 * 1024){ alert(getLang()==='ar' ? 'حجم PDF كبير (حد 8 ميجا).' : 'PDF too large (8MB max).'); return; }
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const dataUrl = reader.result;
+      pendingAttachment = { kind: 'pdf', dataUrl, data: dataUrl.split(',')[1], mimeType: 'application/pdf', name: file.name };
+      showAttachmentPreview();
+    };
+    reader.readAsDataURL(file);
+  } else if(isText){
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      pendingAttachment = { kind: 'text', text: reader.result, name: file.name };
+      showAttachmentPreview();
+    };
+    reader.readAsText(file);
+  } else {
+    alert(getLang()==='ar' ? 'هذه الصيغة غير مدعومة بعد.' : "This file type isn't supported yet.");
+  }
 });
 document.getElementById('removeImage').addEventListener('click', ()=>{
-  pendingImage = null;
+  pendingAttachment = null;
   document.getElementById('imagePreview').classList.add('hidden');
 });
 
@@ -404,20 +453,21 @@ document.getElementById('removeImage').addEventListener('click', ()=>{
 window.sendMessage = async function(){
   const input = document.getElementById('msgInput');
   const text = input.value.trim();
-  const image = pendingImage; // snapshot — cleared below before the request goes out
-  if((!text && !image) || input.disabled) return;
+  const attachment = pendingAttachment; // snapshot — cleared below before the request goes out
+  if((!text && !attachment) || input.disabled) return;
   if(!currentUser && guestQuestionCount() >= GUEST_LIMIT) return;
 
   input.value = ''; autoGrow(input);
-  pendingImage = null;
+  pendingAttachment = null;
   document.getElementById('imagePreview').classList.add('hidden');
-  addBubble('user', text, true, image ? image.dataUrl : null);
+  const bubbleAttachment = attachment ? { kind: attachment.kind, dataUrl: attachment.dataUrl, name: attachment.name } : null;
+  addBubble('user', text, true, bubbleAttachment);
   trackEvent('message_sent');
 
-  const titleText = text || 'صورة 📎';
+  const titleText = text || (attachment ? attachment.name : '');
   if(currentUser){
     if(!currentChatId){ currentChatId = await createChat(currentUser.uid, titleText); openChat(currentChatId); }
-    await addMessage(currentChatId, 'user', text, image ? image.dataUrl : null);
+    await addMessage(currentChatId, 'user', text, bubbleAttachment);
   } else {
     const g = getGuestChat(); g.push({role:'user', text}); saveGuestChat(g);
     incGuestTotal();
@@ -433,7 +483,7 @@ window.sendMessage = async function(){
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         message: text, lang: getLang(),
-        image: image ? { data: image.base64, mimeType: image.mimeType } : undefined,
+        attachment: attachment ? { kind: attachment.kind, data: attachment.data, mimeType: attachment.mimeType, text: attachment.text, name: attachment.name } : undefined,
         history: historyForApi
       })
     });
