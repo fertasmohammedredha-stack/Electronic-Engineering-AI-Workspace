@@ -25,6 +25,8 @@
   .bubble.bot pre{background:#0B0D0C; border:1px solid var(--line); border-radius:8px; padding:12px 14px; overflow-x:auto; margin:0 0 10px; direction:ltr; text-align:left;}
   .bubble.bot pre code{background:none; color:#EDEFEA; padding:0;}
   .bubble.bot .katex{font-size:1.02em;}
+  .bubble.bot .katex-display{overflow-x:auto; overflow-y:hidden; max-width:100%; padding-bottom:4px;}
+  .chat-inner{overflow-x:hidden;} /* safety net: nothing inside a bubble can stretch the whole page */
   .bubble.bot hr{border:none; border-top:1px solid var(--line); margin:12px 0;}
   body.loading .chat-app{visibility:hidden;}
   .guest-row{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; cursor:pointer; color:var(--ink-soft); font-size:13.5px;}
@@ -125,6 +127,7 @@ let currentUser = null;
 let currentChatId = null;
 let unsubChats = null;
 let unsubMessages = null;
+let historyForApi = []; // {role:'user'|'bot', text} — recent turns sent as context with each request
 
 function getGuestChat(){ return JSON.parse(localStorage.getItem('guestChat') || '[]'); }
 function saveGuestChat(arr){ localStorage.setItem('guestChat', JSON.stringify(arr)); }
@@ -197,6 +200,7 @@ watchAuth(async user => {
         const el = addBubble(m.role, m.text, false);
         if(m.role === 'bot') addMessageActions(el, m.text);
       });
+      historyForApi = guest.map(m => ({ role: m.role, text: m.text }));
       document.getElementById('chatScroll').scrollTop = 999999;
     }
   }
@@ -263,6 +267,7 @@ window.newChat = function(){
   currentChatId = null;
   if(unsubMessages) unsubMessages();
   if(!currentUser) saveGuestChat([]);
+  historyForApi = [];
   document.getElementById('chatInner').innerHTML = `
     <div class="welcome" id="welcome"><h2 id="welcomeTitle" data-i="welcomeTitle"></h2><p id="welcomeSub" data-i="welcomeSub"></p></div>`;
   applyLang();
@@ -299,6 +304,7 @@ function openChat(chatId){
       const el = addBubble(m.role, m.text, false, m.image || null);
       if(m.role === 'bot') addMessageActions(el, m.text);
     });
+    historyForApi = msgs.map(m => ({ role: m.role, text: m.text }));
     document.getElementById('chatScroll').scrollTop = 999999;
   });
 }
@@ -427,7 +433,8 @@ window.sendMessage = async function(){
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         message: text, lang: getLang(),
-        image: image ? { data: image.base64, mimeType: image.mimeType } : undefined
+        image: image ? { data: image.base64, mimeType: image.mimeType } : undefined,
+        history: historyForApi
       })
     });
     if(!res.body) throw new Error('no stream');
@@ -447,6 +454,8 @@ window.sendMessage = async function(){
       const g = getGuestChat(); g.push({role:'bot', text: full}); saveGuestChat(g);
     }
     addMessageActions(botBubble, full);
+    historyForApi.push({ role: 'user', text }, { role: 'bot', text: full });
+    if(historyForApi.length > 20) historyForApi = historyForApi.slice(-20);
     trackEvent('ai_response_success');
   } catch(e){
     botBubble.textContent = '⚠️ تعذر الاتصال بالمساعد.';
