@@ -407,18 +407,28 @@ function openChat(chatId){
   });
 }
 
+// Math must be shielded from the Markdown parser: marked treats "_" as emphasis
+// and eats backslashes before "{", "}", "\\" etc., which wrecks multi-line
+// $$...$$ equations before KaTeX ever sees them. So: pull every math span out
+// into a placeholder, run Markdown on the rest, then put the math back and
+// render it with KaTeX directly.
 function renderBotContent(el, text){
-  el.innerHTML = window.marked ? marked.parse(text || '', { breaks: true }) : (text || '');
-  if(window.renderMathInElement){
-    renderMathInElement(el, {
-      delimiters: [
-        { left: '$$', right: '$$', display: true },
-        { left: '\\(', right: '\\)', display: false },
-        { left: '$', right: '$', display: false }
-      ],
-      throwOnError: false
-    });
-  }
+  const math = [];
+  const stash = (tex, display) => { math.push({ tex, display }); return `@@MATH${math.length - 1}@@`; };
+  let src = text || '';
+  src = src.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => stash(m, true));            // $$ ... $$ (multi-line ok)
+  src = src.replace(/\\\[([\s\S]+?)\\\]/g, (_, m) => stash(m, true));            // \[ ... \]
+  src = src.replace(/\\\(([\s\S]+?)\\\)/g, (_, m) => stash(m, false));           // \( ... \)
+  src = src.replace(/\$([^\s$](?:[^\n$]*?[^\s$])?)\$/g, (_, m) => stash(m, false)); // $ ... $ (one line)
+
+  let html = window.marked ? marked.parse(src, { breaks: true }) : escapeHtml(src);
+  html = html.replace(/@@MATH(\d+)@@/g, (_, i) => {
+    const { tex, display } = math[+i];
+    if(!window.katex) return escapeHtml(tex);
+    try { return katex.renderToString(tex.trim(), { displayMode: display, throwOnError: false }); }
+    catch(e){ return escapeHtml(tex); }
+  });
+  el.innerHTML = html;
   if(window.hljs) el.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
 }
 
