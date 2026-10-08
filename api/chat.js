@@ -150,7 +150,7 @@ export default async function handler(req, res) {
     const content = (attachment.text || "").slice(0, 20000); // keep token usage sane
     effectiveMessage = (effectiveMessage ? effectiveMessage + "\n\n" : "") +
       `--- Attached file: ${attachment.name || "file"} ---\n${content}`;
-    if (attachment.images?.length) visuals = attachment.images.slice(0, 3); // Groq's vision model caps at 3/request
+    if (attachment.images?.length) visuals = attachment.images; // Gemini handles many; capped to 3 only for the Groq fallback below
   } else if (attachment?.kind === "image") {
     visuals = [{ mimeType: attachment.mimeType, data: attachment.data }];
   } else if (attachment?.kind === "pdf") {
@@ -199,7 +199,7 @@ export default async function handler(req, res) {
       try {
         const gen =
           provider === "groq" ? streamGroq(key, ctx, effectiveMessage)
-          : provider === "groq_vision" ? streamGroqVision(key, ctx, effectiveMessage, visuals)
+          : provider === "groq_vision" ? streamGroqVision(key, ctx, effectiveMessage, visuals?.slice(0, 3)) // Groq's vision model caps at 3 images/request
           : streamGemini(key, ctx, effectiveMessage, visuals);
         for await (const token of gen) res.write(token);
         return res.end();
