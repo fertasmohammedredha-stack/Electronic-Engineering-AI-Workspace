@@ -94,9 +94,9 @@ async function* streamGroq(key, history, message) {
 }
 
 // ---- Groq vision (image fallback only — Groq's image_url part doesn't accept PDFs) ----
-async function* streamGroqVision(key, history, message, visual) {
+async function* streamGroqVision(key, history, message, visuals) {
   const content = [{ type: "text", text: message }];
-  if (visual) content.push({ type: "image_url", image_url: { url: `data:${visual.mimeType};base64,${visual.data}` } });
+  for (const v of visuals || []) content.push({ type: "image_url", image_url: { url: `data:${v.mimeType};base64,${v.data}` } });
   const messages = [
     { role: "system", content: SYSTEM_PROMPT },
     ...history.map(h => ({ role: h.role === "bot" ? "assistant" : "user", content: h.text })),
@@ -114,9 +114,9 @@ async function* streamGroqVision(key, history, message, visual) {
 }
 
 // ---- Gemini (text + vision + PDF — inlineData works generically for any supported mimeType) ----
-async function* streamGemini(key, history, message, visual) {
+async function* streamGemini(key, history, message, visuals) {
   const parts = [{ text: message }];
-  if (visual) parts.push({ inlineData: { mimeType: visual.mimeType, data: visual.data } });
+  for (const v of visuals || []) parts.push({ inlineData: { mimeType: v.mimeType, data: v.data } });
   const contents = [
     ...history.map(h => ({ role: h.role === "bot" ? "model" : "user", parts: [{ text: h.text }] })),
     { role: "user", parts }
@@ -136,24 +136,29 @@ async function* streamGemini(key, history, message, visual) {
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  // attachment: { kind:'image'|'pdf'|'text', data?(base64), mimeType?, text?, name? } | undefined
+  // attachment: { kind:'image'|'pdf'|'text', data?(base64), mimeType?, text?, name?,
+  //               images?: [{data,mimeType}] (embedded pictures pulled out of a DOCX/PPTX) } | undefined
   const { message, attachment, history } = req.body || {};
   const ctx = cleanHistory(history);
 
   let effectiveMessage = message || "";
-  let visual = null; // { mimeType, data } — sent as inlineData/image_url to vision-capable calls
+  let visuals = null; // [{ mimeType, data }] — sent as inlineData/image_url to vision-capable calls
+  let pdfOnly = false; // true only for a real PDF attachment (Groq vision can't take PDFs)
 
   if (attachment?.kind === "text") {
-    // Plain text/CSV just gets folded into the prompt — no special routing needed,
-    // so it still benefits from the normal Groq-first key rotation below.
+    // Plain text/CSV (or extracted DOCX/PPTX text) just gets folded into the prompt.
     const content = (attachment.text || "").slice(0, 20000); // keep token usage sane
     effectiveMessage = (effectiveMessage ? effectiveMessage + "\n\n" : "") +
       `--- Attached file: ${attachment.name || "file"} ---\n${content}`;
-  } else if (attachment?.kind === "image" || attachment?.kind === "pdf") {
-    visual = { mimeType: attachment.mimeType, data: attachment.data };
+    if (attachment.images?.length) visuals = attachment.images.slice(0, 3); // Groq's vision model caps at 3/request
+  } else if (attachment?.kind === "image") {
+    visuals = [{ mimeType: attachment.mimeType, data: attachment.data }];
+  } else if (attachment?.kind === "pdf") {
+    visuals = [{ mimeType: attachment.mimeType, data: attachment.data }];
+    pdfOnly = true;
   }
 
-  if (!effectiveMessage && !visual) return res.status(400).json({ error: "Missing message" });
+  if (!effectiveMessage && !visuals) return res.status(400).json({ error: "Missing message" });
   if (!effectiveMessage) {
     effectiveMessage = attachment.kind === "pdf"
       ? "لخّص هذا الملف واشرح أهم النقاط من منظور إلكتروني، وساعد الطالب فيه."
@@ -169,15 +174,15 @@ export default async function handler(req, res) {
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
   res.setHeader("Transfer-Encoding", "chunked");
 
-  // Text (incl. text-file content already folded in above): Groq first, Gemini fallback.
-  // Images: Gemini first (quality), Groq's vision-preview model as a second opinion.
+  // Text (file content already folded in above): Groq first, Gemini fallback.
+  // Images (incl. ones extracted from a DOCX/PPTX): Gemini first, Groq vision as a second opinion.
   // PDFs: Gemini only — Groq's vision endpoint doesn't accept PDFs via image_url.
-  const attempts = !visual
+  const attempts = !visuals
     ? [
         ...groqKeys.filter(k => !burned.has(k)).map(k => ["groq", k]),
         ...geminiKeys.filter(k => !burned.has(k)).map(k => ["gemini", k])
       ]
-    : attachment.kind === "pdf"
+    : pdfOnly
     ? geminiKeys.filter(k => !burned.has(k)).map(k => ["gemini", k])
     : [
         ...geminiKeys.filter(k => !burned.has(k)).map(k => ["gemini", k]),
@@ -194,8 +199,8 @@ export default async function handler(req, res) {
       try {
         const gen =
           provider === "groq" ? streamGroq(key, ctx, effectiveMessage)
-          : provider === "groq_vision" ? streamGroqVision(key, ctx, effectiveMessage, visual)
-          : streamGemini(key, ctx, effectiveMessage, visual);
+          : provider === "groq_vision" ? streamGroqVision(key, ctx, effectiveMessage, visuals)
+          : streamGemini(key, ctx, effectiveMessage, visuals);
         for await (const token of gen) res.write(token);
         return res.end();
       } catch (e) {
