@@ -116,6 +116,22 @@ export async function addMessage(chatId, role, text, attachment = null) {
   await updateDoc(doc(db, "chats", chatId), { updatedAt: serverTimestamp() });
 }
 
+export function togglePinChat(chatId, pinned) {
+  return updateDoc(doc(db, "chats", chatId), { pinned });
+}
+
+export function renameChat(chatId, title) {
+  return updateDoc(doc(db, "chats", chatId), { title });
+}
+
+export async function deleteChat(chatId) {
+  const msgsSnap = await getDocs(collection(db, "chats", chatId, "messages"));
+  const batch = writeBatch(db);
+  msgsSnap.forEach(m => batch.delete(m.ref));
+  if (!msgsSnap.empty) await batch.commit();
+  await deleteDoc(doc(db, "chats", chatId));
+}
+
 export async function deleteAllChats(uid) {
   const snap = await getDocs(query(collection(db, "chats"), where("uid", "==", uid)));
   for (const chatDoc of snap.docs) {
