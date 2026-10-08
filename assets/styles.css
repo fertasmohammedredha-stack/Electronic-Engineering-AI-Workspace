@@ -63,15 +63,27 @@ body.chat-page{height:100vh; height:100dvh; overflow:hidden;}
 .chat-app.sidebar-collapsed{grid-template-columns:0px 1fr;}
 .chat-app.sidebar-collapsed .sidebar{padding:16px 0; overflow:hidden;}
 .chat-app.sidebar-collapsed .sidebar > *{opacity:0; pointer-events:none;}
-.sidebar{background:var(--surface); border-inline-end:1px solid var(--line); display:flex; flex-direction:column; padding:16px 14px; gap:14px; overflow-y:auto; transition:padding .22s ease;}
+.sidebar{background:var(--surface); border-inline-end:1px solid var(--line); display:flex; flex-direction:column; padding:16px 14px; gap:10px; overflow:hidden; transition:padding .22s ease;}
 .sidebar > *{transition:opacity .15s ease;}
+.sidebar-top{display:flex; flex-direction:column; gap:10px; flex-shrink:0;}
+.sidebar-scroll{flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:2px;}
 .sidebar .new-chat{display:flex; align-items:center; gap:8px; justify-content:center;}
 .sidebar .search{border:1px solid var(--line); border-radius:8px; padding:9px 12px; font-size:14px; background:var(--bg); color:var(--ink); font-family:inherit;}
-.sidebar .section-label{font-size:12px; color:var(--ink-soft); margin:8px 4px 2px; font-family:'JetBrains Mono',monospace;}
-.sidebar .chat-item{padding:10px 12px; border-radius:8px; font-size:14px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink-soft);}
+.sidebar .section-label{font-size:11px; color:var(--ink-soft); margin:8px 4px 2px; font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.06em; cursor:default; user-select:none;}
+.sidebar .chat-item{position:relative; display:flex; align-items:center; gap:4px; padding:4px 4px 4px 12px; border-radius:8px; font-size:14px; color:var(--ink-soft);}
+html[dir="rtl"] .sidebar .chat-item{padding:4px 12px 4px 4px;}
 .sidebar .chat-item:hover{background:var(--bg);}
 .sidebar .chat-item.active{background:var(--bg); color:var(--ink); font-weight:600;}
-.sidebar-footer{margin-top:auto; display:flex; align-items:center; gap:10px; padding:10px 12px; border-top:1px solid var(--line); cursor:pointer; border-radius:8px;}
+.chat-item-title{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; padding:6px 0;}
+.chat-item-menu-btn{flex-shrink:0; width:26px; height:26px; border:none; background:transparent; color:var(--ink-soft); border-radius:6px; cursor:pointer; opacity:0; font-size:15px;}
+.sidebar .chat-item:hover .chat-item-menu-btn, .chat-item-menu-btn:focus{opacity:1;}
+.chat-item-menu-btn:hover{background:var(--line);}
+.chat-rename-input{flex:1; min-width:0; background:var(--bg); border:1px solid var(--copper); border-radius:6px; padding:5px 7px; font-size:14px; color:var(--ink); font-family:inherit;}
+.chat-menu{position:absolute; inset-inline-end:4px; top:100%; z-index:40; background:var(--surface); border:1px solid var(--line); border-radius:9px; box-shadow:var(--shadow); padding:5px; display:flex; flex-direction:column; min-width:160px;}
+.chat-menu button{text-align:start; background:none; border:none; padding:8px 10px; border-radius:6px; font-size:13.5px; cursor:pointer; color:var(--ink); font-family:inherit;}
+.chat-menu button:hover{background:var(--bg);}
+.chat-menu button.danger{color:#D9544A;}
+.sidebar-footer{flex-shrink:0; display:flex; align-items:center; gap:10px; padding:10px 12px; border-top:1px solid var(--line); cursor:pointer; border-radius:8px;}
 .sidebar-footer:hover{background:var(--bg);}
 .avatar{width:32px; height:32px; border-radius:50%; background:var(--green); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0;}
 
@@ -100,6 +112,8 @@ html[dir="rtl"] .composer-inner{padding:8px 14px 8px 8px;}
 .icon-round:hover{background:var(--bg); color:var(--ink);}
 .icon-round.send{background:var(--copper); color:#fff;}
 .icon-round.send:hover{background:var(--copper-deep);}
+#micBtn.active{background:#D9544A; color:#fff; animation:micPulse 1.2s infinite;}
+@keyframes micPulse{50%{opacity:.6;}}
 .hint{text-align:center; font-size:12px; color:var(--ink-soft); margin-top:8px;}
 
 @media (max-width:820px){
@@ -113,4 +127,5 @@ html[dir="rtl"] .composer-inner{padding:8px 14px 8px 8px;}
   .sidebar-backdrop{display:block; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:25; opacity:0; pointer-events:none; transition:opacity .2s;}
   .sidebar-backdrop.show{opacity:1; pointer-events:auto;}
   .bubble{max-width:88%;}
+  .chat-item-menu-btn{opacity:1;} /* no hover on touch — keep it reachable */
 }
