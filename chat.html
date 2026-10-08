@@ -27,8 +27,8 @@
   .bubble.bot code{font-family:'JetBrains Mono',monospace; font-size:13px;}
   .bubble.bot pre{background:#0B0D0C; border:1px solid var(--line); border-radius:8px; padding:12px 14px; overflow-x:auto; margin:0 0 10px; direction:ltr; text-align:left;}
   .bubble.bot pre code{background:none; color:#EDEFEA; padding:0;}
-  .bubble.bot .katex{font-size:1.02em;}
-  .bubble.bot .katex-display{overflow-x:auto; overflow-y:hidden; max-width:100%; padding-bottom:4px;}
+  .bubble.bot .katex{font-size:1.02em; direction:ltr; unicode-bidi:isolate;}
+  .bubble.bot .katex-display{overflow-x:auto; overflow-y:hidden; max-width:100%; padding-bottom:4px; direction:ltr; unicode-bidi:isolate;}
   .chat-inner{overflow-x:hidden;} /* safety net: nothing inside a bubble can stretch the whole page */
   .bubble.bot hr{border:none; border-top:1px solid var(--line); margin:12px 0;}
   body.loading .chat-app{visibility:hidden;}
@@ -42,7 +42,7 @@
   .icon-round:disabled{opacity:.35; cursor:not-allowed;}
   .guest-countdown{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--ink-soft); background:var(--surface); border:1px solid var(--line); padding:6px 12px; border-radius:20px;}
   .guest-countdown b{color:var(--copper); font-family:'JetBrains Mono',monospace;}
-  .footer-guest-actions{display:flex; flex-direction:column; gap:6px;}
+  .footer-guest-actions{display:flex; flex-direction:column; gap:6px; flex-shrink:0;}
   .footer-guest-actions .guest-row{padding:9px 12px;}
   .msg-actions{display:flex; gap:4px; margin-top:-10px; margin-inline-start:4px;}
   html[dir="rtl"] .msg-actions{align-self:flex-end;}
@@ -62,11 +62,15 @@
 <div class="chat-app">
   <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="setSidebarOpen(false)"></div>
   <aside class="sidebar" id="sidebar">
-    <button class="btn-primary new-chat" data-i="startChat" onclick="newChat()"></button>
-    <input class="search" data-i-ph="search" oninput="filterChats(this.value)">
-    <div class="section-label" data-i="recent" id="recentLabel"></div>
-    <div id="chatList"></div>
-    <div id="guestNotice" class="locked-hint" data-i="guestSaveHint" style="display:none; padding:0 4px;"></div>
+    <div class="sidebar-top">
+      <button class="btn-primary new-chat" data-i="startChat" onclick="newChat()"></button>
+      <input class="search" data-i-ph="search" oninput="filterChats(this.value)">
+      <div class="section-label" data-i="recent" id="recentLabel"></div>
+    </div>
+    <div class="sidebar-scroll">
+      <div id="chatList"></div>
+      <div id="guestNotice" class="locked-hint" data-i="guestSaveHint" style="display:none; padding:0 4px;"></div>
+    </div>
     <div class="sidebar-footer" id="footerLoggedIn" style="display:none;" onclick="location.href='settings.html'">
       <div class="avatar" id="avatarLetter">?</div>
       <div>
@@ -125,7 +129,7 @@
 
 <script src="assets/lang.js"></script>
 <script type="module">
-import { watchAuth, createChat, watchUserChats, watchMessages, addMessage, trackEvent } from './assets/firebase.js';
+import { watchAuth, createChat, watchUserChats, watchMessages, addMessage, trackEvent, togglePinChat, renameChat, deleteChat } from './assets/firebase.js';
 
 const GUEST_LIMIT = 15;
 let currentUser = null;
@@ -193,7 +197,14 @@ watchAuth(async user => {
     if(unsubChats) unsubChats();
     unsubChats = watchUserChats(user.uid, chats=>{
       renderChatList(chats);
-      if(migratedId && !currentChatId) openChat(migratedId);
+      if(migratedId && !currentChatId){
+        openChat(migratedId);
+      } else if(!currentChatId){
+        // Restore whatever chat was open before (e.g. before navigating to
+        // Settings to change language) instead of always landing on a blank one.
+        const lastId = localStorage.getItem('lastOpenChat');
+        if(lastId && chats.some(c => c.id === lastId)) openChat(lastId);
+      }
     });
   } else {
     if(unsubChats) unsubChats();
@@ -212,6 +223,33 @@ watchAuth(async user => {
 });
 
 window.autoGrow = function(el){ el.style.height='auto'; el.style.height=el.scrollHeight+'px'; };
+
+// ---- Voice input (Web Speech API — free, built into Chrome/Edge/Safari; no server involved) ----
+(function(){
+  const micBtn = document.getElementById('micBtn');
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){ micBtn.style.display = 'none'; return; } // unsupported browser — hide rather than show a dead button
+  const recog = new SpeechRecognition();
+  recog.interimResults = false;
+  recog.continuous = false;
+  let listening = false;
+
+  micBtn.addEventListener('click', ()=>{
+    if(micBtn.disabled) return;
+    if(listening){ recog.stop(); return; }
+    recog.lang = getLang() === 'ar' ? 'ar-SA' : 'en-US';
+    try { recog.start(); } catch(e){}
+  });
+  recog.addEventListener('start', ()=>{ listening = true; micBtn.classList.add('active'); micBtn.textContent = '⏹️'; });
+  recog.addEventListener('end', ()=>{ listening = false; micBtn.classList.remove('active'); micBtn.textContent = '🎤'; });
+  recog.addEventListener('result', (e)=>{
+    const transcript = e.results[0][0].transcript;
+    const input = document.getElementById('msgInput');
+    input.value = (input.value ? input.value + ' ' : '') + transcript;
+    autoGrow(input);
+  });
+  recog.addEventListener('error', ()=>{ listening = false; micBtn.classList.remove('active'); micBtn.textContent = '🎤'; });
+})();
 
 window.setSidebarOpen = function(open){
   document.getElementById('sidebar').classList.toggle('open', open);
@@ -270,6 +308,7 @@ document.getElementById('sidebarToggle').addEventListener('click', ()=>{
 
 window.newChat = function(){
   currentChatId = null;
+  localStorage.removeItem('lastOpenChat');
   if(unsubMessages) unsubMessages();
   if(!currentUser) saveGuestChat([]);
   historyForApi = [];
@@ -283,12 +322,64 @@ window.newChat = function(){
 let lastChats = [];
 function renderChatList(chats){
   lastChats = chats;
+  const sorted = [...chats].sort((a, b) => (b.pinned?1:0) - (a.pinned?1:0));
   const list = document.getElementById('chatList');
-  list.innerHTML = chats.map(c =>
-    `<div class="chat-item ${c.id===currentChatId?'active':''}" data-id="${c.id}">${c.title}</div>`).join('') ||
-    '<div class="chat-item" style="opacity:.5">—</div>';
-  list.querySelectorAll('.chat-item').forEach(el=>{
-    el.addEventListener('click', ()=> openChat(el.dataset.id));
+  list.innerHTML = sorted.map(c => `
+    <div class="chat-item ${c.id===currentChatId?'active':''}" data-id="${c.id}">
+      <span class="chat-item-title">${c.pinned ? '📌 ' : ''}${escapeHtml(c.title)}</span>
+      <button type="button" class="chat-item-menu-btn" data-id="${c.id}">⋮</button>
+    </div>`).join('') || '<div class="chat-item" style="opacity:.5">—</div>';
+
+  list.querySelectorAll('.chat-item-title').forEach(el=>{
+    el.addEventListener('click', ()=> openChat(el.closest('.chat-item').dataset.id));
+  });
+  list.querySelectorAll('.chat-item-menu-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{ e.stopPropagation(); openChatMenu(btn.dataset.id, btn); });
+  });
+}
+function escapeHtml(s){ const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+let openMenuEl = null;
+function closeChatMenu(){ if(openMenuEl){ openMenuEl.remove(); openMenuEl = null; } }
+document.addEventListener('click', closeChatMenu);
+
+function openChatMenu(chatId, anchorBtn){
+  closeChatMenu();
+  const chat = lastChats.find(c => c.id === chatId);
+  if(!chat) return;
+  const menu = document.createElement('div');
+  menu.className = 'chat-menu';
+  const pinLabel = chat.pinned ? (getLang()==='ar'?'إلغاء التثبيت':'Unpin') : (getLang()==='ar'?'تثبيت':'Pin');
+  menu.innerHTML = `
+    <button type="button" data-act="pin">📌 ${pinLabel}</button>
+    <button type="button" data-act="rename">✏️ ${getLang()==='ar'?'إعادة تسمية':'Rename'}</button>
+    <button type="button" data-act="delete" class="danger">🗑️ ${getLang()==='ar'?'حذف':'Delete'}</button>`;
+  anchorBtn.parentElement.appendChild(menu);
+  openMenuEl = menu;
+
+  menu.querySelector('[data-act="pin"]').addEventListener('click', async (e)=>{
+    e.stopPropagation(); closeChatMenu();
+    await togglePinChat(chatId, !chat.pinned);
+  });
+  menu.querySelector('[data-act="rename"]').addEventListener('click', (e)=>{
+    e.stopPropagation(); closeChatMenu();
+    const titleEl = anchorBtn.parentElement.querySelector('.chat-item-title');
+    const input = document.createElement('input');
+    input.className = 'chat-rename-input'; input.value = chat.title;
+    titleEl.replaceWith(input);
+    input.focus(); input.select();
+    const save = async ()=>{
+      const val = input.value.trim();
+      if(val && val !== chat.title) await renameChat(chatId, val.slice(0, 60));
+    };
+    input.addEventListener('keydown', ev=>{ if(ev.key==='Enter') input.blur(); if(ev.key==='Escape'){ input.value = chat.title; input.blur(); } });
+    input.addEventListener('blur', save, { once:true });
+  });
+  menu.querySelector('[data-act="delete"]').addEventListener('click', async (e)=>{
+    e.stopPropagation(); closeChatMenu();
+    if(!confirm(getLang()==='ar' ? 'حذف هذه المحادثة؟' : 'Delete this chat?')) return;
+    if(chatId === currentChatId) newChat();
+    await deleteChat(chatId);
   });
 }
 window.filterChats = function(q){
@@ -299,6 +390,7 @@ window.filterChats = function(q){
 
 function openChat(chatId){
   currentChatId = chatId;
+  localStorage.setItem('lastOpenChat', chatId);
   renderChatList(lastChats);
   const inner = document.getElementById('chatInner');
   inner.innerHTML = '';
@@ -413,7 +505,7 @@ async function parseXlsx(file){
 // a DOCX/PPTX — both are just ZIP archives, so we can reuse JSZip for this too.
 // Native vector charts/SmartArt aren't plain image files, so those are missed —
 // a known, accepted limitation.
-async function extractZipImages(file, mediaPrefix, maxImages = 3){
+async function extractZipImages(file, mediaPrefix, maxImages = 8){
   const zip = await JSZip.loadAsync(await file.arrayBuffer());
   const names = Object.keys(zip.files).filter(n => n.startsWith(mediaPrefix) && /\.(png|jpe?g|gif|bmp)$/i.test(n));
   const images = [];
@@ -520,6 +612,17 @@ document.getElementById('removeImage').addEventListener('click', ()=>{
 // Streams the reply token-by-token from /api/chat (Server-Sent Events / chunked response).
 // The API route (api/chat.js) is responsible for picking a provider (Groq/Gemini),
 // rotating keys, and forwarding the stream — this file just renders it.
+// Cleans the raw first message into something title-shaped: strips markdown/
+// newlines, trims to ~40 chars at a word boundary instead of mid-word.
+function makeChatTitle(text){
+  if(!text) return '';
+  let t = text.replace(/[#*`_>\n\r]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if(t.length <= 40) return t;
+  const cut = t.slice(0, 40);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > 15 ? cut.slice(0, lastSpace) : cut) + '…';
+}
+
 window.sendMessage = async function(){
   const input = document.getElementById('msgInput');
   const text = input.value.trim();
@@ -534,7 +637,7 @@ window.sendMessage = async function(){
   addBubble('user', text, true, bubbleAttachment);
   trackEvent('message_sent');
 
-  const titleText = text || (attachment ? attachment.name : '');
+  const titleText = makeChatTitle(text) || (attachment ? attachment.name : '');
   if(currentUser){
     if(!currentChatId){ currentChatId = await createChat(currentUser.uid, titleText); openChat(currentChatId); }
     await addMessage(currentChatId, 'user', text, bubbleAttachment);
