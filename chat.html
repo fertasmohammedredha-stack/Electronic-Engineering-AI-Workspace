@@ -136,7 +136,20 @@ let currentUser = null;
 let currentChatId = null;
 let unsubChats = null;
 let unsubMessages = null;
-let historyForApi = []; // {role:'user'|'bot', text} — recent turns sent as context with each request
+let historyForApi = []; // {role:'user'|'bot', text} — the conversation memory sent with each request (server trims it to its own budget)
+
+// Very long chats: keep the opening exchange (usually the original problem) + the newest messages.
+function capHistory(arr, max = 100){
+  return arr.length <= max ? arr : [...arr.slice(0, 2), ...arr.slice(-(max - 2))];
+}
+// What the AI should remember about a student message — including a copy of an attached
+// file's text, so follow-up questions about that file still work later in the chat.
+function memoryTextFor(text, att){
+  if(!att) return text;
+  const base = text ? text + '\n\n' : '';
+  if(att.kind === 'text') return base + `[Attached file: ${att.name}]\n` + (att.text || '').slice(0, 5000);
+  return base + `[The student attached ${att.kind === 'pdf' ? 'a PDF' : 'an image'}: ${att.name || ''}]`;
+}
 
 function getGuestChat(){ return JSON.parse(localStorage.getItem('guestChat') || '[]'); }
 function saveGuestChat(arr){ localStorage.setItem('guestChat', JSON.stringify(arr)); }
@@ -402,7 +415,10 @@ function openChat(chatId){
       const el = addBubble(m.role, m.text, false, att);
       if(m.role === 'bot') addMessageActions(el, m.text);
     });
-    historyForApi = msgs.map(m => ({ role: m.role, text: m.text }));
+    historyForApi = capHistory(msgs.map(m => {
+      const marker = m.attachment ? ` [attachment: ${m.attachment.name || m.attachment.kind}]` : (m.image ? ' [image attached]' : '');
+      return { role: m.role, text: (m.text || '') + marker };
+    }));
     document.getElementById('chatScroll').scrollTop = 999999;
   });
 }
@@ -687,8 +703,8 @@ window.sendMessage = async function(){
       const g = getGuestChat(); g.push({role:'bot', text: full}); saveGuestChat(g);
     }
     addMessageActions(botBubble, full);
-    historyForApi.push({ role: 'user', text }, { role: 'bot', text: full });
-    if(historyForApi.length > 20) historyForApi = historyForApi.slice(-20);
+    historyForApi.push({ role: 'user', text: memoryTextFor(text, attachment) }, { role: 'bot', text: full });
+    historyForApi = capHistory(historyForApi);
     trackEvent('ai_response_success');
   } catch(e){
     botBubble.textContent = '⚠️ تعذر الاتصال بالمساعد.';
