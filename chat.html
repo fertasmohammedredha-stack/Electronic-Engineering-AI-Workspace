@@ -136,10 +136,12 @@ let currentUser = null;
 let currentChatId = null;
 let unsubChats = null;
 let unsubMessages = null;
+let isStreaming = false;     // true while a reply is being written into the page
+let skippedSnapshot = null;  // newest Firestore snapshot that arrived mid-reply (drawn once the reply is done)
 let historyForApi = []; // {role:'user'|'bot', text} — the conversation memory sent with each request (server trims it to its own budget)
 
 // Very long chats: keep the opening exchange (usually the original problem) + the newest messages.
-function capHistory(arr, max = 100){
+function capHistory(arr, max = 60){
   return arr.length <= max ? arr : [...arr.slice(0, 2), ...arr.slice(-(max - 2))];
 }
 // What the AI should remember about a student message — including a copy of an attached
@@ -401,25 +403,37 @@ window.filterChats = function(q){
   });
 };
 
-function openChat(chatId){
+function renderMessages(msgs){
+  const inner = document.getElementById('chatInner');
+  inner.innerHTML = '';
+  msgs.forEach(m => {
+    const att = m.attachment || (m.image ? { kind:'image', dataUrl: m.image } : null);
+    const el = addBubble(m.role, m.text, false, att);
+    if(m.role === 'bot') addMessageActions(el, m.text);
+  });
+  document.getElementById('chatScroll').scrollTop = 999999;
+}
+// What the AI remembers of a saved chat. A user message that carried a file stores a "memory"
+// copy (typed text + the file's extracted text) so follow-up questions about the file still work.
+function rebuildHistory(msgs){
+  historyForApi = capHistory(msgs.map(m => {
+    const marker = m.attachment ? ' [attachment: ' + (m.attachment.name || m.attachment.kind) + ']' : (m.image ? ' [image attached]' : '');
+    return { role: m.role, text: m.memory || ((m.text || '') + marker) };
+  }));
+}
+
+// keepDom: used when a brand-new chat is created mid-send, so the bubbles already on screen aren't wiped.
+function openChat(chatId, keepDom = false){
   currentChatId = chatId;
   localStorage.setItem('lastOpenChat', chatId);
   renderChatList(lastChats);
-  const inner = document.getElementById('chatInner');
-  inner.innerHTML = '';
+  if(!keepDom) document.getElementById('chatInner').innerHTML = '';
   if(unsubMessages) unsubMessages();
-  unsubMessages = watchMessages(chatId, msgs=>{
-    inner.innerHTML = '';
-    msgs.forEach(m => {
-      const att = m.attachment || (m.image ? { kind:'image', dataUrl: m.image } : null);
-      const el = addBubble(m.role, m.text, false, att);
-      if(m.role === 'bot') addMessageActions(el, m.text);
-    });
-    historyForApi = capHistory(msgs.map(m => {
-      const marker = m.attachment ? ` [attachment: ${m.attachment.name || m.attachment.kind}]` : (m.image ? ' [image attached]' : '');
-      return { role: m.role, text: (m.text || '') + marker };
-    }));
-    document.getElementById('chatScroll').scrollTop = 999999;
+  unsubMessages = watchMessages(chatId, msgs => {
+    rebuildHistory(msgs);
+    // Redrawing the chat while a reply is streaming would wipe the in-flight bubble, so hold the update.
+    if(isStreaming){ skippedSnapshot = msgs; return; }
+    renderMessages(msgs);
   });
 }
 
@@ -481,11 +495,11 @@ function addBubble(role, text, scroll = true, attachment = null){
     renderBotContent(b, text);
   } else {
     if(attachment){
-      if(attachment.kind === 'image'){
+      if(attachment.kind === 'image' && attachment.dataUrl){
         const img = document.createElement('img'); img.src = attachment.dataUrl; img.className = 'msg-img'; b.appendChild(img);
       } else {
         const chip = document.createElement('div'); chip.className = 'file-chip';
-        chip.textContent = (attachment.kind === 'pdf' ? '📄 ' : '📝 ') + (attachment.name || '');
+        chip.textContent = (attachment.kind === 'pdf' ? '📄 ' : attachment.kind === 'image' ? '🖼️ ' : '📝 ') + (attachment.name || '');
         b.appendChild(chip);
       }
     }
@@ -517,6 +531,38 @@ function showAttachmentPreview(){
 
 // ---- Office formats: extracted to plain text in the browser, then handled
 // exactly like a .txt upload (kind:'text') — no backend changes needed. ----
+// ---- Image helpers (used by direct uploads AND by pictures pulled out of DOCX/PPTX) ----
+const MAX_PDF_BYTES = 2.5 * 1024 * 1024; // Vercel rejects request bodies over ~4.5 MB and base64 adds a third
+const readAsDataURL = file => new Promise((resolve, reject) => {
+  const r = new FileReader();
+  r.onload = () => resolve(r.result);
+  r.onerror = () => reject(r.error || new Error('read failed'));
+  r.readAsDataURL(file);
+});
+const loadImage = src => new Promise((resolve, reject) => {
+  const i = new Image();
+  i.onload = () => resolve(i);
+  i.onerror = () => reject(new Error('image decode failed'));
+  i.src = src;
+});
+// Shrinks to <=1024px and re-encodes as JPEG so requests stay small. Transparent PNGs (very common
+// for circuit diagrams) are flattened onto WHITE first — otherwise JPEG turns transparency black
+// and the drawing becomes invisible to the AI.
+async function compressToJpeg(src, maxDim = 1024, quality = 0.7){
+  const img = await loadImage(src);
+  let { width, height } = img;
+  if(width > maxDim || height > maxDim){
+    const s = maxDim / Math.max(width, height);
+    width = Math.round(width * s); height = Math.round(height * s);
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = width; canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(img, 0, 0, width, height);
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
 async function parseDocx(file){
   const arrayBuffer = await file.arrayBuffer();
   const result = await mammoth.extractRawText({ arrayBuffer });
@@ -533,12 +579,23 @@ async function parseXlsx(file){
 // a known, accepted limitation.
 async function extractZipImages(file, mediaPrefix, maxImages = 8){
   const zip = await JSZip.loadAsync(await file.arrayBuffer());
-  const names = Object.keys(zip.files).filter(n => n.startsWith(mediaPrefix) && /\.(png|jpe?g|gif|bmp)$/i.test(n));
+  const names = Object.keys(zip.files)
+    .filter(n => n.startsWith(mediaPrefix) && /\.(png|jpe?g|gif|bmp)$/i.test(n))
+    .slice(0, 30); // don't decode hundreds of files
   const images = [];
-  for(const name of names.slice(0, maxImages)){
-    const data = await zip.files[name].async('base64');
-    const ext = name.split('.').pop().toLowerCase();
-    images.push({ data, mimeType: ext === 'jpg' ? 'image/jpeg' : `image/${ext}` });
+  let totalChars = 0;
+  for(const name of names){
+    if(images.length >= maxImages || totalChars > 2500000) break; // keep the request well under Vercel's 4.5 MB
+    try {
+      const ext = name.split('.').pop().toLowerCase();
+      const mime = ext === 'jpg' ? 'image/jpeg' : 'image/' + ext;
+      const raw = 'data:' + mime + ';base64,' + await zip.files[name].async('base64');
+      const probe = await loadImage(raw);
+      if(probe.width < 100 || probe.height < 100) continue; // skip icons, bullets, decorations
+      const dataUrl = await compressToJpeg(raw);
+      totalChars += dataUrl.length;
+      images.push({ data: dataUrl.split(',')[1], mimeType: 'image/jpeg' });
+    } catch(e){ /* undecodable image — skip it */ }
   }
   return images;
 }
@@ -580,7 +637,7 @@ document.getElementById('fileInput').addEventListener('change', async (e)=>{
       const images = isDocx ? await extractZipImages(file, 'word/media/')
                    : isPptx ? await extractZipImages(file, 'ppt/media/')
                    : [];
-      pendingAttachment = { kind: 'text', text, name: file.name, images: images.length ? images : undefined };
+      pendingAttachment = { kind: 'text', text: text.slice(0, 20000), name: file.name, images: images.length ? images : undefined };
       showAttachmentPreview();
     } catch(err){
       document.getElementById('imagePreview').classList.add('hidden');
@@ -590,39 +647,22 @@ document.getElementById('fileInput').addEventListener('change', async (e)=>{
   }
 
   if(isImage){
-    const reader = new FileReader();
-    reader.onload = ()=>{
-      const img = new Image();
-      img.onload = ()=>{
-        const maxDim = 1024;
-        let { width, height } = img;
-        if(width > maxDim || height > maxDim){
-          const scale = maxDim / Math.max(width, height);
-          width = Math.round(width * scale); height = Math.round(height * scale);
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width; canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-        pendingAttachment = { kind: 'image', dataUrl, data: dataUrl.split(',')[1], mimeType: 'image/jpeg', name: file.name };
-        showAttachmentPreview();
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  } else if(isPdf){
-    if(file.size > 8 * 1024 * 1024){ alert(getLang()==='ar' ? 'حجم PDF كبير (حد 8 ميجا).' : 'PDF too large (8MB max).'); return; }
-    const reader = new FileReader();
-    reader.onload = ()=>{
-      const dataUrl = reader.result;
-      pendingAttachment = { kind: 'pdf', dataUrl, data: dataUrl.split(',')[1], mimeType: 'application/pdf', name: file.name };
+    try {
+      const dataUrl = await compressToJpeg(await readAsDataURL(file));
+      pendingAttachment = { kind: 'image', dataUrl, data: dataUrl.split(',')[1], mimeType: 'image/jpeg', name: file.name };
       showAttachmentPreview();
-    };
-    reader.readAsDataURL(file);
+    } catch(err){
+      alert(getLang()==='ar' ? 'تعذرت قراءة الصورة (جرّب JPG أو PNG).' : "Couldn't read this image (try JPG or PNG).");
+    }
+  } else if(isPdf){
+    if(file.size > MAX_PDF_BYTES){ alert(getLang()==='ar' ? 'حجم PDF كبير (الحد 2.5 ميجا).' : 'PDF too large (2.5MB max).'); return; }
+    const dataUrl = await readAsDataURL(file);
+    pendingAttachment = { kind: 'pdf', dataUrl, data: dataUrl.split(',')[1], mimeType: 'application/pdf', name: file.name };
+    showAttachmentPreview();
   } else if(isText){
     const reader = new FileReader();
     reader.onload = ()=>{
-      pendingAttachment = { kind: 'text', text: reader.result, name: file.name };
+      pendingAttachment = { kind: 'text', text: String(reader.result).slice(0, 20000), name: file.name };
       showAttachmentPreview();
     };
     reader.readAsText(file);
@@ -649,12 +689,44 @@ function makeChatTitle(text){
   return (lastSpace > 15 ? cut.slice(0, lastSpace) : cut) + '…';
 }
 
+const MAX_REQUEST_BYTES = 4300000; // Vercel rejects request bodies over ~4.5 MB
+
+function userError(message, status){ const e = new Error(message); e.userMessage = message; e.status = status; return e; }
+function httpError(status){
+  const ar = getLang() === 'ar';
+  if(status === 413) return userError(ar ? 'الملف كبير جداً للإرسال (الحد حوالي 4 ميجا). جرّب ملفاً أصغر.' : 'The file is too large to send (about 4 MB max). Try a smaller one.', status);
+  if(status === 504 || status === 408) return userError(ar ? 'انتهت مهلة الخادم. جرّب مرة ثانية أو بملف أصغر.' : 'The server timed out. Try again, or with a smaller file.', status);
+  return userError((ar ? 'خطأ من الخادم (' : 'Server error (') + status + ').', status);
+}
+// A guest shouldn't lose one of their 15 questions to a failed answer.
+function rollbackGuestTurn(){
+  const g = getGuestChat();
+  if(g.length && g[g.length - 1].role === 'user') g.pop();
+  saveGuestChat(g);
+  localStorage.setItem('guestTotal', String(Math.max(0, guestQuestionCount() - 1)));
+  applyGuestUI();
+}
+
 window.sendMessage = async function(){
+  if(isStreaming) return;
   const input = document.getElementById('msgInput');
   const text = input.value.trim();
-  const attachment = pendingAttachment; // snapshot — cleared below before the request goes out
+  const attachment = pendingAttachment; // snapshot — cleared below once the request is accepted
   if((!text && !attachment) || input.disabled) return;
   if(!currentUser && guestQuestionCount() >= GUEST_LIMIT) return;
+  const ar = getLang() === 'ar';
+
+  // Build the request FIRST: (1) the history it carries must not include this very message,
+  // (2) an oversized request can be refused without losing what the student typed or attached.
+  const payload = JSON.stringify({
+    message: text, lang: getLang(),
+    attachment: attachment ? { kind: attachment.kind, data: attachment.data, mimeType: attachment.mimeType, text: attachment.text, name: attachment.name, images: attachment.images } : undefined,
+    history: historyForApi
+  });
+  if(new Blob([payload]).size > MAX_REQUEST_BYTES){
+    alert(ar ? 'الطلب كبير جداً (الحد حوالي 4 ميجا). جرّب ملفاً أصغر أو صوراً أقل.' : 'The request is too large (about 4 MB max). Try a smaller file or fewer images.');
+    return;
+  }
 
   input.value = ''; autoGrow(input);
   pendingAttachment = null;
@@ -663,52 +735,77 @@ window.sendMessage = async function(){
   addBubble('user', text, true, bubbleAttachment);
   trackEvent('message_sent');
 
-  const titleText = makeChatTitle(text) || (attachment ? attachment.name : '');
-  if(currentUser){
-    if(!currentChatId){ currentChatId = await createChat(currentUser.uid, titleText); openChat(currentChatId); }
-    await addMessage(currentChatId, 'user', text, bubbleAttachment);
-  } else {
-    const g = getGuestChat(); g.push({role:'user', text}); saveGuestChat(g);
-    incGuestTotal();
-    applyGuestUI(); // update the countdown immediately, not just at the limit
-  }
+  isStreaming = true;
+  let botBubble = null, savedUser = false, savedBot = false;
+  try {
+    // 1) Save the student's message. A storage problem must never block the answer.
+    if(currentUser){
+      try {
+        if(!currentChatId){
+          currentChatId = await createChat(currentUser.uid, makeChatTitle(text) || (attachment ? attachment.name : ''));
+          openChat(currentChatId, true);
+        }
+        await addMessage(currentChatId, 'user', text, bubbleAttachment, attachment ? memoryTextFor(text, attachment) : null);
+        savedUser = true;
+      } catch(err){ console.error('Saving the message failed:', err); }
+    } else {
+      const g = getGuestChat(); g.push({ role:'user', text }); saveGuestChat(g);
+      incGuestTotal();
+      applyGuestUI(); // update the countdown immediately, not just at the limit
+    }
 
-  const botBubble = addBubble('bot', '');
-  botBubble.innerHTML = '<span class="cursor-blink"></span>';
-
-  try{
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        message: text, lang: getLang(),
-        attachment: attachment ? { kind: attachment.kind, data: attachment.data, mimeType: attachment.mimeType, text: attachment.text, name: attachment.name, images: attachment.images } : undefined,
-        history: historyForApi
-      })
-    });
-    if(!res.body) throw new Error('no stream');
+    // 2) Ask the AI and stream the reply into a new bubble.
+    botBubble = addBubble('bot', '');
+    botBubble.innerHTML = '<span class="cursor-blink"></span>';
+    const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload });
+    if(!res.ok) throw httpError(res.status);
+    if(!res.body) throw userError(ar ? 'لم يصل رد من الخادم.' : 'No response came back from the server.');
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let full = '';
     while(true){
-      const {done, value} = await reader.read();
+      const { done, value } = await reader.read();
       if(done) break;
-      full += decoder.decode(value, {stream:true});
+      full += decoder.decode(value, { stream: true });
       renderBotContent(botBubble, full);
       document.getElementById('chatScroll').scrollTop = 999999;
     }
+    if(!full.trim()) throw userError(ar ? 'لم يصل رد من النموذج. حاول مرة ثانية.' : 'The model returned an empty reply. Please try again.');
+
+    // The server reports "every provider failed" as plain text: show it, but don't save or remember it as an answer.
+    if(full.startsWith('⚠️ All providers are currently unavailable')){
+      if(!currentUser) rollbackGuestTurn();
+      trackEvent('ai_response_error', { error: 'all_providers_unavailable' });
+      return;
+    }
+
+    // 3) Save the reply.
     if(currentUser){
-      await addMessage(currentChatId, 'bot', full);
+      if(currentChatId){
+        try { await addMessage(currentChatId, 'bot', full); savedBot = true; }
+        catch(err){ console.error('Saving the reply failed:', err); }
+      }
     } else {
-      const g = getGuestChat(); g.push({role:'bot', text: full}); saveGuestChat(g);
+      const g = getGuestChat(); g.push({ role:'bot', text: full }); saveGuestChat(g);
     }
     addMessageActions(botBubble, full);
-    historyForApi.push({ role: 'user', text: memoryTextFor(text, attachment) }, { role: 'bot', text: full });
-    historyForApi = capHistory(historyForApi);
+    // Saved chats rebuild their memory from Firestore (see rebuildHistory); otherwise remember it here.
+    if(!(currentUser && savedUser && savedBot)){
+      historyForApi.push({ role: 'user', text: memoryTextFor(text, attachment) }, { role: 'bot', text: full });
+      historyForApi = capHistory(historyForApi);
+    }
     trackEvent('ai_response_success');
   } catch(e){
-    botBubble.textContent = '⚠️ تعذر الاتصال بالمساعد.';
+    console.error('sendMessage failed:', e);
+    const msg = e.userMessage || (ar ? 'تعذر الاتصال بالمساعد.' : "Couldn't reach the assistant.");
+    if(botBubble) botBubble.textContent = '⚠️ ' + msg; else addBubble('bot', '⚠️ ' + msg);
+    if(!currentUser) rollbackGuestTurn();
     trackEvent('ai_response_error', { error: String(e.message || e).slice(0, 100) });
+  } finally {
+    isStreaming = false;
+    // Draw whatever Firestore delivered mid-reply, but only if the reply was saved (otherwise it would vanish).
+    if(skippedSnapshot && savedBot) renderMessages(skippedSnapshot);
+    skippedSnapshot = null;
   }
 };
 </script>
