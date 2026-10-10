@@ -100,18 +100,22 @@ export function watchMessages(chatId, callback) {
   });
 }
 
-// attachment: optional { kind:'image'|'pdf'|'text', dataUrl?, name? } — stored
-// inline on the message doc for display on reload. For 'text' attachments we
-// only keep the name (the file's content isn't persisted here, only sent to
-// the AI for that one turn) to keep documents small; image/pdf dataUrls stay
-// comfortably under Firestore's 1MB limit at the sizes this app sends.
-export async function addMessage(chatId, role, text, attachment = null) {
+// attachment: optional { kind:'image'|'pdf'|'text', dataUrl?, name? }.
+// Firestore documents are capped at 1 MiB, so only a SMALL inline image preview is stored;
+// PDFs and text files are stored by name only (their bytes were never needed to redraw the chat).
+// memory: optional text version of the message the AI should remember later (typed text plus
+// the attached file's extracted text), so follow-up questions about the file keep working.
+const MAX_INLINE_IMAGE_CHARS = 700000;
+export async function addMessage(chatId, role, text, attachment = null, memory = null) {
   const data = { role, text: text || '', createdAt: serverTimestamp() };
   if (attachment) {
-    data.attachment = attachment.kind === 'text'
-      ? { kind: 'text', name: attachment.name }
-      : attachment;
+    const a = { kind: attachment.kind, name: attachment.name || '' };
+    if (attachment.kind === 'image' && attachment.dataUrl && attachment.dataUrl.length <= MAX_INLINE_IMAGE_CHARS) {
+      a.dataUrl = attachment.dataUrl;
+    }
+    data.attachment = a;
   }
+  if (memory) data.memory = String(memory).slice(0, 6000);
   await addDoc(collection(db, "chats", chatId, "messages"), data);
   await updateDoc(doc(db, "chats", chatId), { updatedAt: serverTimestamp() });
 }
