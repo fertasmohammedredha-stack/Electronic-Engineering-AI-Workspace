@@ -8,7 +8,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
   getFirestore, doc, setDoc, getDoc, collection, addDoc, query,
-  where, orderBy, onSnapshot, serverTimestamp, updateDoc, getDocs, deleteDoc, writeBatch
+  where, orderBy, onSnapshot, serverTimestamp, updateDoc, getDocs, deleteDoc, writeBatch, deleteField
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-analytics.js";
 
@@ -59,6 +59,13 @@ export async function signInWithEmail(email, password) {
 
 export function resetPassword(email) {
   return sendPasswordResetEmail(auth, email);
+}
+
+// The signed-in student's Firebase ID token (proves identity to /api/chat). Firebase refreshes it
+// automatically when it's close to expiry; forceRefresh=true fetches a brand-new one.
+export async function getIdToken(forceRefresh = false) {
+  const u = auth.currentUser;
+  return u ? u.getIdToken(forceRefresh) : null;
 }
 
 export function signOutUser() {
@@ -116,8 +123,21 @@ export async function addMessage(chatId, role, text, attachment = null, memory =
     data.attachment = a;
   }
   if (memory) data.memory = String(memory).slice(0, 6000);
-  await addDoc(collection(db, "chats", chatId, "messages"), data);
+  const ref = await addDoc(collection(db, "chats", chatId, "messages"), data);
   await updateDoc(doc(db, "chats", chatId), { updatedAt: serverTimestamp() });
+  return ref.id; // lets the UI attach 👍/👎 and "regenerate" to this exact message
+}
+
+// 👍/👎 on a reply. rating: 'up' | 'down' | null (null removes the rating).
+export function setMessageFeedback(chatId, messageId, rating) {
+  return updateDoc(doc(db, "chats", chatId, "messages", messageId), { feedback: rating || deleteField() });
+}
+
+// Removes specific messages (used by "regenerate" and "edit my message").
+export async function deleteMessages(chatId, messageIds) {
+  const batch = writeBatch(db);
+  messageIds.forEach(id => batch.delete(doc(db, "chats", chatId, "messages", id)));
+  await batch.commit();
 }
 
 export function togglePinChat(chatId, pinned) {
