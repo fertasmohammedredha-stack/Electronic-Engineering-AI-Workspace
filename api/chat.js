@@ -8,6 +8,14 @@
 //   • Short text  → Groq first (fast), Gemini fallback.
 //   • Long memory / big file text → Gemini first (huge context window), Groq last resort with trimmed history.
 //   • Images → Gemini first, Groq vision (Qwen) fallback. PDFs → Gemini only.
+//
+// Protection (see "Who is calling" in the handler):
+//   • A valid Firebase ID token (Authorization: Bearer ...) = signed-in student. No token = guest.
+//   • Guests can't send files (logged-in feature) and get a per-IP soft limit.
+//   • Burst limits per user / per IP, and strict input validation. Nobody gets a daily cap for normal use.
+// Optional env vars: FIREBASE_PROJECT_ID, RATE_USER_PER_MIN, RATE_GUEST_PER_MIN, RATE_GUEST_PER_DAY, SHOW_DEBUG_ERRORS=0
+
+import crypto from "node:crypto";
 
 const ASSISTANT_NAME = "Dara (دارة)"; // ← change here once the final brand name is chosen
 const CREATOR = "Fertas Mohammed Redha";
@@ -215,12 +223,156 @@ async function* streamGemini(key, system, turns, message, visuals) {
   }
 }
 
+// ===========================================================================
+// PROTECTION: who is calling, how often, and is the input sane
+// ===========================================================================
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "electronic-engineering-ai"; // public value from firebase-config.js
+const RATE_USER_PER_MIN = Number(process.env.RATE_USER_PER_MIN) || 12;     // far above human typing speed; only stops scripts
+const RATE_GUEST_PER_MIN = Number(process.env.RATE_GUEST_PER_MIN) || 10;
+const RATE_GUEST_PER_DAY = Number(process.env.RATE_GUEST_PER_DAY) || 400;  // per IP — generous because a whole campus/mobile carrier can share one IP
+const SHOW_DEBUG = process.env.SHOW_DEBUG_ERRORS !== "0";                   // set to 0 to hide provider error details from the chat
+const MAX_MESSAGE_CHARS = 12000;
+const MAX_B64_CHARS = 4400000;
+
+const httpErr = (status, message) => Object.assign(new Error(message), { status });
+
+// ---- Firebase ID token verification (no dependencies: Node's crypto + Google's public keys) ----
+const JWKS_URL = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
+let jwks = { keys: new Map(), expires: 0 };
+
+async function loadJwks(force = false) {
+  if (!force && jwks.keys.size && Date.now() < jwks.expires) return jwks.keys;
+  let r;
+  try { r = await fetch(JWKS_URL); } catch (e) { throw Object.assign(new Error("jwks_unreachable"), { transient: true }); }
+  if (!r.ok) throw Object.assign(new Error("jwks_" + r.status), { transient: true });
+  const { keys } = await r.json();
+  const maxAge = parseInt((r.headers.get("cache-control") || "").match(/max-age=(\d+)/)?.[1] || "3600", 10);
+  jwks = {
+    keys: new Map(keys.map(k => [k.kid, crypto.createPublicKey({ key: k, format: "jwk" })])),
+    expires: Date.now() + maxAge * 1000
+  };
+  return jwks.keys;
+}
+
+async function verifyFirebaseIdToken(token) {
+  const parts = String(token || "").split(".");
+  if (parts.length !== 3) throw new Error("malformed");
+  let header, payload;
+  try {
+    header = JSON.parse(Buffer.from(parts[0], "base64url").toString());
+    payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+  } catch { throw new Error("malformed"); }
+  if (header.alg !== "RS256" || !header.kid) throw new Error("bad_alg");
+
+  let key = (await loadJwks()).get(header.kid);
+  if (!key) key = (await loadJwks(true)).get(header.kid); // Google rotates its keys
+  if (!key) throw new Error("unknown_kid");
+  const valid = crypto.verify("RSA-SHA256", Buffer.from(parts[0] + "." + parts[1]), key, Buffer.from(parts[2], "base64url"));
+  if (!valid) throw new Error("bad_signature");
+
+  const now = Math.floor(Date.now() / 1000);
+  if (payload.aud !== FIREBASE_PROJECT_ID) throw new Error("bad_audience");
+  if (payload.iss !== "https://securetoken.google.com/" + FIREBASE_PROJECT_ID) throw new Error("bad_issuer");
+  if (!(payload.exp > now)) throw new Error("expired");
+  if (payload.iat > now + 300) throw new Error("issued_in_future");
+  if (typeof payload.sub !== "string" || !payload.sub) throw new Error("no_subject");
+  return { uid: payload.sub, email: payload.email };
+}
+
+// ---- Rate limits (in memory = best effort: each serverless instance counts for itself) ----
+// This stops scripts hammering the endpoint. For a hard global guarantee you'd move the counters
+// to a shared store (e.g. Upstash Redis / Vercel KV).
+const windows = new Map(); // key -> [timestamps within the window]
+const days = new Map();    // key -> { n, reset }
+function prune(map, isOld) {
+  if (map.size <= 5000) return;
+  for (const [k, v] of map) if (isOld(v)) map.delete(k);
+}
+// Returns 0 if allowed, otherwise the number of seconds to wait.
+function slidingLimit(key, limit, windowMs) {
+  const now = Date.now();
+  const arr = (windows.get(key) || []).filter(t => now - t < windowMs);
+  if (arr.length >= limit) { windows.set(key, arr); return Math.max(1, Math.ceil((windowMs - (now - arr[0])) / 1000)); }
+  arr.push(now); windows.set(key, arr);
+  prune(windows, v => !v.length || now - v[v.length - 1] > windowMs);
+  return 0;
+}
+function dailyLimit(key, limit) {
+  const now = Date.now();
+  let d = days.get(key);
+  if (!d || now > d.reset) d = { n: 0, reset: now + 86400000 };
+  if (d.n >= limit) { days.set(key, d); return Math.max(1, Math.ceil((d.reset - now) / 1000)); }
+  d.n++; days.set(key, d);
+  prune(days, v => now > v.reset);
+  return 0;
+}
+function clientIp(req) {
+  const h = req.headers || {};
+  const raw = h["x-vercel-forwarded-for"] || h["x-real-ip"] || h["x-forwarded-for"] || req.socket?.remoteAddress || "unknown";
+  return String(raw).split(",")[0].trim();
+}
+
+// ---- Input validation: only well-formed, size-limited fields get through ----
+function validVisual(v, kind) {
+  if (!v || typeof v.data !== "string" || v.data.length > MAX_B64_CHARS) return false;
+  return kind === "pdf" ? v.mimeType === "application/pdf" : /^image\/(jpeg|png|webp|gif)$/.test(v.mimeType);
+}
+function cleanInput(body) {
+  const b = body && typeof body === "object" ? body : {};
+  const message = typeof b.message === "string" ? b.message : "";
+  if (message.length > MAX_MESSAGE_CHARS) throw httpErr(413, "message_too_long");
+  const history = Array.isArray(b.history) ? b.history.slice(-200) : [];
+
+  let attachment;
+  const a = b.attachment;
+  if (a && typeof a === "object") {
+    const name = String(a.name || "file").slice(0, 200);
+    if (a.kind === "text") {
+      attachment = { kind: "text", name, text: typeof a.text === "string" ? a.text.slice(0, 20000) : "" };
+      if (Array.isArray(a.images)) {
+        attachment.images = a.images.slice(0, 8).filter(i => validVisual(i, "image")).map(i => ({ data: i.data, mimeType: i.mimeType }));
+      }
+    } else if (a.kind === "image" || a.kind === "pdf") {
+      if (!validVisual(a, a.kind)) throw httpErr(400, "bad_attachment");
+      attachment = { kind: a.kind, name, data: a.data, mimeType: a.mimeType };
+    } else {
+      throw httpErr(400, "bad_attachment");
+    }
+  }
+  return { message, attachment, history };
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+  // 1) Who is calling? A valid Firebase ID token = a signed-in student. No token = a guest.
+  let user = null;
+  const authHeader = String(req.headers?.authorization || "");
+  if (authHeader.startsWith("Bearer ")) {
+    try { user = await verifyFirebaseIdToken(authHeader.slice(7)); }
+    catch (e) {
+      if (e.transient) return res.status(503).json({ error: "auth_unavailable" });
+      return res.status(401).json({ error: "invalid_token" });
+    }
+  }
+
+  // 2) Burst / abuse protection.
+  const wait = user
+    ? slidingLimit("u:" + user.uid, RATE_USER_PER_MIN, 60000)
+    : slidingLimit("g:" + clientIp(req), RATE_GUEST_PER_MIN, 60000) || dailyLimit("g:" + clientIp(req), RATE_GUEST_PER_DAY);
+  if (wait) {
+    res.setHeader("Retry-After", String(wait));
+    return res.status(429).json({ error: "rate_limited", retryAfter: wait });
+  }
+
+  // 3) Validate and clean the input.
   // attachment: { kind:'image'|'pdf'|'text', data?(base64), mimeType?, text?, name?,
   //               images?: [{data,mimeType}] (pictures pulled out of a DOCX/PPTX) } | undefined
-  const { message, attachment, history } = req.body || {};
+  let input;
+  try { input = cleanInput(req.body); }
+  catch (e) { return res.status(e.status || 400).json({ error: e.message }); }
+  const { message, attachment, history } = input;
+  if (!user && attachment) return res.status(403).json({ error: "login_required" }); // files are a signed-in feature
 
   let effectiveMessage = message || "";
   let visuals = null;   // [{ mimeType, data }]
@@ -301,6 +453,6 @@ export default async function handler(req, res) {
     }
   }
   console.error("All providers failed:", errors);
-  res.write(`⚠️ All providers are currently unavailable.\n(debug: ${errors.join(" | ") || "no API keys matched"})`);
+  res.write("⚠️ All providers are currently unavailable." + (SHOW_DEBUG ? `\n(debug: ${errors.join(" | ") || "no API keys matched"})` : ""));
   res.end();
 }
