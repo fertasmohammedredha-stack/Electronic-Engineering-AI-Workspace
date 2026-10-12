@@ -102,8 +102,14 @@ watchAuth(user => {
 
   document.getElementById('deleteChatsBtn').addEventListener('click', async ()=>{
     if(confirm(getLang()==='ar' ? 'حذف كل المحادثات نهائيًا؟' : 'Permanently delete all chats?')){
-      await deleteAllChats(user.uid);
-      alert(getLang()==='ar' ? 'تم الحذف.' : 'Deleted.');
+      try {
+        await deleteAllChats(user.uid);
+        localStorage.removeItem('lastOpenChat');
+        alert(getLang()==='ar' ? 'تم الحذف.' : 'Deleted.');
+      } catch(err){
+        console.error('Delete all chats failed:', err);
+        alert(getLang()==='ar' ? 'تعذر حذف المحادثات. حاول مرة ثانية.' : "Couldn't delete the chats. Please try again.");
+      }
     }
   });
 });
