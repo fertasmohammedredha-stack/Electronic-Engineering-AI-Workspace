@@ -50,6 +50,14 @@
   .action-btn{border:none; background:transparent; font-size:13px; padding:4px 7px; border-radius:6px; cursor:pointer; opacity:.6; line-height:1;}
   .action-btn:hover{opacity:1; background:var(--surface);}
   .action-btn.active{opacity:1; background:var(--surface);}
+  html[dir="rtl"] .msg-actions.user-actions{align-self:flex-start;}
+  html[dir="ltr"] .msg-actions.user-actions{align-self:flex-end;}
+  .bubble.user.editing{width:min(560px,92%); max-width:92%;}
+  .edit-area{width:100%; resize:vertical; background:transparent; color:inherit; border:1px solid color-mix(in srgb, currentColor 45%, transparent); border-radius:8px; padding:8px 10px; font:inherit; outline:none;}
+  .edit-bar{display:flex; gap:8px; justify-content:flex-end; margin-top:8px;}
+  .edit-bar button{border:none; border-radius:7px; padding:6px 14px; font:inherit; font-size:13px; cursor:pointer;}
+  .edit-save{background:var(--copper); color:#fff;}
+  .edit-cancel{background:color-mix(in srgb, currentColor 16%, transparent); color:inherit;}
   .image-preview{max-width:760px; margin:0 auto 10px; display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:8px 10px;}
   .image-preview.hidden{display:none;}
   .image-preview img{width:44px; height:44px; object-fit:cover; border-radius:6px;}
@@ -129,7 +137,7 @@
 
 <script src="assets/lang.js"></script>
 <script type="module">
-import { watchAuth, createChat, watchUserChats, watchMessages, addMessage, trackEvent, togglePinChat, renameChat, deleteChat } from './assets/firebase.js';
+import { watchAuth, createChat, watchUserChats, watchMessages, addMessage, trackEvent, togglePinChat, renameChat, deleteChat, getIdToken, setMessageFeedback, deleteMessages } from './assets/firebase.js';
 
 const GUEST_LIMIT = 15;
 let currentUser = null;
@@ -138,6 +146,8 @@ let unsubChats = null;
 let unsubMessages = null;
 let isStreaming = false;     // true while a reply is being written into the page
 let skippedSnapshot = null;  // newest Firestore snapshot that arrived mid-reply (drawn once the reply is done)
+let currentMsgs = [];        // latest saved messages of the open chat, WITH their Firestore ids
+let lastTurn = null;         // {text, attachment, chatId} of the last completed send — lets "regenerate" re-send the exact original file
 let historyForApi = []; // {role:'user'|'bot', text} — the conversation memory sent with each request (server trims it to its own budget)
 
 // Very long chats: keep the opening exchange (usually the original problem) + the newest messages.
@@ -227,9 +237,10 @@ watchAuth(async user => {
     const guest = getGuestChat();
     if(guest.length){
       document.getElementById('chatInner').innerHTML = '';
-      guest.forEach(m => {
+      guest.forEach((m, i) => {
         const el = addBubble(m.role, m.text, false);
-        if(m.role === 'bot') addMessageActions(el, m.text);
+        if(m.role === 'bot') addMessageActions(el, m.text, { isLast: i === guest.length - 1 });
+        else addUserActions(el, m.text, { guestIndex: i, canEdit: true });
       });
       historyForApi = guest.map(m => ({ role: m.role, text: m.text }));
       document.getElementById('chatScroll').scrollTop = 999999;
@@ -326,7 +337,7 @@ window.newChat = function(){
   localStorage.removeItem('lastOpenChat');
   if(unsubMessages) unsubMessages();
   if(!currentUser) saveGuestChat([]);
-  historyForApi = [];
+  historyForApi = []; currentMsgs = []; lastTurn = null;
   document.getElementById('chatInner').innerHTML = `
     <div class="welcome" id="welcome"><h2 id="welcomeTitle" data-i="welcomeTitle"></h2><p id="welcomeSub" data-i="welcomeSub"></p></div>`;
   applyLang();
@@ -374,7 +385,8 @@ function openChatMenu(chatId, anchorBtn){
 
   menu.querySelector('[data-act="pin"]').addEventListener('click', async (e)=>{
     e.stopPropagation(); closeChatMenu();
-    await togglePinChat(chatId, !chat.pinned);
+    try { await togglePinChat(chatId, !chat.pinned); }
+    catch(err){ console.error('Pin failed:', err); alert(getLang()==='ar' ? 'تعذر تثبيت المحادثة.' : "Couldn't pin the chat."); }
   });
   menu.querySelector('[data-act="rename"]').addEventListener('click', (e)=>{
     e.stopPropagation(); closeChatMenu();
@@ -385,7 +397,10 @@ function openChatMenu(chatId, anchorBtn){
     input.focus(); input.select();
     const save = async ()=>{
       const val = input.value.trim();
-      if(val && val !== chat.title) await renameChat(chatId, val.slice(0, 60));
+      if(val && val !== chat.title){
+        try { await renameChat(chatId, val.slice(0, 60)); }
+        catch(err){ console.error('Rename failed:', err); alert(getLang()==='ar' ? 'تعذرت إعادة التسمية.' : "Couldn't rename the chat."); }
+      }
     };
     input.addEventListener('keydown', ev=>{ if(ev.key==='Enter') input.blur(); if(ev.key==='Escape'){ input.value = chat.title; input.blur(); } });
     input.addEventListener('blur', save, { once:true });
@@ -393,8 +408,13 @@ function openChatMenu(chatId, anchorBtn){
   menu.querySelector('[data-act="delete"]').addEventListener('click', async (e)=>{
     e.stopPropagation(); closeChatMenu();
     if(!confirm(getLang()==='ar' ? 'حذف هذه المحادثة؟' : 'Delete this chat?')) return;
-    if(chatId === currentChatId) newChat();
-    await deleteChat(chatId);
+    try {
+      await deleteChat(chatId);
+      if(chatId === currentChatId) newChat();
+    } catch(err){
+      console.error('Delete chat failed:', err);
+      alert(getLang()==='ar' ? 'تعذر حذف المحادثة. حاول مرة ثانية.' : "Couldn't delete the chat. Please try again.");
+    }
   });
 }
 window.filterChats = function(q){
@@ -406,21 +426,23 @@ window.filterChats = function(q){
 function renderMessages(msgs){
   const inner = document.getElementById('chatInner');
   inner.innerHTML = '';
-  msgs.forEach(m => {
+  msgs.forEach((m, i) => {
     const att = m.attachment || (m.image ? { kind:'image', dataUrl: m.image } : null);
     const el = addBubble(m.role, m.text, false, att);
-    if(m.role === 'bot') addMessageActions(el, m.text);
+    if(m.role === 'bot') addMessageActions(el, m.text, { id: m.id, feedback: m.feedback, isLast: i === msgs.length - 1 });
+    else addUserActions(el, m.text, { id: m.id, canEdit: !att });
   });
   document.getElementById('chatScroll').scrollTop = 999999;
 }
 // What the AI remembers of a saved chat. A user message that carried a file stores a "memory"
 // copy (typed text + the file's extracted text) so follow-up questions about the file still work.
-function rebuildHistory(msgs){
-  historyForApi = capHistory(msgs.map(m => {
+function historyFromMsgs(msgs){
+  return msgs.map(m => {
     const marker = m.attachment ? ' [attachment: ' + (m.attachment.name || m.attachment.kind) + ']' : (m.image ? ' [image attached]' : '');
     return { role: m.role, text: m.memory || ((m.text || '') + marker) };
-  }));
+  });
 }
+function rebuildHistory(msgs){ historyForApi = capHistory(historyFromMsgs(msgs)); }
 
 // keepDom: used when a brand-new chat is created mid-send, so the bubbles already on screen aren't wiped.
 function openChat(chatId, keepDom = false){
@@ -430,6 +452,7 @@ function openChat(chatId, keepDom = false){
   if(!keepDom) document.getElementById('chatInner').innerHTML = '';
   if(unsubMessages) unsubMessages();
   unsubMessages = watchMessages(chatId, msgs => {
+    currentMsgs = msgs;
     rebuildHistory(msgs);
     // Redrawing the chat while a reply is streaming would wipe the in-flight bubble, so hold the update.
     if(isStreaming){ skippedSnapshot = msgs; return; }
@@ -462,27 +485,162 @@ function renderBotContent(el, text){
   if(window.hljs) el.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
 }
 
-function addMessageActions(bubbleEl, text){
+const L = (ar, en) => getLang() === 'ar' ? ar : en;
+
+function copyText(text, btn){
+  if(navigator.clipboard) navigator.clipboard.writeText(text);
+  const old = btn.textContent; btn.textContent = '✅';
+  setTimeout(() => { btn.textContent = old; }, 1200);
+}
+
+// Under every AI reply: copy, 👍, 👎 — and 🔄 on the newest reply only.
+// meta: { id (Firestore message id), feedback ('up'|'down'), isLast }
+function addMessageActions(bubbleEl, text, meta = {}){
   const row = document.createElement('div');
   row.className = 'msg-actions';
-  row.innerHTML = `
-    <button class="action-btn" data-action="copy" title="Copy">📋</button>
-    <button class="action-btn" data-action="up" title="Good response">👍</button>
-    <button class="action-btn" data-action="down" title="Bad response">👎</button>`;
-  row.querySelector('[data-action="copy"]').addEventListener('click', (e)=>{
-    navigator.clipboard.writeText(text);
-    e.currentTarget.textContent = '✅';
-    setTimeout(()=> e.currentTarget.textContent = '📋', 1200);
-  });
-  row.querySelector('[data-action="up"]').addEventListener('click', (e)=> toggleFeedback(e.currentTarget, row, 'up'));
-  row.querySelector('[data-action="down"]').addEventListener('click', (e)=> toggleFeedback(e.currentTarget, row, 'down'));
+  const fb = meta.feedback;
+  row.innerHTML =
+    '<button class="action-btn" data-action="copy" title="' + L('نسخ', 'Copy') + '">📋</button>' +
+    '<button class="action-btn' + (fb === 'up' ? ' active' : '') + '" data-action="up" title="' + L('رد جيد', 'Good response') + '">👍</button>' +
+    '<button class="action-btn' + (fb === 'down' ? ' active' : '') + '" data-action="down" title="' + L('رد سيئ', 'Bad response') + '">👎</button>' +
+    (meta.isLast ? '<button class="action-btn regen-btn" data-action="regen" title="' + L('إعادة توليد', 'Regenerate') + '">🔄</button>' : '');
+  row.querySelector('[data-action="copy"]').addEventListener('click', e => copyText(text, e.currentTarget));
+  ['up', 'down'].forEach(kind => row.querySelector('[data-action="' + kind + '"]').addEventListener('click', e => onFeedback(e.currentTarget, row, kind, meta.id)));
+  const regen = row.querySelector('[data-action="regen"]');
+  if(regen) regen.addEventListener('click', () => regenerateLast());
   bubbleEl.insertAdjacentElement('afterend', row);
+  return row;
 }
-function toggleFeedback(btn, row, kind){
-  const other = row.querySelector(`[data-action="${kind==='up'?'down':'up'}"]`);
-  const isActive = btn.classList.contains('active');
+
+// 👍/👎: toggles, is counted in Analytics, and (for saved chats) is stored on the message itself.
+function onFeedback(btn, row, kind, messageId){
+  const other = row.querySelector('[data-action="' + (kind === 'up' ? 'down' : 'up') + '"]');
+  const turnedOn = !btn.classList.contains('active');
   other.classList.remove('active');
-  btn.classList.toggle('active', !isActive);
+  btn.classList.toggle('active', turnedOn);
+  const rating = turnedOn ? kind : null;
+  trackEvent('message_feedback', { rating: rating || 'cleared' });
+  if(currentUser && currentChatId && messageId){
+    setMessageFeedback(currentChatId, messageId, rating).catch(err => console.error('Saving the rating failed:', err));
+  }
+}
+
+// Under the student's own messages: copy, and ✏️ edit (text-only messages).
+// meta: { id | guestIndex, canEdit }
+function addUserActions(bubbleEl, text, meta = {}){
+  if(!text) return null;
+  const row = document.createElement('div');
+  row.className = 'msg-actions user-actions';
+  row.innerHTML =
+    '<button class="action-btn" data-action="copy" title="' + L('نسخ', 'Copy') + '">📋</button>' +
+    (meta.canEdit ? '<button class="action-btn" data-action="edit" title="' + L('تعديل', 'Edit') + '">✏️</button>' : '');
+  row.querySelector('[data-action="copy"]').addEventListener('click', e => copyText(text, e.currentTarget));
+  const edit = row.querySelector('[data-action="edit"]');
+  if(edit) edit.addEventListener('click', () => startEdit(bubbleEl, row, text, meta));
+  bubbleEl.insertAdjacentElement('afterend', row);
+  return row;
+}
+
+// ---- Edit my message: inline editor, then (after confirmation) everything from that
+// message onward is replaced by a fresh turn built on the edited text. ----
+function startEdit(bubbleEl, row, original, meta){
+  if(isStreaming) return;
+  row.style.display = 'none';
+  bubbleEl.classList.add('editing');
+  bubbleEl.innerHTML = '';
+  const ta = document.createElement('textarea');
+  ta.className = 'edit-area'; ta.value = original;
+  ta.rows = Math.min(8, Math.max(2, original.split('\n').length));
+  const bar = document.createElement('div'); bar.className = 'edit-bar';
+  const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'edit-cancel'; cancel.textContent = L('إلغاء', 'Cancel');
+  const save = document.createElement('button'); save.type = 'button'; save.className = 'edit-save'; save.textContent = L('حفظ وإرسال', 'Save & send');
+  bar.append(cancel, save);
+  bubbleEl.append(ta, bar);
+  ta.focus();
+
+  const restore = () => {
+    bubbleEl.classList.remove('editing'); bubbleEl.innerHTML = '';
+    const t = document.createElement('div'); t.textContent = original; bubbleEl.appendChild(t);
+    row.style.display = '';
+  };
+  cancel.addEventListener('click', restore);
+  save.addEventListener('click', () => {
+    const newText = ta.value.trim();
+    if(!newText || newText === original){ restore(); return; }
+    if(newText.length > MAX_MESSAGE_CHARS){
+      alert(L('الرسالة طويلة جداً (الحد ' + MAX_MESSAGE_CHARS + ' حرف).', 'The message is too long (limit ' + MAX_MESSAGE_CHARS + ' characters).'));
+      return;
+    }
+    commitEdit(bubbleEl, newText, meta, restore);
+  });
+}
+
+async function commitEdit(bubbleEl, newText, meta, restore){
+  if(isStreaming) return;
+  if(!confirm(L('تعديل هذه الرسالة يحذف كل ما بعدها ويعيد توليد الرد. متابعة؟', 'Editing this message deletes everything after it and regenerates the reply. Continue?'))) return;
+  let before;
+  if(currentUser){
+    const idx = currentMsgs.findIndex(m => m.id === meta.id);
+    if(idx < 0){ restore(); return; }
+    before = currentMsgs.slice(0, idx);
+    try { await deleteMessages(currentChatId, currentMsgs.slice(idx).map(m => m.id)); }
+    catch(err){
+      console.error('Edit failed while deleting the old messages:', err);
+      alert(L('تعذر التعديل. حاول مرة ثانية.', "Couldn't edit the message. Please try again."));
+      restore(); return;
+    }
+  } else {
+    const g = getGuestChat();
+    if(meta.guestIndex === undefined || meta.guestIndex >= g.length){ restore(); return; }
+    before = g.slice(0, meta.guestIndex);
+    saveGuestChat(before);
+  }
+  trackEvent('message_edited');
+  await runTurn({
+    text: newText, attachment: null,
+    history: capHistory(historyFromMsgs(before)),
+    showUser: true,
+    // remove the edited bubble and everything after it from the screen
+    onAccepted: () => { let n = bubbleEl; while(n){ const next = n.nextElementSibling; n.remove(); n = next; } }
+  });
+}
+
+// ---- Regenerate: ask again for the newest reply. The old reply is kept (hidden) until the
+// new one has arrived, so a failed attempt never costs the student a good answer. ----
+async function regenerateLast(){
+  if(isStreaming) return;
+  let userMsg, botMsg, history;
+  if(currentUser){
+    const n = currentMsgs.length;
+    if(n < 2 || currentMsgs[n - 1].role !== 'bot' || currentMsgs[n - 2].role !== 'user') return;
+    userMsg = currentMsgs[n - 2]; botMsg = currentMsgs[n - 1];
+    history = capHistory(historyFromMsgs(currentMsgs.slice(0, n - 2)));
+  } else {
+    const g = getGuestChat(); const n = g.length;
+    if(n < 2 || g[n - 1].role !== 'bot' || g[n - 2].role !== 'user') return;
+    if(guestQuestionCount() >= GUEST_LIMIT) return; // for guests a regeneration counts as a question
+    userMsg = g[n - 2]; botMsg = g[n - 1];
+    history = capHistory(historyFromMsgs(g.slice(0, n - 2)));
+  }
+
+  // Rebuild what was originally sent.
+  let text = userMsg.text || '', attachment = null;
+  const att = userMsg.attachment;
+  if(lastTurn && lastTurn.chatId === currentChatId && lastTurn.text === text && lastTurn.attachment){
+    attachment = lastTurn.attachment;                       // still in memory from this session: the exact original
+  } else if(att && att.kind === 'image' && att.dataUrl){
+    attachment = { kind: 'image', dataUrl: att.dataUrl, data: att.dataUrl.split(',')[1], mimeType: 'image/jpeg', name: att.name };
+  } else if(att && att.kind === 'text'){
+    text = userMsg.memory || text;                          // the saved copy already contains the file's text
+  } else if(att){
+    alert(L('لا يمكن إعادة التوليد لهذا الملف بعد إعادة تحميل الصفحة. أرفقه من جديد وأرسله.', "This file can't be re-sent after a page reload. Attach it again and resend."));
+    return;
+  }
+
+  const botBubble = [...document.querySelectorAll('#chatInner .bubble.bot')].pop();
+  const next = botBubble && botBubble.nextElementSibling;
+  const botRow = next && next.classList.contains('msg-actions') ? next : null;
+  await runTurn({ text, attachment, history, showUser: false, oldBot: { els: [botBubble, botRow].filter(Boolean), id: botMsg.id } });
 }
 
 function addBubble(role, text, scroll = true, attachment = null){
@@ -689,13 +847,23 @@ function makeChatTitle(text){
   return (lastSpace > 15 ? cut.slice(0, lastSpace) : cut) + '…';
 }
 
+const MAX_MESSAGE_CHARS = 12000;
 const MAX_REQUEST_BYTES = 4300000; // Vercel rejects request bodies over ~4.5 MB
 
 function userError(message, status){ const e = new Error(message); e.userMessage = message; e.status = status; return e; }
-function httpError(status){
+function formatWait(sec, ar){
+  if(sec >= 7200) return Math.ceil(sec / 3600) + (ar ? ' ساعة' : ' h');
+  if(sec >= 120)  return Math.ceil(sec / 60) + (ar ? ' دقيقة' : ' min');
+  return sec + (ar ? ' ثانية' : ' s');
+}
+function httpError(status, retryAfter){
   const ar = getLang() === 'ar';
-  if(status === 413) return userError(ar ? 'الملف كبير جداً للإرسال (الحد حوالي 4 ميجا). جرّب ملفاً أصغر.' : 'The file is too large to send (about 4 MB max). Try a smaller one.', status);
+  if(status === 413) return userError(ar ? 'الملف أو الرسالة كبيرة جداً للإرسال. جرّب أصغر.' : 'The file or message is too large to send. Try a smaller one.', status);
   if(status === 504 || status === 408) return userError(ar ? 'انتهت مهلة الخادم. جرّب مرة ثانية أو بملف أصغر.' : 'The server timed out. Try again, or with a smaller file.', status);
+  if(status === 401) return userError(ar ? 'انتهت جلستك. سجّل الدخول من جديد.' : 'Your session expired. Please sign in again.', status);
+  if(status === 403) return userError(ar ? 'هذه الميزة (الملفات) متاحة بعد تسجيل الدخول.' : 'This feature (files) needs you to sign in.', status);
+  if(status === 429) return userError(ar ? 'طلبات كثيرة بسرعة. انتظر ' + formatWait(retryAfter || 30, true) + ' وجرّب.' : 'Too many requests too fast. Wait ' + formatWait(retryAfter || 30, false) + ' and try again.', status);
+  if(status === 503) return userError(ar ? 'الخدمة غير متاحة مؤقتاً. جرّب بعد قليل.' : 'The service is temporarily unavailable. Try again shortly.', status);
   return userError((ar ? 'خطأ من الخادم (' : 'Server error (') + status + ').', status);
 }
 // A guest shouldn't lose one of their 15 questions to a failed answer.
@@ -707,13 +875,12 @@ function rollbackGuestTurn(){
   applyGuestUI();
 }
 
-window.sendMessage = async function(){
-  if(isStreaming) return;
-  const input = document.getElementById('msgInput');
-  const text = input.value.trim();
-  const attachment = pendingAttachment; // snapshot — cleared below once the request is accepted
-  if((!text && !attachment) || input.disabled) return;
-  if(!currentUser && guestQuestionCount() >= GUEST_LIMIT) return;
+// One AI turn, shared by "send", "regenerate" and "edit":
+//   showUser  — add + save the student's message first (send, edit); false for regenerate.
+//   oldBot    — {els, id}: the reply being replaced (regenerate). Hidden now, removed only once the new one is safe.
+//   onAccepted — runs once the request is known to be sendable (clear the input, etc.).
+async function runTurn({ text, attachment, history, showUser, oldBot = null, onAccepted = null }){
+  if(isStreaming) return false;
   const ar = getLang() === 'ar';
 
   // Build the request FIRST: (1) the history it carries must not include this very message,
@@ -721,35 +888,38 @@ window.sendMessage = async function(){
   const payload = JSON.stringify({
     message: text, lang: getLang(),
     attachment: attachment ? { kind: attachment.kind, data: attachment.data, mimeType: attachment.mimeType, text: attachment.text, name: attachment.name, images: attachment.images } : undefined,
-    history: historyForApi
+    history
   });
   if(new Blob([payload]).size > MAX_REQUEST_BYTES){
     alert(ar ? 'الطلب كبير جداً (الحد حوالي 4 ميجا). جرّب ملفاً أصغر أو صوراً أقل.' : 'The request is too large (about 4 MB max). Try a smaller file or fewer images.');
-    return;
+    return false;
   }
+  if(onAccepted) onAccepted();
 
-  input.value = ''; autoGrow(input);
-  pendingAttachment = null;
-  document.getElementById('imagePreview').classList.add('hidden');
+  document.querySelectorAll('.regen-btn').forEach(b => b.remove()); // only the newest reply can be regenerated
   const bubbleAttachment = attachment ? { kind: attachment.kind, dataUrl: attachment.dataUrl, name: attachment.name } : null;
-  addBubble('user', text, true, bubbleAttachment);
-  trackEvent('message_sent');
+  const userEl = showUser ? addBubble('user', text, true, bubbleAttachment) : null;
+  trackEvent(showUser ? 'message_sent' : 'regenerate_clicked');
+  if(oldBot) oldBot.els.forEach(el => { el.style.display = 'none'; });
 
   isStreaming = true;
-  let botBubble = null, savedUser = false, savedBot = false;
+  let botBubble = null, savedUser = !showUser, savedBot = false, newBotId = null, ok = false, guestIdx;
   try {
     // 1) Save the student's message. A storage problem must never block the answer.
     if(currentUser){
-      try {
-        if(!currentChatId){
-          currentChatId = await createChat(currentUser.uid, makeChatTitle(text) || (attachment ? attachment.name : ''));
-          openChat(currentChatId, true);
-        }
-        await addMessage(currentChatId, 'user', text, bubbleAttachment, attachment ? memoryTextFor(text, attachment) : null);
-        savedUser = true;
-      } catch(err){ console.error('Saving the message failed:', err); }
+      if(showUser){
+        try {
+          if(!currentChatId){
+            currentChatId = await createChat(currentUser.uid, makeChatTitle(text) || (attachment ? attachment.name : ''));
+            openChat(currentChatId, true);
+          }
+          await addMessage(currentChatId, 'user', text, bubbleAttachment, attachment ? memoryTextFor(text, attachment) : null);
+          savedUser = true;
+        } catch(err){ console.error('Saving the message failed:', err); }
+      }
     } else {
-      const g = getGuestChat(); g.push({ role:'user', text }); saveGuestChat(g);
+      const g = getGuestChat();
+      if(showUser){ g.push({ role:'user', text }); saveGuestChat(g); guestIdx = g.length - 1; }
       incGuestTotal();
       applyGuestUI(); // update the countdown immediately, not just at the limit
     }
@@ -757,8 +927,15 @@ window.sendMessage = async function(){
     // 2) Ask the AI and stream the reply into a new bubble.
     botBubble = addBubble('bot', '');
     botBubble.innerHTML = '<span class="cursor-blink"></span>';
-    const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload });
-    if(!res.ok) throw httpError(res.status);
+    // Signed-in students prove who they are with their Firebase ID token; guests send none.
+    const callApi = token => fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+      body: payload
+    });
+    let res = await callApi(currentUser ? await getIdToken() : null);
+    if(res.status === 401 && currentUser) res = await callApi(await getIdToken(true)); // token may have just expired: retry once with a fresh one
+    if(!res.ok) throw httpError(res.status, parseInt(res.headers.get('retry-after'), 10) || 0);
     if(!res.body) throw userError(ar ? 'لم يصل رد من الخادم.' : 'No response came back from the server.');
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -776,37 +953,73 @@ window.sendMessage = async function(){
     if(full.startsWith('⚠️ All providers are currently unavailable')){
       if(!currentUser) rollbackGuestTurn();
       trackEvent('ai_response_error', { error: 'all_providers_unavailable' });
-      return;
+      return false;
     }
 
     // 3) Save the reply.
     if(currentUser){
       if(currentChatId){
-        try { await addMessage(currentChatId, 'bot', full); savedBot = true; }
+        try { newBotId = await addMessage(currentChatId, 'bot', full); savedBot = true; }
         catch(err){ console.error('Saving the reply failed:', err); }
       }
     } else {
-      const g = getGuestChat(); g.push({ role:'bot', text: full }); saveGuestChat(g);
+      const g = getGuestChat();
+      if(oldBot && g.length && g[g.length - 1].role === 'bot') g.pop(); // regenerate: swap the old reply
+      g.push({ role:'bot', text: full }); saveGuestChat(g);
     }
-    addMessageActions(botBubble, full);
+    // Regenerate: the new reply is safe now, so the old one can go.
+    if(oldBot){
+      if(currentUser && savedBot && oldBot.id){
+        try { await deleteMessages(currentChatId, [oldBot.id]); }
+        catch(err){ console.error('Removing the old reply failed:', err); }
+      }
+      oldBot.els.forEach(el => el.remove());
+    }
+    addMessageActions(botBubble, full, { id: newBotId, isLast: true });
+    if(userEl && !currentUser) addUserActions(userEl, text, { guestIndex: guestIdx, canEdit: !attachment });
     // Saved chats rebuild their memory from Firestore (see rebuildHistory); otherwise remember it here.
     if(!(currentUser && savedUser && savedBot)){
-      historyForApi.push({ role: 'user', text: memoryTextFor(text, attachment) }, { role: 'bot', text: full });
-      historyForApi = capHistory(historyForApi);
+      historyForApi = capHistory([...history, { role: 'user', text: memoryTextFor(text, attachment) }, { role: 'bot', text: full }]);
     }
+    lastTurn = { text, attachment, chatId: currentChatId };
     trackEvent('ai_response_success');
+    ok = true;
   } catch(e){
-    console.error('sendMessage failed:', e);
+    console.error('AI turn failed:', e);
     const msg = e.userMessage || (ar ? 'تعذر الاتصال بالمساعد.' : "Couldn't reach the assistant.");
     if(botBubble) botBubble.textContent = '⚠️ ' + msg; else addBubble('bot', '⚠️ ' + msg);
     if(!currentUser) rollbackGuestTurn();
     trackEvent('ai_response_error', { error: String(e.message || e).slice(0, 100) });
   } finally {
+    if(oldBot && !ok) oldBot.els.forEach(el => { el.style.display = ''; }); // a failed regeneration restores the old reply
     isStreaming = false;
     // Draw whatever Firestore delivered mid-reply, but only if the reply was saved (otherwise it would vanish).
     if(skippedSnapshot && savedBot) renderMessages(skippedSnapshot);
     skippedSnapshot = null;
   }
+  return ok;
+}
+
+window.sendMessage = async function(){
+  if(isStreaming) return;
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  const attachment = pendingAttachment; // snapshot — cleared once the request is accepted
+  if((!text && !attachment) || input.disabled) return;
+  if(!currentUser && guestQuestionCount() >= GUEST_LIMIT) return;
+  if(text.length > MAX_MESSAGE_CHARS){
+    const ar = getLang() === 'ar';
+    alert(ar ? 'الرسالة طويلة جداً (الحد ' + MAX_MESSAGE_CHARS + ' حرف). اختصرها أو ارفعها كملف.' : 'The message is too long (limit ' + MAX_MESSAGE_CHARS + ' characters). Shorten it or attach it as a file.');
+    return;
+  }
+  await runTurn({
+    text, attachment, history: historyForApi, showUser: true,
+    onAccepted: () => {
+      input.value = ''; autoGrow(input);
+      pendingAttachment = null;
+      document.getElementById('imagePreview').classList.add('hidden');
+    }
+  });
 };
 </script>
 </body>
