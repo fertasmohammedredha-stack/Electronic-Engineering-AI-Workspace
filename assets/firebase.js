@@ -31,3 +31,168 @@ setPersistence(auth, browserLocalPersistence);
 
 export async function signInWithGoogle() {
   const result = await signInWithPopup(auth, provider);
+  const u = result.user;
+  await setDoc(doc(db, "users", u.uid), {
+    name: u.displayName,
+    email: u.email,
+    photoURL: u.photoURL,
+    lastLogin: serverTimestamp()
+  }, { merge: true });
+  trackEvent('login_success', { method: 'google' });
+  return u;
+}
+
+export async function signUpWithEmail(name, email, password) {
+  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  await updateProfile(cred.user, { displayName: name });
+  await setDoc(doc(db, "users", cred.user.uid), {
+    name, email, createdAt: serverTimestamp()
+  }, { merge: true });
+  trackEvent('login_success', { method: 'email_signup' });
+  return cred.user;
+}
+
+export async function signInWithEmail(email, password) {
+  const cred = await signInWithEmailAndPassword(auth, email, password);
+  trackEvent('login_success', { method: 'email' });
+  return cred.user;
+}
+
+export function resetPassword(email) {
+  return sendPasswordResetEmail(auth, email);
+}
+
+// The signed-in student's Firebase ID token (proves identity to /api/chat). Firebase refreshes it
+// automatically when it's close to expiry; forceRefresh=true fetches a brand-new one.
+export async function getIdToken(forceRefresh = false) {
+  const u = auth.currentUser;
+  return u ? u.getIdToken(forceRefresh) : null;
+}
+
+// ---- Account settings ----
+// What the settings page needs to know about the signed-in student.
+export function getAccountInfo() {
+  const u = auth.currentUser;
+  if (!u) return null;
+  const ids = (u.providerData || []).map(p => p.providerId);
+  return { uid: u.uid, email: u.email, displayName: u.displayName, hasPassword: ids.includes("password"), hasGoogle: ids.includes("google.com") };
+}
+
+export async function updateDisplayName(name) {
+  const u = auth.currentUser;
+  if (!u) throw new Error("not_signed_in");
+  await updateProfile(u, { displayName: name });
+  // keep the profile document in step; the name above is what really matters, so a failure here isn't fatal
+  try { await setDoc(doc(db, "users", u.uid), { name }, { merge: true }); }
+  catch (e) { console.warn("Profile document not updated:", e); }
+  trackEvent("username_changed");
+  return name;
+}
+
+// Only for email/password accounts: re-confirms the current password, then sets the new one.
+export async function changePassword(currentPassword, newPassword) {
+  const u = auth.currentUser;
+  if (!u || !u.email) throw new Error("not_signed_in");
+  await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, currentPassword));
+  await updatePassword(u, newPassword);
+  trackEvent("password_changed");
+}
+
+export function signOutUser() {
+  trackEvent('logout');
+  return signOut(auth);
+}
+
+export function watchAuth(callback) {
+  return onAuthStateChanged(auth, callback);
+}
+
+// ---- Chats ----
+export async function createChat(uid, firstMessage) {
+  const ref = await addDoc(collection(db, "chats"), {
+    uid,
+    title: firstMessage.slice(0, 40) || "محادثة جديدة",
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+  trackEvent('chat_created');
+  return ref.id;
+}
+
+export function watchUserChats(uid, callback) {
+  // NOTE: filtering by uid only (no orderBy) avoids needing a Firestore
+  // composite index — we sort by updatedAt on the client instead.
+  const q = query(collection(db, "chats"), where("uid", "==", uid));
+  return onSnapshot(q, snap => {
+    const chats = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    chats.sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
+    callback(chats);
+  }, err => console.error("watchUserChats error:", err));
+}
+
+export function watchMessages(chatId, callback) {
+  const q = query(collection(db, "chats", chatId, "messages"), orderBy("createdAt", "asc"));
+  return onSnapshot(q, snap => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  });
+}
+
+// attachment: optional { kind:'image'|'pdf'|'text', dataUrl?, name? }.
+// Firestore documents are capped at 1 MiB, so only a SMALL inline image preview is stored;
+// PDFs and text files are stored by name only (their bytes were never needed to redraw the chat).
+// memory: optional text version of the message the AI should remember later (typed text plus
+// the attached file's extracted text), so follow-up questions about the file keep working.
+const MAX_INLINE_IMAGE_CHARS = 700000;
+export async function addMessage(chatId, role, text, attachment = null, memory = null) {
+  const data = { role, text: text || '', createdAt: serverTimestamp() };
+  if (attachment) {
+    const a = { kind: attachment.kind, name: attachment.name || '' };
+    if (attachment.kind === 'image' && attachment.dataUrl && attachment.dataUrl.length <= MAX_INLINE_IMAGE_CHARS) {
+      a.dataUrl = attachment.dataUrl;
+    }
+    data.attachment = a;
+  }
+  if (memory) data.memory = String(memory).slice(0, 6000);
+  const ref = await addDoc(collection(db, "chats", chatId, "messages"), data);
+  await updateDoc(doc(db, "chats", chatId), { updatedAt: serverTimestamp() });
+  return ref.id; // lets the UI attach 👍/👎 and "regenerate" to this exact message
+}
+
+// 👍/👎 on a reply. rating: 'up' | 'down' | null (null removes the rating).
+export function setMessageFeedback(chatId, messageId, rating) {
+  return updateDoc(doc(db, "chats", chatId, "messages", messageId), { feedback: rating || deleteField() });
+}
+
+// Removes specific messages (used by "regenerate" and "edit my message").
+export async function deleteMessages(chatId, messageIds) {
+  const batch = writeBatch(db);
+  messageIds.forEach(id => batch.delete(doc(db, "chats", chatId, "messages", id)));
+  await batch.commit();
+}
+
+export function togglePinChat(chatId, pinned) {
+  return updateDoc(doc(db, "chats", chatId), { pinned });
+}
+
+export function renameChat(chatId, title) {
+  return updateDoc(doc(db, "chats", chatId), { title });
+}
+
+export async function deleteChat(chatId) {
+  const msgsSnap = await getDocs(collection(db, "chats", chatId, "messages"));
+  const batch = writeBatch(db);
+  msgsSnap.forEach(m => batch.delete(m.ref));
+  if (!msgsSnap.empty) await batch.commit();
+  await deleteDoc(doc(db, "chats", chatId));
+}
+
+export async function deleteAllChats(uid) {
+  const snap = await getDocs(query(collection(db, "chats"), where("uid", "==", uid)));
+  for (const chatDoc of snap.docs) {
+    const msgsSnap = await getDocs(collection(db, "chats", chatDoc.id, "messages"));
+    const batch = writeBatch(db);
+    msgsSnap.forEach(m => batch.delete(m.ref));
+    if (!msgsSnap.empty) await batch.commit();
+    await deleteDoc(chatDoc.ref);
+  }
+}
