@@ -25,6 +25,15 @@ const DICT = {
     guestBack: "الصفحة الرئيسية",
     statBilingual: "بلغتين", statFree: "مجاني", statYears: "سنوات دراسية مدعومة",
     showPassword: "إظهار كلمة السر",
+    accountInfo: "معلومات الحساب", username: "اسم المستخدم", signInMethod: "طريقة الدخول",
+    viaGoogle: "Google", viaEmail: "البريد وكلمة السر", viaBoth: "Google + البريد وكلمة السر",
+    change: "تغيير", edit: "تعديل", save: "حفظ", cancel: "إلغاء", managedByGoogle: "تُدار من Google",
+    currentPassword: "كلمة السر الحالية", newPassword: "كلمة السر الجديدة", confirmNewPassword: "أعد كتابة كلمة السر الجديدة",
+    nameSaved: "تم حفظ الاسم.", passwordChanged: "تم تغيير كلمة السر.",
+    errName: "الاسم يجب أن يكون بين 2 و40 حرفًا.", errPwWrong: "كلمة السر الحالية غير صحيحة.",
+    errPwWeak: "كلمة السر الجديدة قصيرة (6 أحرف على الأقل).", errPwMismatch: "كلمتا السر الجديدتان غير متطابقتين.",
+    errPwSame: "كلمة السر الجديدة مطابقة للحالية.", errTooMany: "محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.",
+    errGeneric: "تعذّر الحفظ. حاول مرة ثانية.",
   },
   en: {
     brand: "Dara", dir: "ltr",
@@ -51,9 +60,20 @@ const DICT = {
     guestBack: "Home",
     statBilingual: "bilingual", statFree: "free", statYears: "years of study covered",
     showPassword: "Show password",
+    accountInfo: "Account details", username: "Username", signInMethod: "Sign-in method",
+    viaGoogle: "Google", viaEmail: "Email & password", viaBoth: "Google + Email & password",
+    change: "Change", edit: "Edit", save: "Save", cancel: "Cancel", managedByGoogle: "Managed by Google",
+    currentPassword: "Current password", newPassword: "New password", confirmNewPassword: "Repeat the new password",
+    nameSaved: "Name saved.", passwordChanged: "Password changed.",
+    errName: "The name must be 2 to 40 characters.", errPwWrong: "The current password is incorrect.",
+    errPwWeak: "The new password is too short (at least 6 characters).", errPwMismatch: "The new passwords don't match.",
+    errPwSame: "The new password is the same as the current one.", errTooMany: "Too many attempts. Wait a moment and try again.",
+    errGeneric: "Couldn't save. Please try again.",
   }
 };
 
+// Looks a string up in the current language (for messages built in JS, not in the HTML).
+function tr(key){ const d = DICT[getLang()] || DICT.ar; return d[key] !== undefined ? d[key] : key; }
 function getLang(){ return localStorage.getItem('lang') || 'ar'; }
 function setLang(l){ localStorage.setItem('lang', l); applyLang(); }
 function applyLang(){
