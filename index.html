@@ -30,6 +30,27 @@
   .frow .num{font-family:'JetBrains Mono',monospace; color:var(--copper); font-size:14px; padding-top:3px;}
   .frow h3{font-size:18px; margin-bottom:6px;}
   .frow p{color:var(--ink-soft); font-size:15px; max-width:60ch;}
+  .new-pill{display:inline-flex; align-items:center; gap:9px; max-width:100%; padding:5px 14px 5px 6px; border:1px solid var(--line); border-radius:999px; background:var(--surface); font-size:13px; color:var(--ink-soft); text-decoration:none; margin-bottom:18px;}
+  html[dir="rtl"] .new-pill{padding:5px 6px 5px 14px;}
+  .new-pill b{background:var(--green); color:#fff; border-radius:999px; padding:2px 10px; font-size:11.5px; font-weight:600; flex-shrink:0;}
+  .new-pill span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .new-pill:hover{border-color:var(--copper); color:var(--ink);}
+  .updates{padding:10px 0 90px;}
+  .up-soon{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin-bottom:12px;}
+  .up-soon-card{border:1px dashed color-mix(in srgb, var(--copper) 55%, var(--line)); border-radius:12px; padding:16px 18px 15px; background:color-mix(in srgb, var(--surface) 70%, transparent);}
+  .up-soon-card h3{font-size:16px; margin:9px 0 4px;}
+  .up-soon-card p{font-size:14px; color:var(--ink-soft);}
+  .up-month{font-family:'JetBrains Mono',monospace; font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); margin:34px 0 16px;}
+  .timeline{position:relative; padding-inline-start:32px;}
+  .timeline::before{content:""; position:absolute; inset-inline-start:7px; top:8px; bottom:14px; width:2px; background:linear-gradient(var(--copper), color-mix(in srgb, var(--copper) 18%, transparent));}
+  .up-item{position:relative; padding:0 0 26px;}
+  .up-item::before{content:""; position:absolute; inset-inline-start:-32px; top:4px; width:16px; height:16px; border-radius:50%; background:var(--bg); border:3px solid var(--copper); box-sizing:border-box;}
+  .up-item h3{font-size:17px; margin:7px 0 4px;}
+  .up-item p{font-size:14.5px; color:var(--ink-soft); max-width:62ch;}
+  .tag{display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.05em; text-transform:uppercase; padding:2px 8px; border-radius:5px; border:1px solid var(--line);}
+  .tag.new{color:var(--green); border-color:color-mix(in srgb, var(--green) 55%, transparent);}
+  .tag.improved{color:var(--copper-deep); border-color:color-mix(in srgb, var(--copper) 55%, transparent);}
+  .tag.soon{color:var(--ink-soft); border-style:dashed;}
   footer{border-top:1px solid var(--line); padding:30px 0; font-size:13.5px; color:var(--ink-soft);}
   footer .wrap{display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;}
   @media (max-width:860px){
@@ -56,6 +77,7 @@
 <section class="hero">
   <div class="wrap">
     <div>
+      <a class="new-pill" id="newPill" href="#updates"></a>
       <div class="eyebrow" id="eyebrow"></div>
       <h1 id="heroH1"></h1>
       <p id="heroP"></p>
@@ -118,12 +140,24 @@
   </div>
 </section>
 
+<section class="updates" id="updates">
+  <div class="wrap">
+    <div class="section-head"><h2 id="uh"></h2><p id="up"></p></div>
+    <div id="upSoonWrap">
+      <div class="up-month" id="upSoonLabel"></div>
+      <div class="up-soon" id="upSoon"></div>
+    </div>
+    <div id="upTimeline"></div>
+  </div>
+</section>
+
 <footer><div class="wrap">
   <span>© 2026 Dara</span>
   <span class="dev-credit">Developed by <b>Fertas Mohammed Redha</b></span>
 </div></footer>
 
 <script src="assets/lang.js"></script>
+<script src="assets/updates.js"></script>
 <script type="module" src="assets/analytics.js"></script>
 <script>
 const CONTENT = {
@@ -133,19 +167,69 @@ const CONTENT = {
     btn1:"جرّب المساعد", btn2:"كيف يعمل", fh:"مبني لطريقة تفكيرك، لا لطريقة تفكير الآلة",
     fp:"كل ميزة مصمّمة حول احتياج حقيقي لطالب إلكترونيك، من أول سنة لحد التخرج.",
     features:[["شرح خطوة بخطوة","يفكك أي درس أو تمرين إلى خطوات مرتبة مع مثال محلول."],
-      ["رفع الصور والملفات","صوّر مخطط دارة أو مسألة مكتوبة بخط اليد، ويحللها لك مباشرة."],
-      ["مبني على المنهج الجزائري","إجابات مرتبطة بما تدرسه فعليًا في الجامعة."],
-      ["محاكاة تفاعلية داخل المحادثة","جرّب قانون أوم أو دارة RC مباشرة بسلايدرات تفاعلية."]]},
+      ["رفع الصور والملفات","صوّر مخطط دارة أو مسألة مكتوبة بخط اليد، أو ارفع PDF وWord وPowerPoint وExcel، ويحللها لك مباشرة."],
+      ["مصمَّم لطالب الإلكترونيك الجزائري","يشرح بالعربية والفرنسية والإنجليزية، بأسلوب يخدم الامتحانات والتمارين."],
+      ["يتذكّر محادثتك","تابع بأسئلة مثل «اشرح الخطوة 3» أو «حلّها بالإنجليزي» ويفهم قصدك من سياق المحادثة."]],
+    uh:"الجديد في دارة", up:"كل ميزة جديدة نضيفها تظهر هنا، لتعرف ما الذي تغيّر وما القادم.",
+    newLabel:"جديد", soonLabel:"قريبًا", tagNew:"جديد", tagImproved:"تحسين", tagSoon:"قريبًا"},
   en:{ eyebrow:"Built for electronics students & engineers",
     h1:'Your AI tutor for <span>electronics</span>',
     p:"Explain your lessons, solve exercises, and understand your projects — built specifically for electronics curricula, in Arabic and English.",
     btn1:"Try the assistant", btn2:"How it works", fh:"Built around how you think, not how a model thinks",
     fp:"Every feature answers a real need for an electronics student, from year one to graduation.",
     features:[["Step-by-step explanations","Breaks down any lesson into ordered steps with a solved example."],
-      ["Upload images & files","Photograph a circuit or handwritten problem for instant analysis."],
-      ["Built for the Algerian curriculum","Answers grounded in what you actually study."],
-      ["Interactive in-chat simulations","Try Ohm's law or an RC circuit live with interactive sliders."]]}
+      ["Upload images & files","Photograph a circuit or a handwritten problem, or attach a PDF, Word, PowerPoint or Excel file, for instant analysis."],
+      ["Designed for Algerian electronics students","Explains in Arabic, French and English, with an exam- and exercise-oriented approach."],
+      ["Remembers your conversation","Follow up with “explain step 3” or “solve it in English” — it understands from the context."]],
+    uh:"What's new in Dara", up:"Every feature we add shows up here, so you can see what changed and what's coming.",
+    newLabel:"New", soonLabel:"Coming next", tagNew:"New", tagImproved:"Improved", tagSoon:"Soon"}
 };
+const el = (tag, cls, text) => { const n = document.createElement(tag); if(cls) n.className = cls; if(text !== undefined) n.textContent = text; return n; };
+
+function monthLabel(ym){
+  try { return new Intl.DateTimeFormat(getLang() === 'ar' ? 'ar-DZ-u-nu-latn' : 'en-GB', { month: 'long', year: 'numeric' }).format(new Date(ym + '-01T12:00:00')); }
+  catch(e){ return ym; }
+}
+
+// Builds the "what's new" timeline + the hero pill from assets/updates.js (newest first).
+function renderUpdates(){
+  if(typeof UPDATES === 'undefined'){ // assets/updates.js wasn't uploaded: hide the section instead of breaking the page
+    document.getElementById('updates').hidden = true; document.getElementById('newPill').hidden = true; return;
+  }
+  const lang = getLang(), c = CONTENT[lang];
+  const tagText = { new: c.tagNew, improved: c.tagImproved, soon: c.tagSoon };
+  const soon = UPDATES.filter(u => u.tag === 'soon');
+  const done = UPDATES.filter(u => u.tag !== 'soon');
+
+  document.getElementById('uh').textContent = c.uh;
+  document.getElementById('up').textContent = c.up;
+  document.getElementById('upSoonWrap').hidden = !soon.length;
+  document.getElementById('upSoonLabel').textContent = c.soonLabel;
+  const soonBox = document.getElementById('upSoon'); soonBox.innerHTML = '';
+  soon.forEach(u => {
+    const card = el('div', 'up-soon-card');
+    card.append(el('span', 'tag soon', tagText.soon), el('h3', '', u.title[lang]), el('p', '', u.text[lang]));
+    soonBox.appendChild(card);
+  });
+
+  const box = document.getElementById('upTimeline'); box.innerHTML = '';
+  let lastMonth = null, line = null;
+  done.forEach(u => {
+    if(u.date !== lastMonth){
+      lastMonth = u.date;
+      box.appendChild(el('div', 'up-month', monthLabel(u.date)));
+      line = el('div', 'timeline'); box.appendChild(line);
+    }
+    const item = el('div', 'up-item');
+    item.append(el('span', 'tag ' + u.tag, tagText[u.tag]), el('h3', '', u.title[lang]), el('p', '', u.text[lang]));
+    line.appendChild(item);
+  });
+
+  const pill = document.getElementById('newPill');
+  if(done.length){ pill.hidden = false; pill.innerHTML = ''; pill.append(el('b', '', c.newLabel), el('span', '', done[0].title[lang] + (lang === 'ar' ? ' ←' : ' →'))); }
+  else pill.hidden = true;
+}
+
 function renderContent(){
   const c = CONTENT[getLang()];
   document.getElementById('eyebrow').textContent = c.eyebrow;
@@ -161,6 +245,7 @@ function renderContent(){
     row.innerHTML=`<div class="num">${String(i+1).padStart(2,'0')}</div><div><h3>${f[0]}</h3><p>${f[1]}</p></div>`;
     flist.appendChild(row);
   });
+  renderUpdates();
 }
 document.addEventListener('DOMContentLoaded', renderContent);
 document.getElementById('langToggle')?.addEventListener('click', ()=> setTimeout(renderContent,0));
