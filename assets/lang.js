@@ -1,4 +1,8 @@
 // Shared bilingual dictionary — used by index.html and chat.html
+// Build stamp. Bump it (together with API_VERSION in api/chat.js) on every delivery: the settings page shows both,
+// so a half-uploaded deployment is obvious at a glance.
+const APP_VERSION = "2026.10.15";
+
 const DICT = {
   ar: {
     brand: "دارة", dir: "rtl",
@@ -34,6 +38,7 @@ const DICT = {
     errPwWeak: "كلمة السر الجديدة قصيرة (6 أحرف على الأقل).", errPwMismatch: "كلمتا السر الجديدتان غير متطابقتين.",
     errPwSame: "كلمة السر الجديدة مطابقة للحالية.", errTooMany: "محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.",
     errGeneric: "تعذّر الحفظ. حاول مرة ثانية.",
+    versionMismatch: "النسختان مختلفتان: ارفع كل الملفات", versionUnknown: "غير معروفة (ملف api/chat.js قديم أو غير مرفوع)",
   },
   en: {
     brand: "Dara", dir: "ltr",
@@ -69,6 +74,7 @@ const DICT = {
     errPwWeak: "The new password is too short (at least 6 characters).", errPwMismatch: "The new passwords don't match.",
     errPwSame: "The new password is the same as the current one.", errTooMany: "Too many attempts. Wait a moment and try again.",
     errGeneric: "Couldn't save. Please try again.",
+    versionMismatch: "versions differ: upload all the files", versionUnknown: "unknown (api/chat.js is old or missing)",
   }
 };
 
