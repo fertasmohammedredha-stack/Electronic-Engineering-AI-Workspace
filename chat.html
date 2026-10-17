@@ -124,7 +124,7 @@
       <div class="composer-inner">
         <div class="composer-actions">
           <button class="icon-round" id="fileBtn" title="upload file" onclick="document.getElementById('fileInput').click()">📎</button>
-          <input type="file" id="fileInput" accept="image/*,application/pdf,.pdf,text/plain,.txt,text/csv,.csv,.docx,.xlsx,.pptx" style="display:none">
+          <input type="file" id="fileInput" accept="image/*,application/pdf,.pdf,text/*,.txt,.csv,.tsv,.md,.json,.xml,.yaml,.yml,.ini,.log,.tex,.m,.mdl,.py,.c,.h,.cpp,.cc,.hpp,.ino,.asm,.s,.v,.sv,.vhd,.vhdl,.cir,.sp,.net,.lib,.sub,.asc,.kicad_sch,.kicad_pcb,.js,.ts,.java,.html,.css,.docx,.xlsx,.pptx,.pdsprj,.pdsclip,.dsn,.opj,.msm,.pkt,.pka,.slx,.mlx,.dwg" style="display:none">
           <button class="icon-round" title="voice input" id="micBtn">🎤</button>
         </div>
         <textarea id="msgInput" rows="1" data-i-ph="placeholder" oninput="autoGrow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
@@ -690,6 +690,10 @@ function showAttachmentPreview(){
 // ---- Office formats: extracted to plain text in the browser, then handled
 // exactly like a .txt upload (kind:'text') — no backend changes needed. ----
 // ---- Image helpers (used by direct uploads AND by pictures pulled out of DOCX/PPTX) ----
+// Text-based engineering files are read as plain text (source code, netlists, schematic text formats...).
+const TEXT_FILE_RE = /\.(txt|csv|tsv|md|json|xml|ya?ml|ini|log|tex|m|mdl|py|c|h|cpp|cc|hpp|ino|asm|s|v|sv|vhd|vhdl|cir|sp|net|lib|sub|asc|kicad_sch|kicad_pcb|js|ts|java|html|css)$/i;
+// Closed project formats can't be read from the browser — say so clearly instead of failing silently.
+const CLOSED_FORMAT_RE = /\.(pdsprj|pdsclip|dsn|opj|ms\d+|msm|pkt|pka|slx|mlx|dwg)$/i;
 const MAX_PDF_BYTES = 2.5 * 1024 * 1024; // Vercel rejects request bodies over ~4.5 MB and base64 adds a third
 const readAsDataURL = file => new Promise((resolve, reject) => {
   const r = new FileReader();
@@ -777,9 +781,15 @@ document.getElementById('fileInput').addEventListener('change', async (e)=>{
   const file = e.target.files[0];
   e.target.value = '';
   if(!file) return;
+  if(CLOSED_FORMAT_RE.test(file.name)){
+    alert(getLang()==='ar'
+      ? 'هذه صيغة مشروع مغلقة (Proteus / Multisim / Packet Tracer / Simulink…) ولا أقدر أقراها مباشرة.\nصدّرها كـ PDF أو صورة، أو كملف نصي (netlist بصيغة .cir أو كود .m) ثم ارفعها.'
+      : "This is a closed project format (Proteus / Multisim / Packet Tracer / Simulink…) that can't be read directly.\nExport it as a PDF or an image, or as a text file (a .cir netlist or .m code), then attach that.");
+    return;
+  }
   const isImage = file.type.startsWith('image/');
   const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
-  const isText = file.type === 'text/plain' || file.type === 'text/csv' || /\.(txt|csv)$/i.test(file.name);
+  const isText = file.type.startsWith('text/') || TEXT_FILE_RE.test(file.name);
   const isDocx = /\.docx$/i.test(file.name);
   const isXlsx = /\.xlsx$/i.test(file.name);
   const isPptx = /\.pptx$/i.test(file.name);
@@ -818,14 +828,21 @@ document.getElementById('fileInput').addEventListener('change', async (e)=>{
     pendingAttachment = { kind: 'pdf', dataUrl, data: dataUrl.split(',')[1], mimeType: 'application/pdf', name: file.name };
     showAttachmentPreview();
   } else if(isText){
-    const reader = new FileReader();
-    reader.onload = ()=>{
-      pendingAttachment = { kind: 'text', text: String(reader.result).slice(0, 20000), name: file.name };
+    try {
+      const text = await file.slice(0, 200000).text();       // the first 200 KB is far more than the AI reads
+      const sample = text.slice(0, 4000);
+      if((sample.match(/[\u0000\uFFFD]/g) || []).length > 20) throw new Error('binary');
+      pendingAttachment = { kind: 'text', text: text.slice(0, 20000), name: file.name };
       showAttachmentPreview();
-    };
-    reader.readAsText(file);
+    } catch(err){
+      alert(getLang()==='ar'
+        ? 'يبدو أن هذا الملف ثنائي (مو نص)، ما أقدر أقراه. جرّب تصديره كنص أو PDF.'
+        : "This looks like a binary file, not text, so it can't be read. Try exporting it as text or PDF.");
+    }
   } else {
-    alert(getLang()==='ar' ? 'هذه الصيغة غير مدعومة بعد.' : "This file type isn't supported yet.");
+    alert(getLang()==='ar'
+      ? 'هذه الصيغة غير مدعومة. المدعوم: صور، PDF، Word وPowerPoint وExcel، وملفات نصية وكود (.txt .csv .m .py .c .asm .ino .vhd .cir ...).'
+      : "This file type isn't supported. Supported: images, PDF, Word/PowerPoint/Excel, and text or code files (.txt .csv .m .py .c .asm .ino .vhd .cir ...).");
   }
 });
 document.getElementById('removeImage').addEventListener('click', ()=>{
@@ -848,6 +865,10 @@ function makeChatTitle(text){
 }
 
 const MAX_MESSAGE_CHARS = 12000;
+const FIRST_BYTE_TIMEOUT_MS = 60000; // no reply started after this long -> stop waiting and say so
+// Which build of the site this is (set in assets/lang.js). If it differs from the server's, files are out of sync.
+const CLIENT_VERSION = typeof APP_VERSION === 'string' ? APP_VERSION : 'unknown';
+console.info('Dara web', CLIENT_VERSION);
 const MAX_REQUEST_BYTES = 4300000; // Vercel rejects request bodies over ~4.5 MB
 
 function userError(message, status){ const e = new Error(message); e.userMessage = message; e.status = status; return e; }
@@ -903,7 +924,7 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
   if(oldBot) oldBot.els.forEach(el => { el.style.display = 'none'; });
 
   isStreaming = true;
-  let botBubble = null, savedUser = !showUser, savedBot = false, newBotId = null, ok = false, guestIdx;
+  let botBubble = null, savedUser = !showUser, savedBot = false, newBotId = null, ok = false, guestIdx, stallTimer = null;
   try {
     // 1) Save the student's message. A storage problem must never block the answer.
     if(currentUser){
@@ -928,20 +949,31 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
     botBubble = addBubble('bot', '');
     botBubble.innerHTML = '<span class="cursor-blink"></span>';
     // Signed-in students prove who they are with their Firebase ID token; guests send none.
+    const ctrl = new AbortController();
+    stallTimer = setTimeout(() => ctrl.abort(), FIRST_BYTE_TIMEOUT_MS); // cleared when the first part of the reply arrives
     const callApi = token => fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
-      body: payload
+      body: payload,
+      signal: ctrl.signal
     });
     let res = await callApi(currentUser ? await getIdToken() : null);
     if(res.status === 401 && currentUser) res = await callApi(await getIdToken(true)); // token may have just expired: retry once with a fresh one
-    if(!res.ok) throw httpError(res.status, parseInt(res.headers.get('retry-after'), 10) || 0);
+    if(!res.ok){
+      const err = httpError(res.status, parseInt(res.headers.get('retry-after'), 10) || 0);
+      const serverVersion = res.headers.get('x-dara-version');
+      if(serverVersion && serverVersion !== CLIENT_VERSION){ // a mixed deployment is the usual reason the same page "worked yesterday"
+        err.userMessage += ' ' + L('(نسخة الموقع ' + CLIENT_VERSION + ' لا تطابق الخادم ' + serverVersion + ': ارفع كل الملفات)', '(site version ' + CLIENT_VERSION + ' differs from the server ' + serverVersion + ': upload all the files)');
+      }
+      throw err;
+    }
     if(!res.body) throw userError(ar ? 'لم يصل رد من الخادم.' : 'No response came back from the server.');
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let full = '';
     while(true){
       const { done, value } = await reader.read();
+      clearTimeout(stallTimer);
       if(done) break;
       full += decoder.decode(value, { stream: true });
       renderBotContent(botBubble, full);
@@ -986,11 +1018,14 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
     ok = true;
   } catch(e){
     console.error('AI turn failed:', e);
-    const msg = e.userMessage || (ar ? 'تعذر الاتصال بالمساعد.' : "Couldn't reach the assistant.");
+    const msg = e.userMessage || (e.name === 'AbortError'
+      ? L('الرد تأخر أكثر من دقيقة. حاول مرة ثانية.', 'The reply took longer than a minute. Please try again.')
+      : (ar ? 'تعذر الاتصال بالمساعد.' : "Couldn't reach the assistant."));
     if(botBubble) botBubble.textContent = '⚠️ ' + msg; else addBubble('bot', '⚠️ ' + msg);
     if(!currentUser) rollbackGuestTurn();
     trackEvent('ai_response_error', { error: String(e.message || e).slice(0, 100) });
   } finally {
+    clearTimeout(stallTimer);
     if(oldBot && !ok) oldBot.els.forEach(el => { el.style.display = ''; }); // a failed regeneration restores the old reply
     isStreaming = false;
     // Draw whatever Firestore delivered mid-reply, but only if the reply was saved (otherwise it would vanish).
