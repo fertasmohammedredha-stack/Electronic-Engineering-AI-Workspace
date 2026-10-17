@@ -1,31 +1,29 @@
 # دارة (Dara) — Electronics AI Tutor
 
-## Structure
+## Files (upload ALL of them together — they depend on each other)
 ```
-index.html        Landing page
-chat.html          Chat interface (UI shell, streams from /api/chat)
-assets/styles.css  Shared design system (colors, type, layout)
-assets/lang.js     Shared AR/EN dictionary + language/theme switching
-api/chat.js        Vercel serverless function — AI provider + key rotation
+index.html  auth.html  login.html  chat.html  settings.html
+firestore.rules                      ← paste into Firebase Console → Firestore → Rules → Publish
+api/chat.js                          ← Vercel serverless function (Groq + Gemini)
+assets/  analytics.js  firebase-config.js  firebase.js  lang.js  styles.css
 ```
+(`assets/updates.js` no longer exists — delete it from the repo if you still have it.)
 
-## Deploy on Vercel
-1. Push this folder to a GitHub repo (root must contain `index.html` — done).
-2. Import the repo in Vercel → it auto-detects `api/*.js` as serverless functions.
-3. In Vercel → Project → Settings → Environment Variables, add:
-   - `GROQ_API_KEY_1` … `GROQ_API_KEY_5`
-   - `GEMINI_API_KEY_1` … `GEMINI_API_KEY_5`
-   (add as many as you have; `api/chat.js` reads whichever exist)
-4. Redeploy after adding env vars.
+## Vercel → Settings → Environment Variables
+- `GROQ_API_KEY_1` … and `GEMINI_API_KEY_1` … (Gemini is REQUIRED for images and PDFs)
+- optional: `FIREBASE_PROJECT_ID` (default `electronic-engineering-ai`), `RATE_USER_PER_MIN`, `RATE_GUEST_PER_MIN`, `RATE_GUEST_PER_DAY`, `SHOW_DEBUG_ERRORS=0` (hide technical error text)
 
-## Still to build (next phases)
-- `settings.html` — account, language, theme, ToS/Privacy, delete chats, logout
-- Firebase Auth (Google sign-in) + persistent session (currently a localStorage stub)
-- Real chat history storage (Firestore) — sidebar currently reads a local stub
-- Real streaming from Groq/Gemini in `api/chat.js` (currently a placeholder echo)
-- File Detector: route uploads (PDF/DOCX/images/Proteus/MATLAB/etc.) to the right model
-- In-chat interactive simulations (Ohm's law, RC circuits, SPICE)
+## Firebase Console
+- Authentication → Sign-in method: **Google** and **Email/Password** enabled
+- Authentication → Settings → Authorized domains: your `*.vercel.app` domain
+- Firestore rules: publish `firestore.rules`
 
-## Design system
-See CSS variables at the top of `assets/styles.css` — PCB-inspired palette
-(soldermask green/ink, copper accent), swaps automatically for dark mode.
+## Check that the deployment is in sync (30 seconds)
+1. Open `https://YOUR-SITE/api/chat` → must show JSON with `"version"` and `"providers"` (`groq`/`gemini` should be `true`).
+2. Settings page, bottom line: `Web X · API X` — both must be the same. Red text = some files are old.
+
+## Announce a new feature on the landing page
+Edit the `UPDATES` list at the top of the script in `index.html` — add one object at the top of the released list.
+
+## On every delivery
+Bump `APP_VERSION` (assets/lang.js) and `API_VERSION` (api/chat.js) to the same value.
