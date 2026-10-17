@@ -17,12 +17,20 @@
 
 import crypto from "node:crypto";
 
+// Bump together with APP_VERSION in assets/lang.js on every delivery: the settings page compares the two,
+// which immediately shows when only SOME of the files were uploaded (a mixed deployment).
+const API_VERSION = "2026.10.15";
+
 const ASSISTANT_NAME = "Dara (دارة)"; // ← change here once the final brand name is chosen
 const CREATOR = "Fertas Mohammed Redha";
 
 const GROQ_MODEL = "openai/gpt-oss-120b"; // Groq's recommended replacement after llama-3.3-70b-versatile shut down (16 Aug 2026)
 const GROQ_VISION_MODEL = "qwen/qwen3.8-27b"; // confirmed against console.groq.com/docs/vision
 const GEMINI_MODEL = "gemini-3.8-flash"; // Google's own 404 told us to move here from 2.5-flash
+
+// ---- Provider timeouts: how long we wait for a provider to START answering before trying the next one ----
+const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 40000; // PDFs/images can take a while to begin
+const GROQ_TIMEOUT_MS = Number(process.env.GROQ_TIMEOUT_MS) || 25000;
 
 // ---- Memory budgets (in characters; Arabic/mixed text ≈ 3 chars per token) ----
 const MAX_MSG_CHARS = 6000;          // any single remembered message is cut to this
@@ -42,9 +50,9 @@ function buildSystemPrompt(trimmed) {
 - Your audience: Algerian university students (Licence, Master, Ingénieur), technicians and hobbyists. Courses are often taught in French, so when a technical term matters, give it in Arabic, French and English (e.g. "مرشح تمرير عالٍ — filtre passe-haut — high-pass filter").
 
 # What you can do in this app (be accurate about it)
-- You can read the student's text and SEE images (circuit diagrams, handwritten problems, oscilloscope screenshots, datasheet pages), PDFs, TXT/CSV files, and Word/PowerPoint/Excel files (their text plus embedded pictures; native Excel charts are NOT visible to you).
+- You can read the student's text and SEE images (circuit diagrams, handwritten problems, oscilloscope screenshots, datasheet pages), PDFs, TXT/CSV files, source-code and netlist text files (for example .m, .py, .c, .asm, .ino, .vhd, .cir), and Word/PowerPoint/Excel files (their text plus embedded pictures; native Excel charts are NOT visible to you).
 - Voice input reaches you already converted to text. Math you write is rendered with LaTeX. Each conversation is saved separately and you only remember the current one.
-- You can NOT (yet): produce downloadable files, run SPICE or any simulation, browse the web, or remember other conversations. If asked, say so plainly. You can still write the content the student needs, such as a SPICE netlist, MATLAB/Python/C code, or a Markdown table, for them to paste into their own tool, but be clear that you haven't run it.
+- You can NOT (yet): produce downloadable files, run SPICE or any simulation, browse the web, or remember other conversations. Closed project formats (Proteus, Multisim, Packet Tracer, Simulink .slx) can't be read; if a student has one, suggest exporting a PDF or image, or a text netlist or code. If asked, say so plainly. You can still write the content the student needs, such as a SPICE netlist, MATLAB/Python/C code, or a Markdown table, for them to paste into their own tool, but be clear that you haven't run it.
 
 # Scope
 - Your home ground: electronics and electrical engineering and what supports them: circuit analysis, analog and digital electronics, signals and systems, control, power electronics and machines, telecommunications, instrumentation and measurement, microcontrollers (Arduino, 8051/8085, STM32, PIC), embedded C/C++, Python and MATLAB, VHDL/Verilog, PCB design, tools (Proteus, Multisim, LTspice, Simulink, Packet Tracer), the math and physics behind them, lab reports (TP), graduation projects, exam preparation, and technical translation.
@@ -150,6 +158,19 @@ function foldLastUserTurn(turns, message) {
 const charsOf = turns => turns.reduce((n, m) => n + m.text.length, 0);
 
 // ---- Streaming ----
+// A fetch that gives up if the provider doesn't START answering within `ms` — but never cuts a long,
+// healthy stream short (the timer is cleared as soon as the response headers arrive).
+async function fetchWithStartTimeout(url, opts, ms, label) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try { return await fetch(url, { ...opts, signal: ctrl.signal }); }
+  catch (e) {
+    if (ctrl.signal.aborted) throw new Error(`${label}_timeout_no_answer_in_${ms}ms`);
+    throw e;
+  }
+  finally { clearTimeout(timer); }
+}
+
 async function* streamSSE(res, errPrefix, key) {
   if (res.status === 429) coolDown(key, retryAfterMs(res));
   else if (res.status === 401 || res.status === 403) coolDown(key, 60 * 60 * 1000);
@@ -176,11 +197,11 @@ const toOpenAITurns = turns => turns.map(h => ({ role: h.role === "bot" ? "assis
 
 async function* streamGroq(key, system, turns, message) {
   const messages = [{ role: "system", content: system }, ...toOpenAITurns(turns), { role: "user", content: message }];
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const res = await fetchWithStartTimeout("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({ model: GROQ_MODEL, stream: true, messages })
-  });
+  }, GROQ_TIMEOUT_MS, "groq");
   for await (const json of streamSSE(res, "groq", key)) {
     const token = json.choices?.[0]?.delta?.content;
     if (token) yield token;
@@ -192,11 +213,11 @@ async function* streamGroqVision(key, system, turns, message, visuals) {
   const content = [{ type: "text", text: message }];
   for (const v of visuals || []) content.push({ type: "image_url", image_url: { url: `data:${v.mimeType};base64,${v.data}` } });
   const messages = [{ role: "system", content: system }, ...toOpenAITurns(turns), { role: "user", content }];
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const res = await fetchWithStartTimeout("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({ model: GROQ_VISION_MODEL, stream: true, messages })
-  });
+  }, GROQ_TIMEOUT_MS, "groq_vision");
   for await (const json of streamSSE(res, "groq_vision", key)) {
     const token = json.choices?.[0]?.delta?.content;
     if (token) yield token;
@@ -212,13 +233,16 @@ async function* streamGemini(key, system, turns, message, visuals) {
     { role: "user", parts }
   ];
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse`;
-  const res = await fetch(url, {
+  const res = await fetchWithStartTimeout(url, {
     method: "POST",
     headers: { "x-goog-api-key": key, "Content-Type": "application/json" },
     body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents })
-  });
+  }, GEMINI_TIMEOUT_MS, "gemini");
   for await (const json of streamSSE(res, "gemini", key)) {
-    const token = json.candidates?.[0]?.content?.parts?.[0]?.text;
+    // Newer Gemini models can return several parts (e.g. "thought" parts): keep ALL answer text, skip the thoughts.
+    const token = (json.candidates?.[0]?.content?.parts || [])
+      .filter(p => !p.thought && typeof p.text === "string")
+      .map(p => p.text).join("");
     if (token) yield token;
   }
 }
@@ -343,6 +367,16 @@ function cleanInput(body) {
 }
 
 export default async function handler(req, res) {
+  res.setHeader("X-Dara-Version", API_VERSION);
+
+  // Health check: open https://your-site/api/chat in a browser. It shows which version of this file is live
+  // and whether each provider has at least one key configured (never the keys themselves).
+  if (req.method === "GET") {
+    return res.status(200).json({
+      ok: true, version: API_VERSION,
+      providers: { groq: getKeyPool("GROQ_API_KEY").length > 0, gemini: getKeyPool("GEMINI_API_KEY").length > 0 }
+    });
+  }
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   // 1) Who is calling? A valid Firebase ID token = a signed-in student. No token = a guest.
