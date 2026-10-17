@@ -40,6 +40,8 @@
   .s-edit input{width:100%; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:8px; padding:10px 12px; font:inherit; font-size:14.5px; outline:none;}
   .s-edit input:focus{border-color:var(--copper);}
   .s-edit-bar{display:flex; gap:8px; justify-content:flex-end;}
+  .s-version{font-size:11.5px; color:var(--ink-soft); margin-top:8px; font-family:'JetBrains Mono',monospace; direction:ltr;}
+  .s-version.warn{color:#D9544A;}
   .s-msg{font-size:13px; margin-top:8px; min-height:1.2em; padding:0 4px;}
   .s-msg.ok{color:var(--green);}
   .s-msg.err{color:#D9544A;}
@@ -142,6 +144,7 @@
 
   <div style="text-align:center; margin-top:30px;">
     <span class="dev-credit">Developed by <b>Fertas Mohammed Redha</b></span>
+    <div class="s-version" id="versionLine"></div>
   </div>
 </div>
 
@@ -173,6 +176,17 @@ function renderAccount(){
     closePwForm();
   }
 }
+
+// ---- build check: compares this page's version with the live API's ----
+(async () => {
+  const el = $('versionLine');
+  const web = typeof APP_VERSION === 'string' ? APP_VERSION : '?';
+  let api = null;
+  try { const r = await fetch('/api/chat'); if(r.ok) api = (await r.json()).version || null; } catch(e){}
+  const same = api && api === web;
+  el.textContent = 'Web ' + web + ' · API ' + (api || tr('versionUnknown')) + (same ? '' : ' — ' + tr('versionMismatch'));
+  el.classList.toggle('warn', !same);
+})();
 
 // ---- username ----
 function openNameEdit(){
