@@ -5,7 +5,7 @@
 index.html  auth.html  login.html  chat.html  settings.html
 firestore.rules                      ← paste into Firebase Console → Firestore → Rules → Publish
 api/chat.js                          ← Vercel serverless function (Groq + Gemini)
-assets/  analytics.js  firebase-config.js  firebase.js  lang.js  styles.css
+assets/  analytics.js  filegen.js  firebase-config.js  firebase.js  lang.js  styles.css
 ```
 (`assets/updates.js` no longer exists — delete it from the repo if you still have it.)
 
@@ -21,6 +21,9 @@ assets/  analytics.js  firebase-config.js  firebase.js  lang.js  styles.css
 ## Check that the deployment is in sync (30 seconds)
 1. Open `https://YOUR-SITE/api/chat` → must show JSON with `"version"` and `"providers"` (`groq`/`gemini` should be `true`).
 2. Settings page, bottom line: `Web X · API X` — both must be the same. Red text = some files are old.
+
+## File creation
+`assets/filegen.js` builds Word / PowerPoint / Excel / CSV / code files in the browser (Word and PowerPoint libraries load from the CDN on first use). PDF uses the browser's print dialog ("Save as PDF") because that is the only route that handles Arabic and equations correctly.
 
 ## Announce a new feature on the landing page
 Edit the `UPDATES` list at the top of the script in `index.html` — add one object at the top of the released list.
