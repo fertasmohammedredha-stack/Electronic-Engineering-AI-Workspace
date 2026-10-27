@@ -16,6 +16,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="assets/filegen.js"></script>
 <style>
   .bubble.bot{text-align:start;}
   .bubble.bot :is(h1,h2,h3){margin:14px 0 6px; font-size:16px;}
@@ -31,6 +32,10 @@
   .bubble.bot .katex-display{overflow-x:auto; overflow-y:hidden; max-width:100%; padding-bottom:4px; direction:ltr; unicode-bidi:isolate;}
   .chat-inner{overflow-x:hidden;} /* safety net: nothing inside a bubble can stretch the whole page */
   .bubble.bot hr{border:none; border-top:1px solid var(--line); margin:12px 0;}
+  .bubble.bot table{border-collapse:collapse; margin:10px 0; display:block; max-width:100%; overflow-x:auto; font-size:14px;}
+  .bubble.bot th, .bubble.bot td{border:1px solid var(--line); padding:6px 12px; text-align:start; white-space:nowrap; unicode-bidi:plaintext;} /* each cell takes the direction of its own content: "8 V" stays "8 V" inside an Arabic reply */
+  .bubble.bot th{background:color-mix(in srgb, var(--copper) 14%, transparent); font-weight:600;}
+  .bubble.bot tr:nth-child(even) td{background:color-mix(in srgb, var(--ink) 4%, transparent);}
   body.loading .chat-app{visibility:hidden;}
   .guest-row{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; cursor:pointer; color:var(--ink-soft); font-size:13.5px;}
   .guest-row:hover{background:var(--bg); color:var(--ink);}
@@ -58,6 +63,22 @@
   .edit-bar button{border:none; border-radius:7px; padding:6px 14px; font:inherit; font-size:13px; cursor:pointer;}
   .edit-save{background:var(--copper); color:#fff;}
   .edit-cancel{background:color-mix(in srgb, currentColor 16%, transparent); color:inherit;}
+  .msg-actions{position:relative;}
+  .export-menu{position:absolute; top:100%; inset-inline-start:0; z-index:40; background:var(--surface); border:1px solid var(--line); border-radius:9px; box-shadow:var(--shadow); padding:5px; display:flex; flex-direction:column; min-width:170px; margin-top:4px;}
+  .export-menu button{text-align:start; background:none; border:none; padding:8px 10px; border-radius:6px; font:inherit; font-size:13.5px; cursor:pointer; color:var(--ink);}
+  .export-menu button:hover{background:var(--bg);}
+  .file-card{display:flex; align-items:center; justify-content:space-between; gap:12px; border:1px solid var(--line); background:color-mix(in srgb, var(--bg) 55%, var(--surface)); border-radius:12px; padding:12px 14px; margin:10px 0;}
+  .file-card.pending{justify-content:flex-start; color:var(--ink-soft); font-size:13.5px;}
+  .file-info{min-width:0;}
+  .file-name{font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:ltr; text-align:start;}
+  .file-kind{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+  .file-btn{border:none; background:var(--copper); color:#fff; border-radius:8px; padding:8px 14px; font:inherit; font-size:13px; cursor:pointer; flex-shrink:0;}
+  .file-btn:hover{background:var(--copper-deep);} .file-btn:disabled{opacity:.6; cursor:default;}
+  .bubble.bot pre{position:relative; padding-top:30px;}
+  .code-tools{position:absolute; top:4px; inset-inline-end:6px; display:flex; align-items:center; gap:2px; direction:ltr;}
+  .code-tools span{font:11px 'JetBrains Mono',monospace; color:#8D9490; margin-inline-end:6px; text-transform:uppercase; letter-spacing:.04em;}
+  .code-tools button{border:none; background:transparent; color:#cfd3d0; cursor:pointer; padding:3px 7px; border-radius:5px; font-size:13px;}
+  .code-tools button:hover{background:rgba(255,255,255,.14);}
   .image-preview{max-width:760px; margin:0 auto 10px; display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:8px 10px;}
   .image-preview.hidden{display:none;}
   .image-preview img{width:44px; height:44px; object-fit:cover; border-radius:6px;}
@@ -469,6 +490,10 @@ function renderBotContent(el, text){
   const math = [];
   const stash = (tex, display) => { math.push({ tex, display }); return `@@MATH${math.length - 1}@@`; };
   let src = text || '';
+  // File blocks the AI writes (~~~dara-file … ~~~) are set aside first and shown as download cards.
+  const files = [];
+  src = src.replace(/(^|\n)~~~dara-file[^\n]*\n([\s\S]*?)\n~~~[ \t]*(?=\n|$)/g, (m, lead, body) => { files.push(window.DaraFiles ? DaraFiles.parseBlock(body) : null); return lead + '\n@@FILE' + (files.length - 1) + '@@\n'; });
+  src = src.replace(/(^|\n)~~~dara-file[\s\S]*$/, '$1\n@@FILEWAIT@@\n'); // a block still being written
   src = src.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => stash(m, true));            // $$ ... $$ (multi-line ok)
   src = src.replace(/\\\[([\s\S]+?)\\\]/g, (_, m) => stash(m, true));            // \[ ... \]
   src = src.replace(/\\\(([\s\S]+?)\\\)/g, (_, m) => stash(m, false));           // \( ... \)
@@ -481,8 +506,86 @@ function renderBotContent(el, text){
     try { return katex.renderToString(tex.trim(), { displayMode: display, throwOnError: false }); }
     catch(e){ return escapeHtml(tex); }
   });
+  html = html.replace(/<p>\s*(@@FILE(?:\d+|WAIT)@@)\s*<\/p>/g, '$1')
+             .replace(/@@FILE(\d+)@@/g, '<span class="file-slot" data-i="$1"></span>')
+             .replace(/@@FILEWAIT@@/g, '<span class="file-slot" data-wait="1"></span>');
   el.innerHTML = html;
   if(window.hljs) el.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+  el.querySelectorAll('.file-slot').forEach(slot => slot.replaceWith(slot.dataset.wait ? makePendingCard() : makeFileCard(files[+slot.dataset.i])));
+  enhanceCodeBlocks(el);
+}
+
+// ---- Files the AI creates ----
+const FILE_ICON = { docx: '📝', pdf: '📕', xlsx: '📊', pptx: '📽️', csv: '🧾', code: '💻' };
+function fileKindLabel(type){
+  return ({ docx: L('مستند Word', 'Word document'), pdf: L('مستند PDF', 'PDF document'), xlsx: L('جدول Excel', 'Excel spreadsheet'), pptx: L('عرض PowerPoint', 'PowerPoint presentation'), csv: L('ملف CSV', 'CSV file'), code: L('ملف نصي / كود', 'Text / code file') })[type] || '';
+}
+function makePendingCard(){
+  const c = document.createElement('div'); c.className = 'file-card pending';
+  c.textContent = L('⏳ جاري تجهيز الملف…', '⏳ Preparing the file…');
+  return c;
+}
+function makeFileCard(spec){
+  const card = document.createElement('div'); card.className = 'file-card';
+  if(!spec){ card.textContent = '⚠️'; return card; }
+  const info = document.createElement('div'); info.className = 'file-info';
+  const name = document.createElement('div'); name.className = 'file-name'; name.textContent = (FILE_ICON[spec.type] || '📄') + ' ' + spec.name;
+  const kind = document.createElement('div'); kind.className = 'file-kind'; kind.textContent = fileKindLabel(spec.type);
+  info.append(name, kind);
+  const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'file-btn';
+  const label = spec.type === 'pdf' ? L('طباعة / حفظ PDF', 'Print / Save as PDF') : L('⬇️ تحميل', '⬇️ Download');
+  btn.textContent = label;
+  btn.addEventListener('click', async () => {
+    btn.disabled = true; btn.textContent = L('⏳ جاري التجهيز…', '⏳ Preparing…');
+    try { await DaraFiles.download(spec); trackEvent('file_generated', { type: spec.type, source: 'block' }); }
+    catch(err){ console.error('File creation failed:', err); alert(L('تعذر إنشاء الملف. حاول مرة ثانية.', "Couldn't create the file. Please try again.")); }
+    finally { btn.disabled = false; btn.textContent = label; }
+  });
+  card.append(info, btn);
+  return card;
+}
+// Every code block gets copy + download buttons (the file extension follows the language).
+function enhanceCodeBlocks(root){
+  if(!window.DaraFiles) return;
+  root.querySelectorAll('pre').forEach(pre => {
+    const code = pre.querySelector('code');
+    if(!code || pre.querySelector('.code-tools')) return;
+    const lang = ((code.className.match(/language-([\w+#-]+)/) || [])[1] || '').toLowerCase();
+    const tools = document.createElement('div'); tools.className = 'code-tools';
+    const label = document.createElement('span'); label.textContent = lang || 'code';
+    const mkBtn = (txt, title) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = txt; b.title = title; return b; };
+    const copy = mkBtn('📋', L('نسخ', 'Copy')), dl = mkBtn('⬇️', L('تحميل الملف', 'Download file'));
+    copy.addEventListener('click', () => copyText(code.textContent, copy));
+    dl.addEventListener('click', () => {
+      DaraFiles.save(new Blob([code.textContent + '\n'], { type: 'text/plain;charset=utf-8' }), 'code.' + DaraFiles.extForLang(lang));
+      trackEvent('file_generated', { type: 'code', source: 'codeblock' });
+    });
+    tools.append(label, copy, dl); pre.appendChild(tools);
+  });
+}
+const stripFileBlocks = t => String(t || '').replace(/(^|\n)~~~dara-file[\s\S]*?(\n~~~|$)/g, '$1').trim();
+
+// ⬇️ under a reply: export the whole answer as a document.
+let openExportEl = null;
+function closeExportMenu(){ if(openExportEl){ openExportEl.remove(); openExportEl = null; } }
+document.addEventListener('click', closeExportMenu);
+function openExportMenu(anchorBtn, replyText){
+  closeExportMenu();
+  const text = stripFileBlocks(replyText);
+  if(!text || !window.DaraFiles) return;
+  const items = [['docx', 'Word (.docx)'], ['pdf', 'PDF'], ['md', 'Markdown (.md)']];
+  if(DaraFiles.hasTable(text)) items.splice(2, 0, ['xlsx', 'Excel (.xlsx)']);
+  const menu = document.createElement('div'); menu.className = 'export-menu';
+  items.forEach(([type, label]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.dataset.type = type; b.textContent = label;
+    b.addEventListener('click', async e => {
+      e.stopPropagation(); closeExportMenu();
+      try { await DaraFiles.exportReply(type, text); trackEvent('file_generated', { type, source: 'export' }); }
+      catch(err){ console.error('Export failed:', err); alert(L('تعذر التصدير. حاول مرة ثانية.', "Couldn't export. Please try again.")); }
+    });
+    menu.appendChild(b);
+  });
+  anchorBtn.parentElement.appendChild(menu); openExportEl = menu;
 }
 
 const L = (ar, en) => getLang() === 'ar' ? ar : en;
@@ -501,10 +604,12 @@ function addMessageActions(bubbleEl, text, meta = {}){
   const fb = meta.feedback;
   row.innerHTML =
     '<button class="action-btn" data-action="copy" title="' + L('نسخ', 'Copy') + '">📋</button>' +
+    '<button class="action-btn" data-action="export" title="' + L('تصدير الرد كملف', 'Export this reply as a file') + '">⬇️</button>' +
     '<button class="action-btn' + (fb === 'up' ? ' active' : '') + '" data-action="up" title="' + L('رد جيد', 'Good response') + '">👍</button>' +
     '<button class="action-btn' + (fb === 'down' ? ' active' : '') + '" data-action="down" title="' + L('رد سيئ', 'Bad response') + '">👎</button>' +
     (meta.isLast ? '<button class="action-btn regen-btn" data-action="regen" title="' + L('إعادة توليد', 'Regenerate') + '">🔄</button>' : '');
   row.querySelector('[data-action="copy"]').addEventListener('click', e => copyText(text, e.currentTarget));
+  row.querySelector('[data-action="export"]').addEventListener('click', e => { e.stopPropagation(); openExportMenu(e.currentTarget, text); });
   ['up', 'down'].forEach(kind => row.querySelector('[data-action="' + kind + '"]').addEventListener('click', e => onFeedback(e.currentTarget, row, kind, meta.id)));
   const regen = row.querySelector('[data-action="regen"]');
   if(regen) regen.addEventListener('click', () => regenerateLast());
