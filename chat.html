@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>دارة — المحادثة</title>
+<title>Chat · ElectroRed AI</title>
+<meta name="description" content="ElectroRed AI — Electronic Engineering AI Workspace. Your Intelligent Partner in Electronics.">
+<meta name="theme-color" content="#07111F">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
@@ -17,6 +23,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="assets/filegen.js"></script>
+<script src="assets/brand.js"></script>
 <style>
   .bubble.bot{text-align:start;}
   .bubble.bot :is(h1,h2,h3){margin:14px 0 6px; font-size:16px;}
@@ -24,29 +31,29 @@
   .bubble.bot p:last-child{margin-bottom:0;}
   .bubble.bot ul,.bubble.bot ol{margin:0 0 10px; padding-inline-start:22px;}
   .bubble.bot li{margin-bottom:4px;}
-  .bubble.bot strong{color:var(--copper);}
+  .bubble.bot strong{color:var(--cyan);}
   .bubble.bot code{font-family:'JetBrains Mono',monospace; font-size:13px;}
-  .bubble.bot pre{background:#0B0D0C; border:1px solid var(--line); border-radius:8px; padding:12px 14px; overflow-x:auto; margin:0 0 10px; direction:ltr; text-align:left;}
-  .bubble.bot pre code{background:none; color:#EDEFEA; padding:0;}
+  .bubble.bot pre{background:#07111F; border:1px solid #223650; border-radius:8px; padding:12px 14px; overflow-x:auto; margin:0 0 10px; direction:ltr; text-align:left;}
+  .bubble.bot pre code{background:none; color:#E6EDF7; padding:0;}
   .bubble.bot .katex{font-size:1.02em; direction:ltr; unicode-bidi:isolate;}
   .bubble.bot .katex-display{overflow-x:auto; overflow-y:hidden; max-width:100%; padding-bottom:4px; direction:ltr; unicode-bidi:isolate;}
   .chat-inner{overflow-x:hidden;} /* safety net: nothing inside a bubble can stretch the whole page */
   .bubble.bot hr{border:none; border-top:1px solid var(--line); margin:12px 0;}
   .bubble.bot table{border-collapse:collapse; margin:10px 0; display:block; max-width:100%; overflow-x:auto; font-size:14px;}
   .bubble.bot th, .bubble.bot td{border:1px solid var(--line); padding:6px 12px; text-align:start; white-space:nowrap; unicode-bidi:plaintext;} /* each cell takes the direction of its own content: "8 V" stays "8 V" inside an Arabic reply */
-  .bubble.bot th{background:color-mix(in srgb, var(--copper) 14%, transparent); font-weight:600;}
+  .bubble.bot th{background:color-mix(in srgb, var(--blue) 16%, transparent); font-weight:600;}
   .bubble.bot tr:nth-child(even) td{background:color-mix(in srgb, var(--ink) 4%, transparent);}
   body.loading .chat-app{visibility:hidden;}
   .guest-row{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; cursor:pointer; color:var(--ink-soft); font-size:13.5px;}
   .guest-row:hover{background:var(--bg); color:var(--ink);}
   .locked-hint{font-size:11px; color:var(--ink-soft); text-align:center; margin-top:2px;}
-  .guest-banner{max-width:760px; margin:0 auto 12px; background:var(--surface); border:1px solid var(--copper); border-radius:12px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .guest-banner{max-width:760px; margin:0 auto 12px; background:var(--surface); border:1px solid var(--red); border-radius:12px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
   .guest-banner p{font-size:13.5px; color:var(--ink-soft);}
   .guest-banner.hidden{display:none;}
   textarea:disabled{opacity:.5;}
   .icon-round:disabled{opacity:.35; cursor:not-allowed;}
   .guest-countdown{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--ink-soft); background:var(--surface); border:1px solid var(--line); padding:6px 12px; border-radius:20px;}
-  .guest-countdown b{color:var(--copper); font-family:'JetBrains Mono',monospace;}
+  .guest-countdown b{color:var(--red); font-family:'JetBrains Mono',monospace;}
   .footer-guest-actions{display:flex; flex-direction:column; gap:6px; flex-shrink:0;}
   .footer-guest-actions .guest-row{padding:9px 12px;}
   .msg-actions{display:flex; gap:4px; margin-top:-10px; margin-inline-start:4px;}
@@ -85,12 +92,39 @@
   .image-preview button{margin-inline-start:auto; background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:16px;}
   .bubble img.msg-img{max-width:100%; border-radius:8px; display:block; margin-bottom:8px;}
   .file-chip{display:inline-flex; align-items:center; gap:6px; background:color-mix(in srgb, var(--ink) 8%, transparent); border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-size:13px; margin-bottom:8px;}
+  /* ---- ElectroRed AI workspace ---- */
+  .topbar-brand{display:none; font-size:15px; text-decoration:none; margin-inline-end:auto; margin-inline-start:10px;}
+  .chat-topbar{justify-content:flex-start;}
+  .chat-topbar .guest-countdown{margin-inline-start:auto;}
+  @media (max-width:820px){ .topbar-brand{display:inline-flex;} }
+  .chat-app.sidebar-collapsed .topbar-brand{display:inline-flex;}
+  .welcome{padding:34px 16px 10px;}
+  .welcome-brand{font-size:84px; display:flex; justify-content:center; margin-bottom:10px;}
+  .welcome-word{font-size:34px; display:block; line-height:1.1;}
+  .welcome-desc{font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-soft); direction:ltr; margin:10px 0 22px;}
+  .welcome h2{font-size:22px; margin-bottom:6px;}
+  .welcome p{font-size:14.5px; max-width:520px; margin:0 auto;}
+  .ex-label{font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft); margin:26px 0 10px;}
+  .ex-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; max-width:740px; margin:0 auto; text-align:start;}
+  .ex-chip{display:flex; align-items:flex-start; gap:12px; background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:13px 14px; cursor:pointer; color:var(--ink); font-family:inherit; text-align:start; transition:border-color .15s, box-shadow .15s, transform .15s;}
+  .ex-chip:hover{border-color:var(--blue); box-shadow:0 0 0 3px color-mix(in srgb, var(--blue) 14%, transparent); transform:translateY(-1px);}
+  .ex-ic{flex-shrink:0; width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; color:var(--cyan); background:color-mix(in srgb, var(--blue) 13%, transparent); border:1px solid color-mix(in srgb, var(--blue) 30%, transparent);}
+  .ex-ic svg{width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
+  .ex-body{display:flex; flex-direction:column; gap:3px; min-width:0;}
+  .ex-t{font-weight:600; font-size:14px;}
+  .ex-p{font-size:12.5px; color:var(--ink-soft); line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+  .bubble.bot.error{border-color:color-mix(in srgb, var(--danger) 55%, var(--line)); background:color-mix(in srgb, var(--danger) 8%, var(--surface));}
+  .stopped-note{display:block; margin-top:8px; font-size:12px; color:var(--ink-soft);}
+  .icon-round.send svg{width:19px; height:19px;}
+  .icon-round svg.ic{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;}
+  html[dir="rtl"] .icon-round.send:not(.stop) svg{transform:scaleX(-1);}
 </style>
 </head>
 <body class="loading chat-page">
 <div class="chat-app">
   <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="setSidebarOpen(false)"></div>
   <aside class="sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-brand" data-er-logo="full" aria-label="ElectroRed AI"></a>
     <div class="sidebar-top">
       <button class="btn-primary new-chat" data-i="startChat" onclick="newChat()"></button>
       <input class="search" data-i-ph="search" oninput="filterChats(this.value)">
@@ -121,15 +155,13 @@
 
   <main class="chat-main">
     <div class="chat-topbar">
-      <button class="icon-btn" id="sidebarToggle">☰</button>
+      <button class="icon-btn" id="sidebarToggle" data-i-aria="toggleSidebar" aria-label="Sidebar">☰</button>
+      <a href="index.html" class="topbar-brand" data-er-logo="full" aria-label="ElectroRed AI"></a>
       <div class="guest-countdown" id="guestCountdown" style="display:none;">⏳ <b id="guestRemaining">15</b></div>
     </div>
     <div class="chat-scroll" id="chatScroll">
-      <div class="chat-inner" id="chatInner">
-        <div class="welcome" id="welcome">
-          <h2 id="welcomeTitle" data-i="welcomeTitle"></h2>
-          <p id="welcomeSub" data-i="welcomeSub"></p>
-        </div>
+      <div class="chat-inner" id="chatInner" aria-busy="false">
+        <div class="welcome" id="welcome"></div>
       </div>
     </div>
     <div class="composer">
@@ -144,12 +176,12 @@
       </div>
       <div class="composer-inner">
         <div class="composer-actions">
-          <button class="icon-round" id="fileBtn" title="upload file" onclick="document.getElementById('fileInput').click()">📎</button>
+          <button class="icon-round" id="fileBtn" data-i-title="attachFile" data-i-aria="attachFile" title="Attach a file" aria-label="Attach a file" onclick="document.getElementById('fileInput').click()"><svg class="ic" viewBox="0 0 24 24"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9"/></svg></button>
           <input type="file" id="fileInput" accept="image/*,application/pdf,.pdf,text/*,.txt,.csv,.tsv,.md,.json,.xml,.yaml,.yml,.ini,.log,.tex,.m,.mdl,.py,.c,.h,.cpp,.cc,.hpp,.ino,.asm,.s,.v,.sv,.vhd,.vhdl,.cir,.sp,.net,.lib,.sub,.asc,.kicad_sch,.kicad_pcb,.js,.ts,.java,.html,.css,.docx,.xlsx,.pptx,.pdsprj,.pdsclip,.dsn,.opj,.msm,.pkt,.pka,.slx,.mlx,.dwg" style="display:none">
-          <button class="icon-round" title="voice input" id="micBtn">🎤</button>
+          <button class="icon-round" id="micBtn" data-i-title="voiceInput" data-i-aria="voiceInput" title="Voice input" aria-label="Voice input"><svg class="ic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
         </div>
-        <textarea id="msgInput" rows="1" data-i-ph="placeholder" oninput="autoGrow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
-        <button class="icon-round send" onclick="sendMessage()">➤</button>
+        <textarea id="msgInput" rows="1" data-i-ph="placeholder" data-i-aria="placeholder" aria-label="Message" oninput="autoGrow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+        <button class="icon-round send" id="sendBtn" type="button" data-i-aria="sendMsg" data-i-title="sendMsg" aria-label="Send" title="Send" onclick="onSendClick()"></button>
       </div>
       <div class="hint" id="disclaimer" data-i="disclaimer"></div>
     </div>
@@ -166,6 +198,73 @@ let currentChatId = null;
 let unsubChats = null;
 let unsubMessages = null;
 let isStreaming = false;     // true while a reply is being written into the page
+let activeCtrl = null;       // AbortController of the request in flight (for Stop)
+let stopRequested = false;   // true | 'discard' once the student pressed Stop (or left the chat)
+
+// ---- the real generation state drives the logo, the tab icon, the send/stop button and aria-busy ----
+const SEND_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+const STOP_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>';
+function setGenerating(on){
+  if(window.ElectroRed) ElectroRed.setActivity(on);
+  const btn = document.getElementById('sendBtn');
+  if(btn){
+    const key = on ? 'stopGen' : 'sendMsg';
+    btn.classList.toggle('stop', on);
+    btn.innerHTML = on ? STOP_SVG : SEND_SVG;
+    btn.setAttribute('data-i-aria', key); btn.setAttribute('data-i-title', key);
+    btn.setAttribute('aria-label', tr(key)); btn.title = tr(key);
+  }
+  const inner = document.getElementById('chatInner');
+  if(inner) inner.setAttribute('aria-busy', on ? 'true' : 'false');
+}
+function addStoppedNote(bubbleEl){
+  if(!bubbleEl || bubbleEl.querySelector('.stopped-note')) return;
+  const n = document.createElement('span'); n.className = 'stopped-note'; n.textContent = '⏹ ' + tr('genStopped');
+  bubbleEl.appendChild(n);
+}
+window.stopGeneration = function(discard){
+  if(!isStreaming) return;
+  stopRequested = discard === true ? 'discard' : (stopRequested || true);
+  if(activeCtrl) activeCtrl.abort();
+};
+window.onSendClick = function(){ if(isStreaming) window.stopGeneration(); else window.sendMessage(); };
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && isStreaming) window.stopGeneration(); });
+setGenerating(false);
+
+// ---- welcome screen: logo, descriptor and examples of what the assistant really supports ----
+const EX_ICONS = {
+  chip: '<path d="M8 6h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zM9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
+  gate: '<path d="M5 5h6a7 7 0 0 1 0 14H5zM1 9h4M1 15h4M18 12h5"/>',
+  code: '<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 6l-3 12"/>',
+  warn: '<path d="M12 3.5l9.5 16.5h-19zM12 10v4.5M12 17.2v.3"/>',
+  img: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 9"/>',
+  doc: '<path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/>'
+};
+const EX_LIST = [['exCircuit','exCircuitQ','chip'], ['exLogic','exLogicQ','gate'], ['exMatlab','exMatlabQ','code'], ['exProteus','exProteusQ','warn'], ['exDiagram','exDiagramQ','img'], ['exReport','exReportQ','doc']];
+function welcomeInner(){
+  return '<div class="welcome-brand" data-er-logo="compact" data-size="84"></div>' +
+    '<div class="er-wm welcome-word" data-er-logo="word"></div>' +
+    '<div class="welcome-desc" data-i="descriptor"></div>' +
+    '<h2 id="welcomeTitle" data-i="welcomeTitle"></h2><p id="welcomeSub" data-i="welcomeSub"></p>' +
+    '<div class="ex-label" data-i="tryAsking"></div><div class="ex-grid">' +
+    EX_LIST.map(([t, q, ic]) => '<button type="button" class="ex-chip" data-q="' + q + '"><span class="ex-ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + EX_ICONS[ic] + '</svg></span><span class="ex-body"><span class="ex-t" data-i="' + t + '"></span><span class="ex-p" data-i="' + q + '"></span></span></button>').join('') + '</div>';
+}
+function renderWelcome(){
+  const w = document.getElementById('welcome');
+  if(!w) return;
+  w.innerHTML = welcomeInner();
+  if(window.ElectroRed) ElectroRed.mount(w);
+  applyLang();
+}
+// An example only FILLS the input (the student can edit it, and nothing is sent or counted until they press send).
+document.getElementById('chatInner').addEventListener('click', e => {
+  const chip = e.target.closest('.ex-chip');
+  if(!chip) return;
+  const input = document.getElementById('msgInput');
+  if(input.disabled) return;
+  input.value = tr(chip.dataset.q); autoGrow(input); input.focus();
+});
+renderWelcome();
 let skippedSnapshot = null;  // newest Firestore snapshot that arrived mid-reply (drawn once the reply is done)
 let currentMsgs = [];        // latest saved messages of the open chat, WITH their Firestore ids
 let lastTurn = null;         // {text, attachment, chatId} of the last completed send — lets "regenerate" re-send the exact original file
@@ -354,14 +453,14 @@ document.getElementById('sidebarToggle').addEventListener('click', ()=>{
 })();
 
 window.newChat = function(){
+  if(isStreaming) window.stopGeneration(true);   // leaving the conversation: stop it cleanly, nothing leaks into the new chat
   currentChatId = null;
   localStorage.removeItem('lastOpenChat');
   if(unsubMessages) unsubMessages();
   if(!currentUser) saveGuestChat([]);
   historyForApi = []; currentMsgs = []; lastTurn = null;
-  document.getElementById('chatInner').innerHTML = `
-    <div class="welcome" id="welcome"><h2 id="welcomeTitle" data-i="welcomeTitle"></h2><p id="welcomeSub" data-i="welcomeSub"></p></div>`;
-  applyLang();
+  document.getElementById('chatInner').innerHTML = '<div class="welcome" id="welcome"></div>';
+  renderWelcome();
   document.querySelectorAll('.chat-item').forEach(el=>el.classList.remove('active'));
   if(!currentUser) applyGuestUI();
 };
@@ -450,7 +549,7 @@ function renderMessages(msgs){
   msgs.forEach((m, i) => {
     const att = m.attachment || (m.image ? { kind:'image', dataUrl: m.image } : null);
     const el = addBubble(m.role, m.text, false, att);
-    if(m.role === 'bot') addMessageActions(el, m.text, { id: m.id, feedback: m.feedback, isLast: i === msgs.length - 1 });
+    if(m.role === 'bot'){ if(m.stopped) addStoppedNote(el); addMessageActions(el, m.text, { id: m.id, feedback: m.feedback, isLast: i === msgs.length - 1 }); }
     else addUserActions(el, m.text, { id: m.id, canEdit: !att });
   });
   document.getElementById('chatScroll').scrollTop = 999999;
@@ -467,6 +566,7 @@ function rebuildHistory(msgs){ historyForApi = capHistory(historyFromMsgs(msgs))
 
 // keepDom: used when a brand-new chat is created mid-send, so the bubbles already on screen aren't wiped.
 function openChat(chatId, keepDom = false){
+  if(!keepDom && isStreaming) window.stopGeneration(true);   // switching chats mid-reply: stop it, discard the partial
   currentChatId = chatId;
   localStorage.setItem('lastOpenChat', chatId);
   renderChatList(lastChats);
@@ -490,10 +590,10 @@ function renderBotContent(el, text){
   const math = [];
   const stash = (tex, display) => { math.push({ tex, display }); return `@@MATH${math.length - 1}@@`; };
   let src = text || '';
-  // File blocks the AI writes (~~~dara-file … ~~~) are set aside first and shown as download cards.
+  // File blocks the AI writes (~~~electrored-file … ~~~) are set aside first and shown as download cards.
   const files = [];
-  src = src.replace(/(^|\n)~~~dara-file[^\n]*\n([\s\S]*?)\n~~~[ \t]*(?=\n|$)/g, (m, lead, body) => { files.push(window.DaraFiles ? DaraFiles.parseBlock(body) : null); return lead + '\n@@FILE' + (files.length - 1) + '@@\n'; });
-  src = src.replace(/(^|\n)~~~dara-file[\s\S]*$/, '$1\n@@FILEWAIT@@\n'); // a block still being written
+  src = src.replace(/(^|\n)~~~(?:electrored|dara)-file[^\n]*\n([\s\S]*?)\n~~~[ \t]*(?=\n|$)/g, (m, lead, body) => { files.push(window.ERFiles ? ERFiles.parseBlock(body) : null); return lead + '\n@@FILE' + (files.length - 1) + '@@\n'; });
+  src = src.replace(/(^|\n)~~~(?:electrored|dara)-file[\s\S]*$/, '$1\n@@FILEWAIT@@\n'); // a block still being written
   src = src.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => stash(m, true));            // $$ ... $$ (multi-line ok)
   src = src.replace(/\\\[([\s\S]+?)\\\]/g, (_, m) => stash(m, true));            // \[ ... \]
   src = src.replace(/\\\(([\s\S]+?)\\\)/g, (_, m) => stash(m, false));           // \( ... \)
@@ -537,7 +637,7 @@ function makeFileCard(spec){
   btn.textContent = label;
   btn.addEventListener('click', async () => {
     btn.disabled = true; btn.textContent = L('⏳ جاري التجهيز…', '⏳ Preparing…');
-    try { await DaraFiles.download(spec); trackEvent('file_generated', { type: spec.type, source: 'block' }); }
+    try { await ERFiles.download(spec); trackEvent('file_generated', { type: spec.type, source: 'block' }); }
     catch(err){ console.error('File creation failed:', err); alert(L('تعذر إنشاء الملف. حاول مرة ثانية.', "Couldn't create the file. Please try again.")); }
     finally { btn.disabled = false; btn.textContent = label; }
   });
@@ -546,7 +646,7 @@ function makeFileCard(spec){
 }
 // Every code block gets copy + download buttons (the file extension follows the language).
 function enhanceCodeBlocks(root){
-  if(!window.DaraFiles) return;
+  if(!window.ERFiles) return;
   root.querySelectorAll('pre').forEach(pre => {
     const code = pre.querySelector('code');
     if(!code || pre.querySelector('.code-tools')) return;
@@ -557,13 +657,13 @@ function enhanceCodeBlocks(root){
     const copy = mkBtn('📋', L('نسخ', 'Copy')), dl = mkBtn('⬇️', L('تحميل الملف', 'Download file'));
     copy.addEventListener('click', () => copyText(code.textContent, copy));
     dl.addEventListener('click', () => {
-      DaraFiles.save(new Blob([code.textContent + '\n'], { type: 'text/plain;charset=utf-8' }), 'code.' + DaraFiles.extForLang(lang));
+      ERFiles.save(new Blob([code.textContent + '\n'], { type: 'text/plain;charset=utf-8' }), 'code.' + ERFiles.extForLang(lang));
       trackEvent('file_generated', { type: 'code', source: 'codeblock' });
     });
     tools.append(label, copy, dl); pre.appendChild(tools);
   });
 }
-const stripFileBlocks = t => String(t || '').replace(/(^|\n)~~~dara-file[\s\S]*?(\n~~~|$)/g, '$1').trim();
+const stripFileBlocks = t => String(t || '').replace(/(^|\n)~~~(?:electrored|dara)-file[\s\S]*?(\n~~~|$)/g, '$1').trim();
 
 // ⬇️ under a reply: export the whole answer as a document.
 let openExportEl = null;
@@ -572,15 +672,15 @@ document.addEventListener('click', closeExportMenu);
 function openExportMenu(anchorBtn, replyText){
   closeExportMenu();
   const text = stripFileBlocks(replyText);
-  if(!text || !window.DaraFiles) return;
+  if(!text || !window.ERFiles) return;
   const items = [['docx', 'Word (.docx)'], ['pdf', 'PDF'], ['md', 'Markdown (.md)']];
-  if(DaraFiles.hasTable(text)) items.splice(2, 0, ['xlsx', 'Excel (.xlsx)']);
+  if(ERFiles.hasTable(text)) items.splice(2, 0, ['xlsx', 'Excel (.xlsx)']);
   const menu = document.createElement('div'); menu.className = 'export-menu';
   items.forEach(([type, label]) => {
     const b = document.createElement('button'); b.type = 'button'; b.dataset.type = type; b.textContent = label;
     b.addEventListener('click', async e => {
       e.stopPropagation(); closeExportMenu();
-      try { await DaraFiles.exportReply(type, text); trackEvent('file_generated', { type, source: 'export' }); }
+      try { await ERFiles.exportReply(type, text); trackEvent('file_generated', { type, source: 'export' }); }
       catch(err){ console.error('Export failed:', err); alert(L('تعذر التصدير. حاول مرة ثانية.', "Couldn't export. Please try again.")); }
     });
     menu.appendChild(b);
@@ -973,7 +1073,7 @@ const MAX_MESSAGE_CHARS = 12000;
 const FIRST_BYTE_TIMEOUT_MS = 60000; // no reply started after this long -> stop waiting and say so
 // Which build of the site this is (set in assets/lang.js). If it differs from the server's, files are out of sync.
 const CLIENT_VERSION = typeof APP_VERSION === 'string' ? APP_VERSION : 'unknown';
-console.info('Dara web', CLIENT_VERSION);
+console.info('ElectroRed AI web', CLIENT_VERSION);
 const MAX_REQUEST_BYTES = 4300000; // Vercel rejects request bodies over ~4.5 MB
 
 function userError(message, status){ const e = new Error(message); e.userMessage = message; e.status = status; return e; }
@@ -1028,8 +1128,9 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
   trackEvent(showUser ? 'message_sent' : 'regenerate_clicked');
   if(oldBot) oldBot.els.forEach(el => { el.style.display = 'none'; });
 
-  isStreaming = true;
-  let botBubble = null, savedUser = !showUser, savedBot = false, newBotId = null, ok = false, guestIdx, stallTimer = null;
+  isStreaming = true; stopRequested = false;
+  setGenerating(true);
+  let botBubble = null, stopped = false, savedUser = !showUser, savedBot = false, newBotId = null, ok = false, guestIdx, stallTimer = null;
   try {
     // 1) Save the student's message. A storage problem must never block the answer.
     if(currentUser){
@@ -1055,6 +1156,7 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
     botBubble.innerHTML = '<span class="cursor-blink"></span>';
     // Signed-in students prove who they are with their Firebase ID token; guests send none.
     const ctrl = new AbortController();
+    activeCtrl = ctrl; if(stopRequested) ctrl.abort();   // Stop pressed while the message was still being saved
     stallTimer = setTimeout(() => ctrl.abort(), FIRST_BYTE_TIMEOUT_MS); // cleared when the first part of the reply arrives
     const callApi = token => fetch('/api/chat', {
       method: 'POST',
@@ -1066,7 +1168,7 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
     if(res.status === 401 && currentUser) res = await callApi(await getIdToken(true)); // token may have just expired: retry once with a fresh one
     if(!res.ok){
       const err = httpError(res.status, parseInt(res.headers.get('retry-after'), 10) || 0);
-      const serverVersion = res.headers.get('x-dara-version');
+      const serverVersion = res.headers.get('x-app-version');
       if(serverVersion && serverVersion !== CLIENT_VERSION){ // a mixed deployment is the usual reason the same page "worked yesterday"
         err.userMessage += ' ' + L('(نسخة الموقع ' + CLIENT_VERSION + ' لا تطابق الخادم ' + serverVersion + ': ارفع كل الملفات)', '(site version ' + CLIENT_VERSION + ' differs from the server ' + serverVersion + ': upload all the files)');
       }
@@ -1077,13 +1179,17 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
     const decoder = new TextDecoder();
     let full = '';
     while(true){
-      const { done, value } = await reader.read();
+      let chunk;
+      try { chunk = await reader.read(); }
+      catch(readErr){ if(stopRequested){ stopped = true; break; } throw readErr; }   // Stop pressed mid-stream
+      const { done, value } = chunk;
       clearTimeout(stallTimer);
       if(done) break;
       full += decoder.decode(value, { stream: true });
       renderBotContent(botBubble, full);
       document.getElementById('chatScroll').scrollTop = 999999;
     }
+    if(stopRequested === 'discard' || (stopped && !full.trim())) throw Object.assign(new Error('stopped'), { stopped: true });
     if(!full.trim()) throw userError(ar ? 'لم يصل رد من النموذج. حاول مرة ثانية.' : 'The model returned an empty reply. Please try again.');
 
     // The server reports "every provider failed" as plain text: show it, but don't save or remember it as an answer.
@@ -1096,13 +1202,13 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
     // 3) Save the reply.
     if(currentUser){
       if(currentChatId){
-        try { newBotId = await addMessage(currentChatId, 'bot', full); savedBot = true; }
+        try { newBotId = await addMessage(currentChatId, 'bot', full, null, null, stopped); savedBot = true; }
         catch(err){ console.error('Saving the reply failed:', err); }
       }
     } else {
       const g = getGuestChat();
       if(oldBot && g.length && g[g.length - 1].role === 'bot') g.pop(); // regenerate: swap the old reply
-      g.push({ role:'bot', text: full }); saveGuestChat(g);
+      g.push(stopped ? { role:'bot', text: full, stopped: true } : { role:'bot', text: full }); saveGuestChat(g);
     }
     // Regenerate: the new reply is safe now, so the old one can go.
     if(oldBot){
@@ -1112,6 +1218,7 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
       }
       oldBot.els.forEach(el => el.remove());
     }
+    if(stopped) addStoppedNote(botBubble);
     addMessageActions(botBubble, full, { id: newBotId, isLast: true });
     if(userEl && !currentUser) addUserActions(userEl, text, { guestIndex: guestIdx, canEdit: !attachment });
     // Saved chats rebuild their memory from Firestore (see rebuildHistory); otherwise remember it here.
@@ -1119,20 +1226,29 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
       historyForApi = capHistory([...history, { role: 'user', text: memoryTextFor(text, attachment) }, { role: 'bot', text: full }]);
     }
     lastTurn = { text, attachment, chatId: currentChatId };
-    trackEvent('ai_response_success');
+    trackEvent(stopped ? 'generation_stopped' : 'ai_response_success');
     ok = true;
   } catch(e){
+    if(e.stopped || (stopRequested && e.name === 'AbortError')){
+      // The student stopped it before any text arrived (or left the chat): no error, no leftovers.
+      if(botBubble) botBubble.remove();
+      if(!currentUser) rollbackGuestTurn();
+      trackEvent('generation_stopped');
+      return false;
+    }
     console.error('AI turn failed:', e);
     const msg = e.userMessage || (e.name === 'AbortError'
       ? L('الرد تأخر أكثر من دقيقة. حاول مرة ثانية.', 'The reply took longer than a minute. Please try again.')
       : (ar ? 'تعذر الاتصال بالمساعد.' : "Couldn't reach the assistant."));
-    if(botBubble) botBubble.textContent = '⚠️ ' + msg; else addBubble('bot', '⚠️ ' + msg);
+    if(botBubble){ botBubble.textContent = '⚠️ ' + msg; botBubble.classList.add('error'); } else addBubble('bot', '⚠️ ' + msg).classList.add('error');
     if(!currentUser) rollbackGuestTurn();
     trackEvent('ai_response_error', { error: String(e.message || e).slice(0, 100) });
   } finally {
     clearTimeout(stallTimer);
+    activeCtrl = null; stopRequested = false;
     if(oldBot && !ok) oldBot.els.forEach(el => { el.style.display = ''; }); // a failed regeneration restores the old reply
     isStreaming = false;
+    setGenerating(false);   // ALWAYS runs: success, error, timeout, stop, new chat — the logo can never stay stuck
     // Draw whatever Firestore delivered mid-reply, but only if the reply was saved (otherwise it would vanish).
     if(skippedSnapshot && savedBot) renderMessages(skippedSnapshot);
     skippedSnapshot = null;
