@@ -19,9 +19,9 @@ import crypto from "node:crypto";
 
 // Bump together with APP_VERSION in assets/lang.js on every delivery: the settings page compares the two,
 // which immediately shows when only SOME of the files were uploaded (a mixed deployment).
-const API_VERSION = "2026.10.16";
+const API_VERSION = "2026.10.17";
 
-const ASSISTANT_NAME = "Dara (دارة)"; // ← change here once the final brand name is chosen
+const ASSISTANT_NAME = "ElectroRed AI";
 const CREATOR = "Fertas Mohammed Redha";
 
 const GROQ_MODEL = "openai/gpt-oss-120b"; // Groq's recommended replacement after llama-3.3-70b-versatile shut down (16 Aug 2026)
@@ -47,7 +47,7 @@ const FILE_FORMAT_SECTION = `
 # Creating files
 When the student asks for a downloadable file, write ONE file block. The outer fence uses TILDES (~~~) so Markdown code fences can safely appear inside it:
 
-~~~dara-file
+~~~electrored-file
 type: docx
 name: lab-report.docx
 ---
@@ -202,18 +202,24 @@ async function* streamSSE(res, errPrefix, key) {
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop();
-    for (const line of lines) {
-      if (!line.startsWith("data: ")) continue;
-      const payload = line.slice(6);
-      if (payload === "[DONE]") return;
-      try { yield JSON.parse(payload); } catch {}
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const payload = line.slice(6);
+        if (payload === "[DONE]") return;
+        try { yield JSON.parse(payload); } catch {}
+      }
     }
+  } finally {
+    // Runs on normal end AND when the consumer stops early (the student pressed Stop): closing the connection
+    // makes the provider stop generating, so no free-tier quota is burned on an answer nobody will read.
+    try { await reader.cancel(); } catch {}
   }
 }
 
@@ -391,7 +397,7 @@ function cleanInput(body) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader("X-Dara-Version", API_VERSION);
+  res.setHeader("X-App-Version", API_VERSION);
 
   // Health check: open https://your-site/api/chat in a browser. It shows which version of this file is live
   // and whether each provider has at least one key configured (never the keys themselves).
@@ -499,10 +505,13 @@ export default async function handler(req, res) {
   // so: a couple of quick retries for transient 503s, then fail fast.
   const RETRY_DELAYS_MS = [700, 1500];
   const errors = [];
+  // The student pressed Stop (or closed the tab): remember it so we stop reading — and stop the provider.
+  let clientGone = false;
+  if (typeof res.on === "function") res.on("close", () => { clientGone = true; });
   for (const [provider, key] of attempts) {
     for (let retry = 0; retry <= RETRY_DELAYS_MS.length; retry++) {
       try {
-        for await (const token of job(provider, key)) res.write(token);
+        for await (const token of job(provider, key)) { if (clientGone) break; res.write(token); }
         return res.end();
       } catch (e) {
         const transient = /_503|_overloaded/i.test(e.message);
