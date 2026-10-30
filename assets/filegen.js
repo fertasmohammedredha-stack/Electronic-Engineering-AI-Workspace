@@ -75,7 +75,7 @@
   }
 
   // ---------------------------------------------------------------- the file block the AI writes
-  // ~~~dara-file
+  // ~~~electrored-file
   // type: docx            (docx | pdf | xlsx | pptx | csv | code)
   // name: report.docx
   // ---
@@ -90,7 +90,7 @@
     csv: 'text/csv;charset=utf-8', code: 'text/plain;charset=utf-8'
   };
   function safeName(name, type) {
-    let n = String(name || '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').replace(/\.{2,}/g, '.').replace(/^\.+/, '').trim().slice(0, 80) || 'dara-file';
+    let n = String(name || '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').replace(/\.{2,}/g, '.').replace(/^\.+/, '').trim().slice(0, 80) || 'electrored-file';
     if (type === 'code') { if (!/\.[A-Za-z0-9]{1,8}$/.test(n)) n += '.txt'; return n; }
     return n.toLowerCase().endsWith('.' + TYPE_EXT[type]) ? n : n.replace(/\.[A-Za-z0-9]{1,5}$/, '') + '.' + TYPE_EXT[type];
   }
@@ -306,7 +306,7 @@
 
     const level = (l, bullet, fmt) => ({ level: l, format: fmt, text: bullet, alignment: D.AlignmentType.LEFT, style: { paragraph: { indent: { left: 720 * (l + 1), hanging: 360 } } } });
     const doc = new D.Document({
-      creator: 'Dara', title: spec.title || spec.name,
+      creator: 'ElectroRed AI', title: spec.title || spec.name,
       styles: { default: { document: { run: { font: FONT, size: 22 } } } },
       numbering: { config: [
         { reference: 'bul', levels: [0, 1, 2].map(l => level(l, ['•', '◦', '▪'][l], D.LevelFormat.BULLET)) },
@@ -321,7 +321,7 @@
   async function buildPptx(spec) {
     await loadScript(CDN.pptx);
     const P = new window.PptxGenJS();
-    P.layout = 'LAYOUT_WIDE'; P.title = spec.title || spec.name; P.author = 'Dara';
+    P.layout = 'LAYOUT_WIDE'; P.title = spec.title || spec.name; P.author = 'ElectroRed AI';
     const chunks = String(spec.content).split(/\n[ \t]*-{3,}[ \t]*\n/).map(s => s.trim()).filter(Boolean);
     if (!chunks.length) throw new Error('No slides in the content');
     for (const md of chunks) {
@@ -380,7 +380,7 @@
       catch (e) { return esc(m.tex); }
     });
     const ar = isArabic(spec.content);
-    const title = (spec.name || 'dara').replace(/\.[A-Za-z0-9]{1,5}$/, '');
+    const title = (spec.name || 'electrored').replace(/\.[A-Za-z0-9]{1,5}$/, '');
     return '<!doctype html><html lang="' + (ar ? 'ar' : 'en') + '" dir="' + (ar ? 'rtl' : 'ltr') + '"><head><meta charset="utf-8"><title>' + esc(title) + '</title>' +
       '<link rel="stylesheet" href="' + CDN.katexCss + '"><style>@page{size:A4;margin:16mm}' +
       'body{font-family:"IBM Plex Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;color:#111;line-height:1.75;font-size:12pt}' +
@@ -426,18 +426,18 @@
   const LANG_EXT = { python: 'py', py: 'py', matlab: 'm', octave: 'm', c: 'c', cpp: 'cpp', 'c++': 'cpp', arduino: 'ino', ino: 'ino', vhdl: 'vhd', verilog: 'v', systemverilog: 'sv', spice: 'cir', ngspice: 'cir', netlist: 'cir', asm: 'asm', assembly: 'asm', nasm: 'asm', bash: 'sh', sh: 'sh', shell: 'sh', json: 'json', javascript: 'js', js: 'js', typescript: 'ts', html: 'html', css: 'css', latex: 'tex', tex: 'tex', csv: 'csv', xml: 'xml', yaml: 'yml', yml: 'yml', java: 'java', markdown: 'md', md: 'md' };
   const extForLang = lang => LANG_EXT[String(lang || '').toLowerCase()] || 'txt';
   const hasTable = md => /^\s*\|.*\|\s*$/m.test(md) && /^\s*\|?\s*:?-{2,}/m.test(md);
-  const titleOf = md => { const h = String(md).match(/^#{1,3}\s+(.+)$/m); const t = h ? h[1] : String(md).replace(/[#*`$|>\-]/g, ' ').trim().split(/\s+/).slice(0, 6).join(' '); return stripMd(t).slice(0, 60) || 'dara-answer'; };
+  const titleOf = md => { const h = String(md).match(/^#{1,3}\s+(.+)$/m); const t = h ? h[1] : String(md).replace(/[#*`$|>\-]/g, ' ').trim().split(/\s+/).slice(0, 6).join(' '); return stripMd(t).slice(0, 60) || 'electrored-answer'; };
 
   const api = {
     parseBlock, buildBlob, buildPrintHtml, printHtml, download, save, extForLang, hasTable, titleOf, latexToText, parseMdTables, isArabic,
     // the whole reply as a document
     exportReply(type, text) {
       const t = titleOf(text);
-      const name = t.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'dara-answer';
+      const name = t.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'electrored-answer';
       const spec = { type, name: safeName(name, type === 'md' ? 'code' : type) , title: '', content: text };
-      if (type === 'md') spec.name = (name || 'dara-answer') + '.md';
+      if (type === 'md') spec.name = (name || 'electrored-answer') + '.md';
       return download(spec.type === 'md' ? { ...spec, type: 'code' } : spec);
     }
   };
-  window.DaraFiles = api;
+  window.ERFiles = api;
 })();
