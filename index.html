@@ -3,124 +3,164 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>دارة — مساعدك الذكي في الإلكترونيك</title>
+<title>ElectroRed AI — Electronic Engineering AI Workspace</title>
+<meta name="description" content="ElectroRed AI — Electronic Engineering AI Workspace. Your Intelligent Partner in Electronics: circuit analysis, digital logic, MATLAB and code help, file understanding and lab reports, in Arabic and English.">
+<link rel="canonical" href="https://electronic-engineering-ai-workspace.vercel.app/">
+<meta name="theme-color" content="#07111F">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ElectroRed AI">
+<meta property="og:title" content="ElectroRed AI — Electronic Engineering AI Workspace">
+<meta property="og:description" content="Your Intelligent Partner in Electronics.">
+<meta property="og:url" content="https://electronic-engineering-ai-workspace.vercel.app/">
+<meta property="og:image" content="https://electronic-engineering-ai-workspace.vercel.app/assets/brand/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="ElectroRed AI logo: an H made of red and blue circuit traces">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ElectroRed AI — Electronic Engineering AI Workspace">
+<meta name="twitter:description" content="Your Intelligent Partner in Electronics.">
+<meta name="twitter:image" content="https://electronic-engineering-ai-workspace.vercel.app/assets/brand/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 <style>
-  .hero{padding:76px 0 60px;}
-  .hero .wrap{display:grid; grid-template-columns:1.1fr 1fr; gap:48px; align-items:center;}
-  .eyebrow{color:var(--copper-deep); font-size:14px; font-weight:600; margin-bottom:16px;}
-  .hero h1{font-size:44px; line-height:1.18; margin-bottom:20px;}
-  .hero h1 span{color:var(--green);}
-  .hero p{font-size:17px; color:var(--ink-soft); max-width:46ch; margin-bottom:30px;}
-  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap;}
-  .circuit-card{background:radial-gradient(circle at 30% 25%, #16241D, #060807 72%); border:1px solid #1E2220; border-radius:20px; padding:18px; box-shadow:0 30px 70px -30px rgba(0,0,0,.6), inset 0 0 40px rgba(79,168,125,.05);}
-  .circuit{width:100%; height:auto; display:block;}
-  .stats{border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:22px 0;}
-  .stats .wrap{display:flex; justify-content:space-between; flex-wrap:wrap; gap:16px;}
-  .stat b{font-size:22px; font-family:'JetBrains Mono',monospace; color:var(--green); display:block;}
-  .stat span{font-size:13px; color:var(--ink-soft);}
-  .features{padding:80px 0;}
-  .section-head{max-width:56ch; margin-bottom:44px;}
-  .section-head h2{font-size:30px; margin-bottom:10px;}
-  .flist{display:flex; flex-direction:column;}
-  .frow{display:grid; grid-template-columns:44px 1fr; gap:20px; padding:26px 0; border-top:1px solid var(--line);}
-  .flist .frow:last-child{border-bottom:1px solid var(--line);}
-  .frow .num{font-family:'JetBrains Mono',monospace; color:var(--copper); font-size:14px; padding-top:3px;}
-  .frow h3{font-size:18px; margin-bottom:6px;}
-  .frow p{color:var(--ink-soft); font-size:15px; max-width:60ch;}
-  .new-pill{display:inline-flex; align-items:center; gap:9px; max-width:100%; padding:5px 14px 5px 6px; border:1px solid var(--line); border-radius:999px; background:var(--surface); font-size:13px; color:var(--ink-soft); text-decoration:none; margin-bottom:18px;}
+  header.site .wrap{height:70px;}
+  .site-nav{display:flex; gap:26px; margin-inline-start:34px; margin-inline-end:auto;}
+  .site-nav a{font-size:14.5px; color:var(--ink-soft); text-decoration:none; padding:6px 2px; border-bottom:2px solid transparent;}
+  .site-nav a:hover{color:var(--ink); border-bottom-color:var(--red);}
+  .head-actions{display:flex; gap:10px; align-items:center;}
+  .head-actions .login-link{display:inline-block; text-decoration:none; line-height:1.4;}
+
+  .hero{padding:64px 0 54px;}
+  .hero .wrap{display:grid; grid-template-columns:1.05fr .95fr; gap:44px; align-items:center;}
+  .new-pill{display:inline-flex; align-items:center; gap:9px; max-width:100%; padding:5px 14px 5px 6px; border:1px solid var(--line-strong); border-radius:999px; background:var(--surface); font-size:13px; color:var(--ink-soft); text-decoration:none; margin-bottom:20px;}
   html[dir="rtl"] .new-pill{padding:5px 6px 5px 14px;}
-  .new-pill b{background:var(--green); color:#fff; border-radius:999px; padding:2px 10px; font-size:11.5px; font-weight:600; flex-shrink:0;}
+  .new-pill b{background:var(--blue-solid); color:#fff; border-radius:999px; padding:2px 10px; font-size:11.5px; font-weight:600; flex-shrink:0;}
   .new-pill span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .new-pill:hover{border-color:var(--copper); color:var(--ink);}
-  .updates{padding:10px 0 90px;}
+  .new-pill:hover{border-color:var(--cyan); color:var(--ink);}
+  .eyebrow{font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--cyan); margin-bottom:16px; direction:ltr; text-align:start;}
+  html[dir="rtl"] .eyebrow{text-align:right;}
+  .hero h1{font-size:clamp(34px,5.2vw,56px); line-height:1.12; margin-bottom:18px;}
+  .hero h1 span{color:var(--red);}
+  .hero p.lead{font-size:17px; color:var(--ink-soft); max-width:520px; margin-bottom:24px;}
+  .hero-pills{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:28px;}
+  .hero-pills span{display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line-strong); background:color-mix(in srgb, var(--surface) 70%, transparent); border-radius:999px; padding:6px 13px; font-size:13px; color:var(--ink);}
+  .hero-pills svg{width:15px; height:15px; fill:none; stroke:var(--cyan); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;}
+  .hero-ctas{display:flex; gap:12px; flex-wrap:wrap;}
+  .hero-panel{position:relative; border:1px solid var(--line-strong); border-radius:22px; background:linear-gradient(160deg, color-mix(in srgb, var(--surface) 92%, var(--er-red)) 0%, var(--surface) 45%, color-mix(in srgb, var(--surface) 90%, var(--er-blue)) 100%); aspect-ratio:480/420; overflow:hidden; box-shadow:var(--shadow);}
+  .hero-panel::before{content:""; position:absolute; inset:0; background-image:linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size:30px 30px; opacity:.9;}
+  .panel-traces{position:absolute; inset:0; width:100%; height:100%; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round;}
+  .tr-r{stroke:var(--er-red); opacity:.55;} .tr-b{stroke:var(--er-blue); opacity:.6;}
+  .nd-r{fill:var(--er-red);} .nd-b{fill:var(--er-blue);}
+  .panel-mark{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;}
+  .panel-mark .er-mark{width:54%; height:auto; aspect-ratio:1/1;}
+
+  section.block{padding:62px 0;}
+  .section-head{max-width:640px; margin-bottom:34px;}
+  .section-head .kicker{font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--red); margin-bottom:10px; direction:ltr; text-align:start;}
+  html[dir="rtl"] .section-head .kicker{text-align:right;}
+  .section-head h2{font-size:clamp(26px,3.6vw,36px); line-height:1.2; margin-bottom:10px;}
+  .section-head p{color:var(--ink-soft); font-size:16px;}
+  .tools{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  .tool{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:22px 20px; transition:border-color .15s, transform .15s, box-shadow .15s;}
+  .tool:hover{border-color:var(--blue); transform:translateY(-2px); box-shadow:0 0 0 3px color-mix(in srgb, var(--blue) 12%, transparent), var(--shadow);}
+  .tool-ic{width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:var(--cyan); background:color-mix(in srgb, var(--blue) 13%, transparent); border:1px solid color-mix(in srgb, var(--blue) 32%, transparent); margin-bottom:14px;}
+  .tool-ic svg{width:23px; height:23px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
+  .tool h3{font-size:17px; margin-bottom:6px;} .tool p{font-size:14px; color:var(--ink-soft); line-height:1.65;}
+  .note{margin-top:16px; font-size:13px; color:var(--ink-soft); display:flex; gap:8px; align-items:flex-start;}
+  .note::before{content:"i"; flex-shrink:0; width:18px; height:18px; border-radius:50%; border:1px solid var(--line-strong); font:600 11px/16px 'JetBrains Mono',monospace; text-align:center; color:var(--cyan);}
+
+  .stats{border-block:1px solid var(--line); background:color-mix(in srgb, var(--bg-2) 70%, transparent);}
+  .stats .wrap{display:grid; grid-template-columns:repeat(3,1fr); gap:20px; padding-block:26px;}
+  .stat b{display:block; font-size:30px; font-family:'Space Grotesk',sans-serif; background:linear-gradient(90deg,var(--er-red),var(--er-blue)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .stat span{font-size:13.5px; color:var(--ink-soft);}
+
+  .flist{display:grid; grid-template-columns:repeat(2,1fr); gap:14px;}
+  .frow{display:flex; gap:16px; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:20px;}
+  .frow .num{font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--red); padding-top:3px; flex-shrink:0;}
+  .frow h3{font-size:17px; margin-bottom:5px;} .frow p{font-size:14px; color:var(--ink-soft);}
+
+  .updates{padding:30px 0 70px;}
   .up-soon{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin-bottom:12px;}
-  .up-soon-card{border:1px dashed color-mix(in srgb, var(--copper) 55%, var(--line)); border-radius:12px; padding:16px 18px 15px; background:color-mix(in srgb, var(--surface) 70%, transparent);}
-  .up-soon-card h3{font-size:16px; margin:9px 0 4px;}
-  .up-soon-card p{font-size:14px; color:var(--ink-soft);}
+  .up-soon-card{border:1px dashed color-mix(in srgb, var(--red) 55%, var(--line-strong)); border-radius:14px; padding:16px 18px 15px; background:color-mix(in srgb, var(--surface) 70%, transparent);}
+  .up-soon-card h3{font-size:16px; margin:9px 0 4px;} .up-soon-card p{font-size:14px; color:var(--ink-soft);}
   .up-month{font-family:'JetBrains Mono',monospace; font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); margin:34px 0 16px;}
   .timeline{position:relative; padding-inline-start:32px;}
-  .timeline::before{content:""; position:absolute; inset-inline-start:7px; top:8px; bottom:14px; width:2px; background:linear-gradient(var(--copper), color-mix(in srgb, var(--copper) 18%, transparent));}
+  .timeline::before{content:""; position:absolute; inset-inline-start:7px; top:8px; bottom:14px; width:2px; background:linear-gradient(var(--er-red), var(--er-blue) 70%, transparent);}
   .up-item{position:relative; padding:0 0 26px;}
-  .up-item::before{content:""; position:absolute; inset-inline-start:-32px; top:4px; width:16px; height:16px; border-radius:50%; background:var(--bg); border:3px solid var(--copper); box-sizing:border-box;}
-  .up-item h3{font-size:17px; margin:7px 0 4px;}
-  .up-item p{font-size:14.5px; color:var(--ink-soft); max-width:62ch;}
-  .tag{display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.05em; text-transform:uppercase; padding:2px 8px; border-radius:5px; border:1px solid var(--line);}
-  .tag.new{color:var(--green); border-color:color-mix(in srgb, var(--green) 55%, transparent);}
-  .tag.improved{color:var(--copper-deep); border-color:color-mix(in srgb, var(--copper) 55%, transparent);}
+  .up-item::before{content:""; position:absolute; inset-inline-start:-32px; top:4px; width:16px; height:16px; border-radius:50%; background:var(--bg); border:3px solid var(--er-blue); box-sizing:border-box;}
+  .up-item:first-child::before{border-color:var(--er-red);}
+  .up-item h3{font-size:17px; margin:7px 0 4px;} .up-item p{font-size:14.5px; color:var(--ink-soft); max-width:62ch;}
+  .tag{display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.05em; text-transform:uppercase; padding:2px 8px; border-radius:5px; border:1px solid var(--line-strong);}
+  .tag.new{color:var(--ok); border-color:color-mix(in srgb, var(--ok) 55%, transparent);}
+  .tag.improved{color:var(--cyan); border-color:color-mix(in srgb, var(--cyan) 55%, transparent);}
   .tag.soon{color:var(--ink-soft); border-style:dashed;}
-  footer{border-top:1px solid var(--line); padding:30px 0; font-size:13.5px; color:var(--ink-soft);}
-  footer .wrap{display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;}
-  @media (max-width:860px){
-    .hero .wrap{grid-template-columns:1fr;} .hero{padding:44px 0 40px;} .hero h1{font-size:32px;}
-    .circuit{order:-1; max-width:280px; margin:0 auto;}
+
+  .banner{position:relative; overflow:hidden; border:1px solid var(--line-strong); border-radius:20px; padding:38px 28px; text-align:center; background:linear-gradient(120deg, color-mix(in srgb, var(--surface) 86%, var(--er-red)), var(--surface) 50%, color-mix(in srgb, var(--surface) 84%, var(--er-blue)));}
+  .banner h2{font-size:clamp(24px,3.4vw,34px); margin-bottom:8px;} .banner h2 em{font-style:normal; color:var(--cyan);} .banner h2 strong{color:var(--red);}
+  .banner p{color:var(--ink-soft); margin-bottom:22px;}
+  footer{border-top:1px solid var(--line); padding:26px 0; font-size:13px; color:var(--ink-soft);}
+  footer .wrap{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;}
+  footer .foot-brand{display:flex; align-items:center; gap:10px; font-size:15px;}
+  [hidden]{display:none !important;}
+
+  @media (max-width:900px){
+    .hero{padding:36px 0 30px;} .hero .wrap{grid-template-columns:1fr; gap:30px;}
+    .hero-panel{max-width:440px; width:100%; margin-inline:auto;}
+    .tools{grid-template-columns:repeat(2,1fr);} .flist{grid-template-columns:1fr;}
+    .site-nav{display:none;}
+  }
+  @media (max-width:560px){
+    header.site .wrap{height:62px; padding:0 14px;} .wrap{padding:0 16px;}
+    .logo{font-size:15px;} .head-actions{gap:6px;} .head-actions .login-link{display:none;}
+    .cta{padding:8px 12px; font-size:13px;} .lang-btn{padding:6px 10px;} .theme-btn{width:34px; height:34px;}
+    .tools{grid-template-columns:1fr;} .stats .wrap{grid-template-columns:1fr 1fr 1fr; gap:8px;} .stat b{font-size:22px;} .stat span{font-size:12px;}
+    section.block{padding:42px 0;} .hero p.lead{font-size:16px;} .btn-primary, .btn-ghost{padding:12px 20px;}
   }
 </style>
 </head>
 <body>
 <header class="site">
   <div class="wrap">
-    <div class="logo">
-      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="2.4" fill="#C87F3B"/><path d="M12 2v5.2M12 16.8V22M2 12h5.2M16.8 12H22M5 5l3.7 3.7M15.3 15.3L19 19M19 5l-3.7 3.7M8.7 15.3L5 19" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-      <span data-i="brand">دارة</span>
-    </div>
-    <div style="display:flex; gap:10px; align-items:center;">
-      <button class="theme-btn" id="themeToggle">🌙</button>
-      <button class="lang-btn" id="langToggle">EN</button>
-      <a href="auth.html" class="cta" data-i="navCta">ابدأ مجانًا</a>
+    <a class="logo" href="index.html" data-er-logo="full" aria-label="ElectroRed AI"></a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="#tools" id="navTools"></a><a href="#features" id="navWhy"></a><a href="#updates" id="navUpdates"></a>
+    </nav>
+    <div class="head-actions">
+      <button class="theme-btn" id="themeToggle" type="button" aria-label="Theme">🌙</button>
+      <button class="lang-btn" id="langToggle" type="button">EN</button>
+      <a href="login.html" class="lang-btn login-link" id="navLogin"></a>
+      <a href="auth.html" class="cta" id="navCta"></a>
     </div>
   </div>
 </header>
 
+<main>
 <section class="hero">
   <div class="wrap">
     <div>
       <a class="new-pill" id="newPill" href="#updates"></a>
       <div class="eyebrow" id="eyebrow"></div>
       <h1 id="heroH1"></h1>
-      <p id="heroP"></p>
+      <p class="lead" id="heroP"></p>
+      <div class="hero-pills" id="heroPills"></div>
       <div class="hero-ctas">
         <a href="auth.html" class="btn-primary" id="btn1"></a>
-        <a href="#features" class="btn-ghost" id="btn2"></a>
+        <a href="#tools" class="btn-ghost" id="btn2"></a>
       </div>
     </div>
-    <div class="circuit-card">
-      <svg class="circuit" viewBox="0 0 420 380" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="4" result="blur"/>
-            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-          <radialGradient id="bokeh1" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#4FA87D" stop-opacity=".55"/>
-            <stop offset="100%" stop-color="#4FA87D" stop-opacity="0"/>
-          </radialGradient>
-          <radialGradient id="bokeh2" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#E0954F" stop-opacity=".5"/>
-            <stop offset="100%" stop-color="#E0954F" stop-opacity="0"/>
-          </radialGradient>
-        </defs>
-        <circle cx="90" cy="90" r="46" fill="url(#bokeh1)"/>
-        <circle cx="340" cy="300" r="60" fill="url(#bokeh2)"/>
-        <circle cx="330" cy="70" r="30" fill="url(#bokeh1)"/>
-        <g filter="url(#glow)" stroke-linecap="round">
-          <path d="M40 60H140M140 60V150M140 150H80M80 150V230M140 150H220M220 150V90M220 90H300M300 90V180M300 180H370M300 180V260M220 260H300M60 230H140M60 230V290M220 260H140M220 260V330M300 260V330" stroke="#E0954F" stroke-width="1.6" opacity=".9"/>
-          <path d="M370 180V90M370 90H300" stroke="#4FA87D" stroke-width="1.6" opacity=".9"/>
-          <circle cx="40" cy="60" r="4.5" fill="#4FA87D"/><circle cx="370" cy="180" r="4.5" fill="#4FA87D"/>
-          <circle cx="60" cy="290" r="4.5" fill="#E0954F"/><circle cx="220" cy="330" r="4.5" fill="#E0954F"/>
-          <circle cx="300" cy="330" r="4.5" fill="#4FA87D"/><circle cx="370" cy="90" r="4.5" fill="#4FA87D"/>
-        </g>
-        <rect x="255" y="60" width="90" height="60" rx="6" stroke="#EFEFED" stroke-width="1.5" fill="#111413" filter="url(#glow)"/>
-        <path d="M270 60V48M290 60V48M310 60V48M330 60V48M270 120V132M290 120V132M310 120V132M330 120V132" stroke="#8D9490" stroke-width="1.2"/>
-        <text x="276" y="96" font-family="JetBrains Mono" font-size="13" fill="#E0954F">IC</text>
-        <rect x="60" y="200" width="40" height="60" rx="4" stroke="#EFEFED" stroke-width="1.5" fill="#111413"/>
-        <path d="M62 220H98M62 240H98" stroke="#8D9490" stroke-width="1.2"/>
-        <path d="M120 150 L140 130 L160 150 L140 170 Z" stroke="#EFEFED" stroke-width="1.5" fill="#111413"/>
-        <text x="103" y="115" font-family="JetBrains Mono" font-size="11" fill="#9FB0A8">5V</text>
-        <text x="333" y="205" font-family="JetBrains Mono" font-size="11" fill="#9FB0A8">10kΩ</text>
+    <div class="hero-panel" aria-hidden="true">
+      <svg class="panel-traces" viewBox="0 0 480 420" preserveAspectRatio="xMidYMid slice">
+        <g class="tr-r"><path d="M0 90H60L90 60H150"/><path d="M0 230H55L85 260H115"/><path d="M30 380H110L140 350H190"/></g>
+        <g class="tr-b"><path d="M480 90H420L390 60H330"/><path d="M480 230H425L395 260H365"/><path d="M450 380H370L340 350H290"/></g>
+        <circle class="nd-r" cx="150" cy="60" r="4"/><circle class="nd-r" cx="115" cy="260" r="4"/><circle class="nd-r" cx="190" cy="350" r="4"/>
+        <circle class="nd-b" cx="330" cy="60" r="4"/><circle class="nd-b" cx="365" cy="260" r="4"/><circle class="nd-b" cx="290" cy="350" r="4"/>
       </svg>
+      <div class="panel-mark" data-er-logo="static"></div>
     </div>
   </div>
 </section>
@@ -133,16 +173,24 @@
   </div>
 </div>
 
-<section class="features" id="features">
+<section class="block" id="tools">
   <div class="wrap">
-    <div class="section-head"><h2 id="fh"></h2><p id="fp"></p></div>
+    <div class="section-head"><div class="kicker" id="tk"></div><h2 id="th"></h2><p id="tp"></p></div>
+    <div class="tools" id="toolsGrid"></div>
+    <p class="note" id="toolsNote"></p>
+  </div>
+</section>
+
+<section class="block" id="features">
+  <div class="wrap">
+    <div class="section-head"><div class="kicker" id="fk"></div><h2 id="fh"></h2><p id="fp"></p></div>
     <div class="flist" id="flist"></div>
   </div>
 </section>
 
-<section class="updates" id="updates">
+<section class="block updates" id="updates">
   <div class="wrap">
-    <div class="section-head"><h2 id="uh"></h2><p id="up"></p></div>
+    <div class="section-head"><div class="kicker" id="uk"></div><h2 id="uh"></h2><p id="up"></p></div>
     <div id="upSoonWrap">
       <div class="up-month" id="upSoonLabel"></div>
       <div class="up-soon" id="upSoon"></div>
@@ -151,11 +199,24 @@
   </div>
 </section>
 
+<section class="block" style="padding-top:0">
+  <div class="wrap">
+    <div class="banner">
+      <h2 id="banH"></h2>
+      <p id="banP"></p>
+      <a href="auth.html" class="btn-primary" id="banBtn"></a>
+    </div>
+  </div>
+</section>
+</main>
+
 <footer><div class="wrap">
-  <span>© 2026 Dara</span>
+  <div class="foot-brand"><span data-er-logo="compact" data-size="26"></span><span class="er-wm" data-er-logo="word"></span></div>
+  <span>© 2026 ElectroRed AI · <span class="mono" dir="ltr" style="font-size:12px">Electronic Engineering AI Workspace</span></span>
   <span class="dev-credit">Developed by <b>Fertas Mohammed Redha</b></span>
 </div></footer>
 
+<script src="assets/brand.js"></script>
 <script src="assets/lang.js"></script>
 <script type="module" src="assets/analytics.js"></script>
 <script>
@@ -174,6 +235,10 @@ const UPDATES = [
              en: "Ohm's law, voltage dividers and RC circuits with sliders you control and results you see instantly." } },
 
   // ----- Released (newest first) -----
+  { date: "2026-10", tag: "new",
+    title: { ar: "هوية ElectroRed AI الجديدة", en: "The new ElectroRed AI identity" },
+    text:  { ar: "اسم وشعار وتصميم جديد بالكامل: شعار H يتوهّج بنبضة كهربائية وأنت تنتظر الرد، وزر لإيقاف التوليد، وأمثلة جاهزة للبدء.",
+             en: "A new name, logo and design: the H logo pulses with electricity while you wait for an answer, there is a Stop button, and ready-made examples to start with." } },
   { date: "2026-10", tag: "new",
     title: { ar: "إنشاء الملفات وتصدير الردود", en: "Create files and export replies" },
     text:  { ar: "اطلب تقرير Word أو جدول Excel أو عرض PowerPoint أو ملف CSV، أو صدّر أي رد كـ Word وPDF وMarkdown. وكل كتلة كود تُحمَّل بضغطة.",
@@ -213,28 +278,60 @@ const UPDATES = [
              en: "An electronics tutor in Arabic and English: rendered equations, streaming answers, saved chats, and light and dark themes." } },
 ];
 
+const SVG = {
+  chip: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zM9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg>',
+  gate: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h6a7 7 0 0 1 0 14H5zM1 9h4M1 15h4M18 12h5"/></svg>',
+  code: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 6l-3 12"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l9.5 16.5h-19zM12 10v4.5M12 17.2v.3"/></svg>',
+  img: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 9"/></svg>',
+  doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></svg>'
+};
 const CONTENT = {
-  ar:{ eyebrow:"مخصص لطلبة وتقنيي الإلكترونيك 🇩🇿",
-    h1:'مساعدك الذكي في <span>الإلكترونيك</span>',
-    p:"اشرح دروسك، حلّ تمارينك، وافهم مشاريعك — مساعد ذكاء اصطناعي مبني خصيصًا لمناهج الإلكترونيك، بالعربية والإنجليزية.",
-    btn1:"جرّب المساعد", btn2:"كيف يعمل", fh:"مبني لطريقة تفكيرك، لا لطريقة تفكير الآلة",
+  ar:{ navTools:"الأدوات", navWhy:"لماذا نحن", navUpdates:"الجديد", navLogin:"دخول", navCta:"ابدأ الآن",
+    eyebrow:"Electronic Engineering AI Workspace",
+    h1:'شريكك الذكي في <span>الإلكترونيك.</span>',
+    p:"افهم الدارات، حلّل مسائلك، اكتب وافهم كود MATLAB، وجهّز تقارير المخبر — بالعربية والإنجليزية، وبشكل أسرع وأذكى.",
+    pills:[["chip","محادثة ذكية"],["code","MATLAB والكود"],["img","صور وملفات"]],
+    btn1:"ابدأ الآن", btn2:"ماذا يقدّم",
+    tk:"TOOLS", th:"ماذا تستطيع أن تفعل مع ElectroRed AI", tp:"أدوات حقيقية لطالب الإلكترونيك، مبنية على ما يعمل فعلاً اليوم.",
+    tools:[["chip","تحليل الدارات","صِف الدارة أو أرفق صورتها، واحصل على تحليل خطوة بخطوة مع المعادلات والقيم."],
+      ["gate","المنطق الرقمي","جبر بول، جداول الحقيقة، التبسيط، وشرح البوابات المنطقية."],
+      ["code","MATLAB والكود","اقرأ واشرح واكتب كود MATLAB وPython وC وAssembly وVHDL وArduino. أرفق ملفات ‎.m ‎.py ‎.ino."],
+      ["warn","مساعدة Proteus وMultisim","أرفق لقطة شاشة أو ملف netlist واحصل على مساعدة في إيجاد الأخطاء."],
+      ["img","فهم المخططات والملفات","صور، PDF، Word، PowerPoint، Excel، وملفات نصية وكود."],
+      ["doc","التقارير والتصدير","أنشئ ملفات Word وPDF وExcel وPowerPoint، أو صدّر أي رد بضغطة."]],
+    note:"ElectroRed AI يقرأ لقطات الشاشة والملفات المصدَّرة ويشرحها؛ لكنه لا يشغّل المحاكاة بنفسه ولا يفتح ملفات المشاريع المغلقة مثل ‎.pdsprj.",
+    fk:"WHY", fh:"مبني لطريقة تفكيرك، لا لطريقة تفكير الآلة",
     fp:"كل ميزة مصمّمة حول احتياج حقيقي لطالب إلكترونيك، من أول سنة لحد التخرج.",
     features:[["شرح خطوة بخطوة","يفكك أي درس أو تمرين إلى خطوات مرتبة مع مثال محلول."],
       ["رفع الصور والملفات","صوّر مخطط دارة أو مسألة مكتوبة بخط اليد، أو ارفع PDF وWord وPowerPoint وExcel، ويحللها لك مباشرة."],
       ["مصمَّم لطالب الإلكترونيك الجزائري","يشرح بالعربية والفرنسية والإنجليزية، بأسلوب يخدم الامتحانات والتمارين."],
       ["يتذكّر محادثتك","تابع بأسئلة مثل «اشرح الخطوة 3» أو «حلّها بالإنجليزي» ويفهم قصدك من سياق المحادثة."]],
-    uh:"الجديد في دارة", up:"كل ميزة جديدة نضيفها تظهر هنا، لتعرف ما الذي تغيّر وما القادم.",
+    uk:"WHAT'S NEW", uh:"الجديد في ElectroRed AI", up:"كل ميزة جديدة نضيفها تظهر هنا، لتعرف ما الذي تغيّر وما القادم.",
+    banH:'إلكترونيات <em>أذكى.</em> مستقبل <strong>أسطع.</strong>', banP:"ابدأ بدون حساب: جرّب 15 سؤالاً مجاناً كزائر.", banBtn:"ابدأ الآن",
     newLabel:"جديد", soonLabel:"قريبًا", tagNew:"جديد", tagImproved:"تحسين", tagSoon:"قريبًا"},
-  en:{ eyebrow:"Built for electronics students & engineers",
-    h1:'Your AI tutor for <span>electronics</span>',
-    p:"Explain your lessons, solve exercises, and understand your projects — built specifically for electronics curricula, in Arabic and English.",
-    btn1:"Try the assistant", btn2:"How it works", fh:"Built around how you think, not how a model thinks",
+  en:{ navTools:"Tools", navWhy:"Why us", navUpdates:"What's new", navLogin:"Login", navCta:"Get started",
+    eyebrow:"Electronic Engineering AI Workspace",
+    h1:'Your Intelligent Partner in <span>Electronics.</span>',
+    p:"Understand circuits, analyze your problems, write and explain MATLAB code, and prepare lab reports — in Arabic and English, faster and smarter.",
+    pills:[["chip","AI chat"],["code","MATLAB & code"],["img","Images & files"]],
+    btn1:"Start now", btn2:"See what it does",
+    tk:"TOOLS", th:"What you can do with ElectroRed AI", tp:"Real tools for electronics students, built on what works today.",
+    tools:[["chip","Circuit analysis","Describe a circuit or attach its photo and get a step-by-step analysis with equations and values."],
+      ["gate","Digital logic","Boolean algebra, truth tables, simplification, and gate-level explanations."],
+      ["code","MATLAB & code","Read, explain and write MATLAB, Python, C, Assembly, VHDL and Arduino code. Attach .m, .py or .ino files."],
+      ["warn","Proteus & Multisim help","Attach a screenshot or a netlist export and get help finding the mistake."],
+      ["img","Diagrams & files","Images, PDF, Word, PowerPoint, Excel, plus text and code files."],
+      ["doc","Reports & exports","Create Word, PDF, Excel and PowerPoint files, or export any reply in one tap."]],
+    note:"ElectroRed AI reads and explains screenshots and exported files; it does not run simulations itself and cannot open closed project files such as .pdsprj.",
+    fk:"WHY", fh:"Built around how you think, not how a model thinks",
     fp:"Every feature answers a real need for an electronics student, from year one to graduation.",
     features:[["Step-by-step explanations","Breaks down any lesson into ordered steps with a solved example."],
       ["Upload images & files","Photograph a circuit or a handwritten problem, or attach a PDF, Word, PowerPoint or Excel file, for instant analysis."],
       ["Designed for Algerian electronics students","Explains in Arabic, French and English, with an exam- and exercise-oriented approach."],
       ["Remembers your conversation","Follow up with “explain step 3” or “solve it in English” — it understands from the context."]],
-    uh:"What's new in Dara", up:"Every feature we add shows up here, so you can see what changed and what's coming.",
+    uk:"WHAT'S NEW", uh:"What's new in ElectroRed AI", up:"Every feature we add shows up here, so you can see what changed and what's coming.",
+    banH:'Smarter <em>Electronics.</em> Brighter <strong>Future.</strong>', banP:"No account needed: try 15 free questions as a guest.", banBtn:"Start now",
     newLabel:"New", soonLabel:"Coming next", tagNew:"New", tagImproved:"Improved", tagSoon:"Soon"}
 };
 const el = (tag, cls, text) => { const n = document.createElement(tag); if(cls) n.className = cls; if(text !== undefined) n.textContent = text; return n; };
@@ -244,16 +341,13 @@ function monthLabel(ym){
   catch(e){ return ym; }
 }
 
-// Builds the "what's new" timeline + the hero pill from assets/updates.js (newest first).
+// Builds the "what's new" timeline + the hero pill from the UPDATES list above (newest first).
 function renderUpdates(){
-  if(typeof UPDATES === 'undefined'){ // assets/updates.js wasn't uploaded: hide the section instead of breaking the page
-    document.getElementById('updates').hidden = true; document.getElementById('newPill').hidden = true; return;
-  }
   const lang = getLang(), c = CONTENT[lang];
   const tagText = { new: c.tagNew, improved: c.tagImproved, soon: c.tagSoon };
   const soon = UPDATES.filter(u => u.tag === 'soon');
   const done = UPDATES.filter(u => u.tag !== 'soon');
-
+  document.getElementById('uk').textContent = c.uk;
   document.getElementById('uh').textContent = c.uh;
   document.getElementById('up').textContent = c.up;
   document.getElementById('upSoonWrap').hidden = !soon.length;
@@ -264,7 +358,6 @@ function renderUpdates(){
     card.append(el('span', 'tag soon', tagText.soon), el('h3', '', u.title[lang]), el('p', '', u.text[lang]));
     soonBox.appendChild(card);
   });
-
   const box = document.getElementById('upTimeline'); box.innerHTML = '';
   let lastMonth = null, line = null;
   done.forEach(u => {
@@ -277,7 +370,6 @@ function renderUpdates(){
     item.append(el('span', 'tag ' + u.tag, tagText[u.tag]), el('h3', '', u.title[lang]), el('p', '', u.text[lang]));
     line.appendChild(item);
   });
-
   const pill = document.getElementById('newPill');
   if(done.length){ pill.hidden = false; pill.innerHTML = ''; pill.append(el('b', '', c.newLabel), el('span', '', done[0].title[lang] + (lang === 'ar' ? ' ←' : ' →'))); }
   else pill.hidden = true;
@@ -285,23 +377,21 @@ function renderUpdates(){
 
 function renderContent(){
   const c = CONTENT[getLang()];
-  document.getElementById('eyebrow').textContent = c.eyebrow;
+  const set = (id, v) => { document.getElementById(id).textContent = v; };
+  ['navTools','navWhy','navUpdates','navLogin','navCta','eyebrow','btn1','btn2','tk','th','tp','fk','fh','fp','banP','banBtn'].forEach(id => set(id, c[id] !== undefined ? c[id] : ({tk:c.tk,th:c.th}[id])));
   document.getElementById('heroH1').innerHTML = c.h1;
-  document.getElementById('heroP').textContent = c.p;
-  document.getElementById('btn1').textContent = c.btn1;
-  document.getElementById('btn2').textContent = c.btn2;
-  document.getElementById('fh').textContent = c.fh;
-  document.getElementById('fp').textContent = c.fp;
-  const flist = document.getElementById('flist'); flist.innerHTML='';
-  c.features.forEach((f,i)=>{
-    const row=document.createElement('div'); row.className='frow';
-    row.innerHTML=`<div class="num">${String(i+1).padStart(2,'0')}</div><div><h3>${f[0]}</h3><p>${f[1]}</p></div>`;
-    flist.appendChild(row);
-  });
+  set('heroP', c.p); set('toolsNote', c.note);
+  document.getElementById('banH').innerHTML = c.banH;
+  const pills = document.getElementById('heroPills'); pills.innerHTML = '';
+  c.pills.forEach(([ic, label]) => { const s = el('span'); s.innerHTML = SVG[ic]; s.append(document.createTextNode(label)); pills.appendChild(s); });
+  const grid = document.getElementById('toolsGrid'); grid.innerHTML = '';
+  c.tools.forEach(([ic, h, p]) => { const a = el('article', 'tool'); const i = el('div', 'tool-ic'); i.innerHTML = SVG[ic]; a.append(i, el('h3', '', h), el('p', '', p)); grid.appendChild(a); });
+  const flist = document.getElementById('flist'); flist.innerHTML = '';
+  c.features.forEach((f, i) => { const row = el('div', 'frow'); const n = el('div', 'num', String(i + 1).padStart(2, '0')); const b = el('div'); b.append(el('h3', '', f[0]), el('p', '', f[1])); row.append(n, b); flist.appendChild(row); });
   renderUpdates();
 }
 document.addEventListener('DOMContentLoaded', renderContent);
-document.getElementById('langToggle')?.addEventListener('click', ()=> setTimeout(renderContent,0));
+document.getElementById('langToggle')?.addEventListener('click', () => setTimeout(renderContent, 0));
 </script>
 </body>
 </html>
