@@ -143,8 +143,9 @@ export function watchMessages(chatId, callback) {
 // memory: optional text version of the message the AI should remember later (typed text plus
 // the attached file's extracted text), so follow-up questions about the file keep working.
 const MAX_INLINE_IMAGE_CHARS = 700000;
-export async function addMessage(chatId, role, text, attachment = null, memory = null) {
+export async function addMessage(chatId, role, text, attachment = null, memory = null, stopped = false) {
   const data = { role, text: text || '', createdAt: serverTimestamp() };
+  if (stopped) data.stopped = true;   // the student pressed Stop: the reply is a partial one
   if (attachment) {
     const a = { kind: attachment.kind, name: attachment.name || '' };
     if (attachment.kind === 'image' && attachment.dataUrl && attachment.dataUrl.length <= MAX_INLINE_IMAGE_CHARS) {
