@@ -1,24 +1,24 @@
 // Shared bilingual dictionary — used by index.html and chat.html
 // Build stamp. Bump it (together with API_VERSION in api/chat.js) on every delivery: the settings page shows both,
 // so a half-uploaded deployment is obvious at a glance.
-const APP_VERSION = "2026.10.16";
+const APP_VERSION = "2026.10.17";
 
 const DICT = {
   ar: {
-    brand: "دارة", dir: "rtl",
+    brand: "ElectroRed AI", dir: "rtl",
     nav1: "المميزات", nav2: "المساعد", nav3: "الأسعار", navCta: "ابدأ مجانًا",
     startChat: "محادثة جديدة", search: "بحث في المحادثات", projects: "المشاريع",
     recent: "المحادثات الأخيرة", settings: "الإعدادات",
-    welcomeTitle: "أهلاً، كيف يمكنني مساعدتك اليوم؟",
-    welcomeSub: "اسأل عن أي مفهوم، مسألة، أو مشروع في الإلكترونيك.",
+    welcomeTitle: "أهلاً، على ماذا نعمل اليوم؟",
+    welcomeSub: "اسأل عن أي مفهوم أو مسألة أو مشروع في الإلكترونيك، أو أرفق صورة أو ملفاً.",
     placeholder: "اكتب رسالتك...",
-    disclaimer: "دارة قد يخطئ أحيانًا — تحقق من المعلومات المهمة.",
+    disclaimer: "قد يخطئ ElectroRed AI أحيانًا — تحقق من المعلومات المهمة.",
     signIn: "تسجيل الدخول بحساب Google",
-    authTagline: "مساعدك الذكي في الإلكترونيك — خاص بطلبة وتقنيي الإلكترونيك",
+    authTagline: "شريكك الذكي في الإلكترونيك.",
     authFoot: "محادثاتك تُحفظ تلقائياً في حسابك",
     settingsTitle: "الإعدادات", prefs: "التفضيلات", language: "اللغة", theme: "المظهر",
     light: "فاتح", dark: "داكن", system: "تلقائي", about: "حول",
-    tos: "شروط الاستخدام", privacy: "سياسة الخصوصية", aboutUs: "عن دارة", contact: "تواصل معنا",
+    tos: "شروط الاستخدام", privacy: "سياسة الخصوصية", aboutUs: "عن ElectroRed AI", contact: "تواصل معنا",
     account: "الحساب", deleteChats: "حذف كل المحادثات", logout: "تسجيل الخروج",
     guestSaveHint: "سجل دخول لحفظ محادثاتك", guestLimitMsg: "وصلت للحد الأقصى كزائر (15 سؤال) — سجل دخول للمتابعة من نفس المحادثة.",
     goLogin: "تسجيل الدخول / إنشاء حساب", goGuest: "المتابعة كضيف", backHome: "← رجوع للصفحة الرئيسية",
@@ -38,23 +38,31 @@ const DICT = {
     errPwWeak: "كلمة السر الجديدة قصيرة (6 أحرف على الأقل).", errPwMismatch: "كلمتا السر الجديدتان غير متطابقتين.",
     errPwSame: "كلمة السر الجديدة مطابقة للحالية.", errTooMany: "محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.",
     errGeneric: "تعذّر الحفظ. حاول مرة ثانية.",
+    descriptor: "مساحة عمل ذكاء اصطناعي لهندسة الإلكترونيك", tagline: "شريكك الذكي في الإلكترونيك.", tryAsking: "جرّب أن تسأل",
+    exCircuit: "تحليل الدارات", exCircuitQ: "حلّل مقسّم جهد: R1 = 1kΩ و R2 = 2kΩ و Vin = 12V، واحسب Vout والتيار.",
+    exLogic: "المنطق الرقمي", exLogicQ: "بسّط الدالة F = A'B + AB' + AB بجبر بول، ثم أعطني جدول الحقيقة.",
+    exMatlab: "مساعدة MATLAB", exMatlabQ: "اكتب كود MATLAB يرسم استجابة مرشح RC تمرير منخفض بتردد قطع 1 kHz.",
+    exProteus: "أخطاء Proteus", exProteusQ: "دارتي في Proteus لا تعطي النتيجة المتوقعة. سأرفق لقطة شاشة، ساعدني أجد الخطأ.",
+    exDiagram: "فهم المخططات", exDiagramQ: "اشرح لي كيف تعمل هذه الدارة خطوة بخطوة (سأرفق صورة المخطط).",
+    exReport: "تقارير المخبر", exReportQ: "ساعدني في كتابة تقرير مخبري عن تجربة قانون أوم، ثم جهّزه كملف Word.",
+    stopGen: "إيقاف التوليد", sendMsg: "إرسال", attachFile: "إرفاق ملف", voiceInput: "إدخال صوتي", toggleSidebar: "القائمة الجانبية", genStopped: "تم إيقاف التوليد.",
     versionMismatch: "النسختان مختلفتان: ارفع كل الملفات", versionUnknown: "غير معروفة (ملف api/chat.js قديم أو غير مرفوع)",
   },
   en: {
-    brand: "Dara", dir: "ltr",
+    brand: "ElectroRed AI", dir: "ltr",
     nav1: "Features", nav2: "Assistant", nav3: "Pricing", navCta: "Start free",
     startChat: "New chat", search: "Search chats", projects: "Projects",
     recent: "Recent chats", settings: "Settings",
-    welcomeTitle: "Hi, how can I help you today?",
-    welcomeSub: "Ask about any electronics concept, problem, or project.",
+    welcomeTitle: "Hi, what are we working on today?",
+    welcomeSub: "Ask about any electronics concept, problem or project — or attach an image or a file.",
     placeholder: "Type your message...",
-    disclaimer: "Dara can make mistakes — double-check important info.",
+    disclaimer: "ElectroRed AI can make mistakes — double-check important info.",
     signIn: "Sign in with Google",
-    authTagline: "Your AI tutor for electronics — built for students & engineers",
+    authTagline: "Your Intelligent Partner in Electronics.",
     authFoot: "Your chats are saved automatically to your account",
     settingsTitle: "Settings", prefs: "Preferences", language: "Language", theme: "Theme",
     light: "Light", dark: "Dark", system: "System", about: "About",
-    tos: "Terms of Service", privacy: "Privacy Policy", aboutUs: "About Dara", contact: "Contact us",
+    tos: "Terms of Service", privacy: "Privacy Policy", aboutUs: "About ElectroRed AI", contact: "Contact us",
     account: "Account", deleteChats: "Delete all chats", logout: "Log out",
     guestSaveHint: "Sign in to save your chats", guestLimitMsg: "You've reached the guest limit (15 questions) — sign in to continue this same conversation.",
     goLogin: "Sign in / Create account", goGuest: "Continue as guest", backHome: "← Back to home",
@@ -74,6 +82,14 @@ const DICT = {
     errPwWeak: "The new password is too short (at least 6 characters).", errPwMismatch: "The new passwords don't match.",
     errPwSame: "The new password is the same as the current one.", errTooMany: "Too many attempts. Wait a moment and try again.",
     errGeneric: "Couldn't save. Please try again.",
+    descriptor: "Electronic Engineering AI Workspace", tagline: "Your Intelligent Partner in Electronics.", tryAsking: "Try asking",
+    exCircuit: "Circuit analysis", exCircuitQ: "Analyze a voltage divider: R1 = 1kΩ, R2 = 2kΩ, Vin = 12V. Find Vout and the current.",
+    exLogic: "Digital logic", exLogicQ: "Simplify F = A'B + AB' + AB with Boolean algebra, then give me the truth table.",
+    exMatlab: "MATLAB help", exMatlabQ: "Write MATLAB code that plots the response of an RC low-pass filter with a 1 kHz cutoff.",
+    exProteus: "Proteus troubleshooting", exProteusQ: "My Proteus circuit doesn't give the expected output. I'll attach a screenshot — help me find the mistake.",
+    exDiagram: "Reading diagrams", exDiagramQ: "Explain how this circuit works step by step (I'll attach the diagram image).",
+    exReport: "Lab reports", exReportQ: "Help me write a lab report on an Ohm's law experiment, then prepare it as a Word file.",
+    stopGen: "Stop generating", sendMsg: "Send", attachFile: "Attach a file", voiceInput: "Voice input", toggleSidebar: "Sidebar", genStopped: "Generation stopped.",
     versionMismatch: "versions differ: upload all the files", versionUnknown: "unknown (api/chat.js is old or missing)",
   }
 };
@@ -90,6 +106,14 @@ function applyLang(){
   document.querySelectorAll('[data-i]').forEach(el=>{
     const k = el.getAttribute('data-i');
     if(t[k] !== undefined) el.textContent = t[k];
+  });
+  document.querySelectorAll('[data-i-aria]').forEach(el=>{
+    const k = el.getAttribute('data-i-aria');
+    if(t[k] !== undefined) el.setAttribute('aria-label', t[k]);
+  });
+  document.querySelectorAll('[data-i-title]').forEach(el=>{
+    const k = el.getAttribute('data-i-title');
+    if(t[k] !== undefined) el.setAttribute('title', t[k]);
   });
   document.querySelectorAll('[data-i-ph]').forEach(el=>{
     const k = el.getAttribute('data-i-ph');
