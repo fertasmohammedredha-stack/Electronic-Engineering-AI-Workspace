@@ -3,35 +3,46 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>دارة — ابدأ</title>
+<title>Get started · ElectroRed AI</title>
+<meta name="description" content="ElectroRed AI — Electronic Engineering AI Workspace. Sign in, or try it as a guest.">
+<meta name="theme-color" content="#07111F">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 <style>
-  .center-page{min-height:100vh; min-height:100dvh; display:flex; align-items:center; justify-content:center;
-    background: radial-gradient(circle at 20% 20%, rgba(79,168,125,.10), transparent 40%),
-                radial-gradient(circle at 80% 75%, rgba(224,149,79,.10), transparent 40%), var(--bg);}
-  .choice-card{text-align:center; padding:46px 40px; background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:0 30px 70px -30px rgba(0,0,0,.5); max-width:380px; width:92%;}
-  .choice-card .logo{font-size:24px; margin-bottom:8px;}
-  .choice-card .tagline{color:var(--ink-soft); font-size:14px; margin-bottom:30px;}
-  .choice-btn{display:block; width:100%; padding:14px 20px; border-radius:10px; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; margin-bottom:12px; text-decoration:none;}
-  .choice-btn.primary{background:var(--copper); color:#fff; border:none;}
-  .choice-btn.primary:hover{background:var(--copper-deep);}
-  .choice-btn.secondary{background:transparent; border:1px solid var(--line); color:var(--ink);}
-  .choice-btn.secondary:hover{border-color:var(--ink-soft);}
+  .center-page{min-height:100vh; min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:24px;}
+  .choice-card{text-align:center; padding:40px 34px 34px; background:linear-gradient(180deg, var(--surface), color-mix(in srgb, var(--surface) 88%, var(--bg))); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow), 0 0 0 1px color-mix(in srgb, var(--blue) 8%, transparent); max-width:400px; width:100%; position:relative; overflow:hidden;}
+  .choice-card::before{content:""; position:absolute; inset-inline:0; top:0; height:2px; background:linear-gradient(90deg, var(--er-red), var(--er-mid), var(--er-cyan));}
+  .choice-card .brand-mark{font-size:78px; display:flex; justify-content:center; margin-bottom:10px;}
+  .choice-card .brand-word{font-size:27px; display:block; margin-bottom:6px;}
+  .choice-card .descriptor{font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.16em; color:var(--ink-soft); text-transform:uppercase; direction:ltr; margin-bottom:14px;}
+  .choice-card .tagline{color:var(--ink-soft); font-size:14.5px; margin-bottom:28px;}
+  .choice-btn{display:block; width:100%; padding:14px 20px; border-radius:11px; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; margin-bottom:12px; text-decoration:none;}
+  .choice-btn.primary{background:var(--red-solid); color:#fff; border:none; box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 10px 24px -12px var(--red-solid);}
+  .choice-btn.primary:hover{background:var(--red-deep);}
+  .choice-btn.secondary{background:transparent; border:1px solid var(--line-strong); color:var(--ink);}
+  .choice-btn.secondary:hover{border-color:var(--cyan); color:var(--cyan);}
   .back-link{display:inline-block; margin-top:4px; font-size:13px; color:var(--ink-soft); text-decoration:none;}
+  .back-link:hover{color:var(--ink);}
 </style>
 </head>
 <body>
-<div class="center-page">
+<main class="center-page">
   <div class="choice-card">
-    <div class="logo">دارة</div>
+    <div class="brand-mark" data-er-logo="compact" data-size="78"></div>
+    <span class="brand-word er-wm" data-er-logo="word"></span>
+    <div class="descriptor" data-i="descriptor"></div>
     <div class="tagline" data-i="authTagline"></div>
     <a href="login.html" class="choice-btn primary" data-i="goLogin"></a>
     <a href="chat.html" class="choice-btn secondary" data-i="goGuest"></a>
     <a href="index.html" class="back-link" data-i="backHome"></a>
   </div>
-</div>
+</main>
+<script src="assets/brand.js"></script>
 <script src="assets/lang.js"></script>
 <script type="module" src="assets/analytics.js"></script>
 </body>
