@@ -51,13 +51,13 @@
   .hero-pills span{display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line-strong); background:color-mix(in srgb, var(--surface) 70%, transparent); border-radius:999px; padding:6px 13px; font-size:13px; color:var(--ink);}
   .hero-pills svg{width:15px; height:15px; fill:none; stroke:var(--cyan); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;}
   .hero-ctas{display:flex; gap:12px; flex-wrap:wrap;}
-  .hero-panel{position:relative; border:1px solid var(--line-strong); border-radius:22px; background:linear-gradient(160deg, color-mix(in srgb, var(--surface) 92%, var(--er-red)) 0%, var(--surface) 45%, color-mix(in srgb, var(--surface) 90%, var(--er-blue)) 100%); aspect-ratio:480/420; overflow:hidden; box-shadow:var(--shadow);}
+  .hero-panel{position:relative; border:1px solid var(--line-strong); border-radius:22px; background:linear-gradient(160deg, color-mix(in srgb, var(--surface) 92%, var(--er-red)) 0%, var(--surface) 45%, color-mix(in srgb, var(--surface) 90%, var(--er-blue)) 100%); aspect-ratio:480/380; max-width:460px; width:100%; justify-self:end; overflow:hidden; box-shadow:var(--shadow);}
   .hero-panel::before{content:""; position:absolute; inset:0; background-image:linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size:30px 30px; opacity:.9;}
   .panel-traces{position:absolute; inset:0; width:100%; height:100%; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round;}
   .tr-r{stroke:var(--er-red); opacity:.55;} .tr-b{stroke:var(--er-blue); opacity:.6;}
   .nd-r{fill:var(--er-red);} .nd-b{fill:var(--er-blue);}
   .panel-mark{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;}
-  .panel-mark .er-mark{width:54%; height:auto; aspect-ratio:1/1;}
+  .panel-mark .er-mark{width:34%; height:auto; aspect-ratio:1/1;}
 
   section.block{padding:62px 0;}
   .section-head{max-width:640px; margin-bottom:34px;}
@@ -110,7 +110,7 @@
 
   @media (max-width:900px){
     .hero{padding:36px 0 30px;} .hero .wrap{grid-template-columns:1fr; gap:30px;}
-    .hero-panel{max-width:440px; width:100%; margin-inline:auto;}
+    .hero-panel{max-width:400px; width:100%; margin-inline:auto; justify-self:center;}
     .tools{grid-template-columns:repeat(2,1fr);} .flist{grid-template-columns:1fr;}
     .site-nav{display:none;}
   }
@@ -123,12 +123,12 @@
   }
 </style>
 </head>
-<body>
+<body data-logo-motion="always">
 <header class="site">
   <div class="wrap">
     <a class="logo" href="index.html" data-er-logo="full" aria-label="ElectroRed AI"></a>
     <nav class="site-nav" aria-label="Primary">
-      <a href="#tools" id="navTools"></a><a href="#features" id="navWhy"></a><a href="#updates" id="navUpdates"></a>
+      <a href="#tools" id="navTools"></a><a href="#features" id="navWhy"></a><a href="#updates" id="navUpdates"></a><a href="about.html" id="navAbout"></a>
     </nav>
     <div class="head-actions">
       <button class="theme-btn" id="themeToggle" type="button" aria-label="Theme">🌙</button>
@@ -154,13 +154,13 @@
       </div>
     </div>
     <div class="hero-panel" aria-hidden="true">
-      <svg class="panel-traces" viewBox="0 0 480 420" preserveAspectRatio="xMidYMid slice">
-        <g class="tr-r"><path d="M0 90H60L90 60H150"/><path d="M0 230H55L85 260H115"/><path d="M30 380H110L140 350H190"/></g>
-        <g class="tr-b"><path d="M480 90H420L390 60H330"/><path d="M480 230H425L395 260H365"/><path d="M450 380H370L340 350H290"/></g>
-        <circle class="nd-r" cx="150" cy="60" r="4"/><circle class="nd-r" cx="115" cy="260" r="4"/><circle class="nd-r" cx="190" cy="350" r="4"/>
-        <circle class="nd-b" cx="330" cy="60" r="4"/><circle class="nd-b" cx="365" cy="260" r="4"/><circle class="nd-b" cx="290" cy="350" r="4"/>
+      <svg class="panel-traces" viewBox="0 0 480 380" preserveAspectRatio="xMidYMid slice">
+        <g class="tr-r"><path d="M0 90H60L90 60H150"/><path d="M0 230H55L85 260H115"/><path d="M30 340H110L140 310H190"/></g>
+        <g class="tr-b"><path d="M480 90H420L390 60H330"/><path d="M480 230H425L395 260H365"/><path d="M450 340H370L340 310H290"/></g>
+        <circle class="nd-r" cx="150" cy="60" r="4"/><circle class="nd-r" cx="115" cy="260" r="4"/><circle class="nd-r" cx="190" cy="310" r="4"/>
+        <circle class="nd-b" cx="330" cy="60" r="4"/><circle class="nd-b" cx="365" cy="260" r="4"/><circle class="nd-b" cx="290" cy="310" r="4"/>
       </svg>
-      <div class="panel-mark" data-er-logo="static"></div>
+      <div class="panel-mark" data-er-logo="compact"></div>
     </div>
   </div>
 </section>
@@ -212,7 +212,7 @@
 
 <footer><div class="wrap">
   <div class="foot-brand"><span data-er-logo="compact" data-size="26"></span><span class="er-wm" data-er-logo="word"></span></div>
-  <span>© 2026 ElectroRed AI · <span class="mono" dir="ltr" style="font-size:12px">Electronic Engineering AI Workspace</span></span>
+  <span>© 2026 ElectroRed AI · <a href="about.html" id="footAbout" style="text-decoration:underline"></a> · <span class="mono" dir="ltr" style="font-size:12px">Electronic Engineering AI Workspace</span></span>
   <span class="dev-credit">Developed by <b>Fertas Mohammed Redha</b></span>
 </div></footer>
 
@@ -235,6 +235,10 @@ const UPDATES = [
              en: "Ohm's law, voltage dividers and RC circuits with sliders you control and results you see instantly." } },
 
   // ----- Released (newest first) -----
+  { date: "2026-10", tag: "new",
+    title: { ar: "صفحة «عن المشروع»", en: "The About page" },
+    text:  { ar: "تعرّف على ElectroRed AI: لماذا بُني، وكيف يعمل، وما الذي يستطيعه وما لا يستطيعه، ومن صنعه.",
+             en: "Learn what ElectroRed AI is for, how it works, what it can and can't do, and who built it." } },
   { date: "2026-10", tag: "new",
     title: { ar: "هوية ElectroRed AI الجديدة", en: "The new ElectroRed AI identity" },
     text:  { ar: "اسم وشعار وتصميم جديد بالكامل: شعار H يتوهّج بنبضة كهربائية وأنت تنتظر الرد، وزر لإيقاف التوليد، وأمثلة جاهزة للبدء.",
@@ -287,7 +291,7 @@ const SVG = {
   doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></svg>'
 };
 const CONTENT = {
-  ar:{ navTools:"الأدوات", navWhy:"لماذا نحن", navUpdates:"الجديد", navLogin:"دخول", navCta:"ابدأ الآن",
+  ar:{ navTools:"الأدوات", navWhy:"لماذا نحن", navUpdates:"الجديد", navAbout:"عن المشروع", footAbout:"عن المشروع", navLogin:"دخول", navCta:"ابدأ الآن",
     eyebrow:"Electronic Engineering AI Workspace",
     h1:'شريكك الذكي في <span>الإلكترونيك.</span>',
     p:"افهم الدارات، حلّل مسائلك، اكتب وافهم كود MATLAB، وجهّز تقارير المخبر — بالعربية والإنجليزية، وبشكل أسرع وأذكى.",
@@ -310,7 +314,7 @@ const CONTENT = {
     uk:"WHAT'S NEW", uh:"الجديد في ElectroRed AI", up:"كل ميزة جديدة نضيفها تظهر هنا، لتعرف ما الذي تغيّر وما القادم.",
     banH:'إلكترونيات <em>أذكى.</em> مستقبل <strong>أسطع.</strong>', banP:"ابدأ بدون حساب: جرّب 15 سؤالاً مجاناً كزائر.", banBtn:"ابدأ الآن",
     newLabel:"جديد", soonLabel:"قريبًا", tagNew:"جديد", tagImproved:"تحسين", tagSoon:"قريبًا"},
-  en:{ navTools:"Tools", navWhy:"Why us", navUpdates:"What's new", navLogin:"Login", navCta:"Get started",
+  en:{ navTools:"Tools", navWhy:"Why us", navUpdates:"What's new", navAbout:"About", footAbout:"About", navLogin:"Login", navCta:"Get started",
     eyebrow:"Electronic Engineering AI Workspace",
     h1:'Your Intelligent Partner in <span>Electronics.</span>',
     p:"Understand circuits, analyze your problems, write and explain MATLAB code, and prepare lab reports — in Arabic and English, faster and smarter.",
@@ -378,7 +382,7 @@ function renderUpdates(){
 function renderContent(){
   const c = CONTENT[getLang()];
   const set = (id, v) => { document.getElementById(id).textContent = v; };
-  ['navTools','navWhy','navUpdates','navLogin','navCta','eyebrow','btn1','btn2','tk','th','tp','fk','fh','fp','banP','banBtn'].forEach(id => set(id, c[id] !== undefined ? c[id] : ({tk:c.tk,th:c.th}[id])));
+  ['navTools','navWhy','navUpdates','navAbout','footAbout','navLogin','navCta','eyebrow','btn1','btn2','tk','th','tp','fk','fh','fp','banP','banBtn'].forEach(id => set(id, c[id] !== undefined ? c[id] : ({tk:c.tk,th:c.th}[id])));
   document.getElementById('heroH1').innerHTML = c.h1;
   set('heroP', c.p); set('toolsNote', c.note);
   document.getElementById('banH').innerHTML = c.banH;
