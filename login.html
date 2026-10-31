@@ -6,9 +6,9 @@
 <title>Sign in · ElectroRed AI</title>
 <meta name="description" content="Sign in to ElectroRed AI — Electronic Engineering AI Workspace.">
 <meta name="theme-color" content="#07111F">
-<link rel="icon" href="/favicon.ico" sizes="48x48">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/favicon.ico?v=19" sizes="48x48">
+<link rel="icon" href="/favicon.svg?v=19" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=19">
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -34,6 +34,8 @@
   .submit-btn:hover{background:var(--red-deep);}
   .form-foot{display:flex; justify-content:space-between; align-items:center; margin-top:16px; font-size:13px;}
   .form-foot a,.form-foot span{color:var(--blue); cursor:pointer; text-decoration:none;}
+  .agree-note{margin-top:16px; font-size:12px; color:var(--ink-soft); text-align:center; line-height:1.7;}
+  .agree-note a{color:var(--ink-soft); text-decoration:underline;} .agree-note a:hover{color:var(--ink);}
   .err-msg{color:var(--danger); font-size:13px; margin-top:10px; display:none;}
   .ok-msg{color:var(--ok); font-size:13px; margin-top:10px; display:none;}
   [hidden]{display:none !important;}
@@ -87,6 +89,7 @@
 
     <div class="err-msg" id="errMsg"></div>
     <div class="ok-msg" id="okMsg"></div>
+    <p class="agree-note"><span data-i="agreePre"></span> <a href="terms.html" data-i="tos"></a> <span data-i="andWord"></span> <a href="privacy.html" data-i="privacy"></a>.</p>
   </div>
 </div>
 
