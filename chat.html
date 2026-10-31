@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Chat · ElectroRed AI</title>
+<title>ElectroRed AI</title>
 <meta name="description" content="ElectroRed AI — Electronic Engineering AI Workspace. Your Intelligent Partner in Electronics.">
 <meta name="theme-color" content="#07111F">
-<link rel="icon" href="/favicon.ico" sizes="48x48">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/favicon.ico?v=19" sizes="48x48">
+<link rel="icon" href="/favicon.svg?v=19" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=19">
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -284,7 +284,7 @@ function memoryTextFor(text, att){
 }
 
 function getGuestChat(){ return JSON.parse(localStorage.getItem('guestChat') || '[]'); }
-function saveGuestChat(arr){ localStorage.setItem('guestChat', JSON.stringify(arr)); }
+function saveGuestChat(arr){ localStorage.setItem('guestChat', JSON.stringify(arr)); if(!currentUser && typeof updateDocTitle === 'function') updateDocTitle(); }
 // guestTotal persists across "New chat" — it's the lifetime guest limit, not tied to one conversation.
 function guestQuestionCount(){ return parseInt(localStorage.getItem('guestTotal') || '0', 10); }
 function incGuestTotal(){ localStorage.setItem('guestTotal', String(guestQuestionCount() + 1)); }
@@ -305,6 +305,7 @@ function applyGuestUI(){
   document.getElementById('msgInput').disabled = atLimit;
   document.getElementById('guestCountdown').style.display = 'flex';
   document.getElementById('guestRemaining').textContent = Math.max(0, GUEST_LIMIT - count);
+  updateDocTitle();
 }
 function applyAuthedUI(user){
   document.getElementById('footerLoggedIn').style.display = 'flex';
@@ -463,8 +464,19 @@ window.newChat = function(){
   renderWelcome();
   document.querySelectorAll('.chat-item').forEach(el=>el.classList.remove('active'));
   if(!currentUser) applyGuestUI();
+  updateDocTitle();
 };
 
+// The browser tab shows the name of the open conversation (e.g. "What is a diode? · ElectroRed AI").
+function currentChatName(){
+  if(currentUser){ const c = lastChats.find(x => x.id === currentChatId); return c ? c.title : ''; }
+  const first = getGuestChat().find(m => m.role === 'user');
+  return first ? makeChatTitle(first.text) : '';
+}
+function updateDocTitle(){
+  const name = (currentChatName() || '').trim();
+  document.title = (name ? (name.length > 60 ? name.slice(0, 59) + '…' : name) : tr('startChat')) + ' · ElectroRed AI';
+}
 let lastChats = [];
 function renderChatList(chats){
   lastChats = chats;
@@ -482,6 +494,7 @@ function renderChatList(chats){
   list.querySelectorAll('.chat-item-menu-btn').forEach(btn=>{
     btn.addEventListener('click', (e)=>{ e.stopPropagation(); openChatMenu(btn.dataset.id, btn); });
   });
+  updateDocTitle();
 }
 function escapeHtml(s){ const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
@@ -569,7 +582,7 @@ function openChat(chatId, keepDom = false){
   if(!keepDom && isStreaming) window.stopGeneration(true);   // switching chats mid-reply: stop it, discard the partial
   currentChatId = chatId;
   localStorage.setItem('lastOpenChat', chatId);
-  renderChatList(lastChats);
+  renderChatList(lastChats);   // also refreshes the tab title
   if(!keepDom) document.getElementById('chatInner').innerHTML = '';
   if(unsubMessages) unsubMessages();
   unsubMessages = watchMessages(chatId, msgs => {
