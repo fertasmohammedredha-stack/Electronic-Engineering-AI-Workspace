@@ -1,69 +1,167 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>من نحن — StPathDZ</title>
-  <meta name="description" content="تعرّف على StPathDZ، المساعد الذكي المجاني لطلبة جذع مشترك علوم وتكنولوجيا بالجزائر لاختيار تخصصهم الجامعي." />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%F0%9F%8E%93</text></svg>" />
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="content.css" />
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8453655205136555" crossorigin="anonymous"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>About · ElectroRed AI</title>
+<meta name="description" content="About ElectroRed AI — Electronic Engineering AI Workspace: what it is for, how it works, what it can and can't do, and who built it.">
+<meta name="theme-color" content="#07111F">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ElectroRed AI">
+<meta property="og:title" content="About ElectroRed AI">
+<meta property="og:description" content="A study partner for electronics students, built by a student.">
+<meta property="og:image" content="https://electronic-engineering-ai-workspace.vercel.app/assets/brand/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  header.site .wrap{height:70px;}
+  .site-nav{display:flex; gap:26px; margin-inline-start:34px; margin-inline-end:auto;}
+  .site-nav a{font-size:14.5px; color:var(--ink-soft); text-decoration:none; padding:6px 2px; border-bottom:2px solid transparent;}
+  .site-nav a:hover, .site-nav a[aria-current="page"]{color:var(--ink); border-bottom-color:var(--red);}
+  .head-actions{display:flex; gap:10px; align-items:center;}
+  .about-hero{padding:64px 0 36px; max-width:780px;}
+  .kicker{font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--red); margin-bottom:12px; direction:ltr; text-align:start;}
+  html[dir="rtl"] .kicker{text-align:right;}
+  .about-hero h1{font-size:clamp(30px,4.6vw,48px); line-height:1.15; margin-bottom:16px;}
+  .about-hero h1 span{color:var(--red);}
+  .lead{font-size:17.5px; color:var(--ink-soft); max-width:660px;}
+  section.block{padding:40px 0;}
+  .section-head{max-width:660px; margin-bottom:24px;}
+  .section-head h2{font-size:clamp(24px,3.2vw,32px); line-height:1.25; margin-bottom:10px;}
+  .section-head p{color:var(--ink-soft); font-size:16px;}
+  .two{display:grid; grid-template-columns:repeat(2,1fr); gap:14px;}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:22px 22px 20px;}
+  .card h3{font-size:17px; margin-bottom:12px; display:flex; align-items:center; gap:10px;}
+  .card h3 i{font-style:normal; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font:700 14px/1 'JetBrains Mono',monospace; flex-shrink:0;}
+  .card.yes h3 i{background:color-mix(in srgb, var(--ok) 18%, transparent); color:var(--ok);}
+  .card.no h3 i{background:color-mix(in srgb, var(--red) 16%, transparent); color:var(--red);}
+  .card ul{list-style:none; display:flex; flex-direction:column; gap:10px;}
+  .card li{font-size:14.5px; color:var(--ink-soft); padding-inline-start:18px; position:relative; line-height:1.65;}
+  .card li::before{content:""; position:absolute; inset-inline-start:0; top:.72em; width:7px; height:7px; border-radius:50%; background:var(--cyan);}
+  .card.no li::before{background:var(--red);}
+  .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  .step{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:22px 20px;}
+  .step .n{font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--red); margin-bottom:10px;}
+  .step h3{font-size:17px; margin-bottom:6px;} .step p{font-size:14.5px; color:var(--ink-soft);}
+  .dev{display:flex; gap:20px; align-items:center; background:linear-gradient(120deg, color-mix(in srgb, var(--surface) 88%, var(--er-red)), var(--surface) 55%, color-mix(in srgb, var(--surface) 88%, var(--er-blue))); border:1px solid var(--line-strong); border-radius:18px; padding:26px;}
+  .dev .er-mark{font-size:64px; flex-shrink:0;}
+  .dev h3{font-size:19px; margin-bottom:6px;} .dev p{color:var(--ink-soft); font-size:15px; max-width:60ch;}
+  .banner{text-align:center; border:1px solid var(--line-strong); border-radius:20px; padding:34px 24px; background:var(--surface);}
+  .banner h2{font-size:clamp(22px,3vw,30px); margin-bottom:16px;}
+  footer{border-top:1px solid var(--line); padding:26px 0; font-size:13px; color:var(--ink-soft); margin-top:30px;}
+  footer .wrap{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;}
+  footer .foot-brand{display:flex; align-items:center; gap:10px; font-size:15px;}
+  @media (max-width:800px){ .two, .steps{grid-template-columns:1fr;} .site-nav{display:none;} .dev{flex-direction:column; text-align:center; align-items:center;} .about-hero{padding:38px 0 20px;} }
+  @media (max-width:560px){ header.site .wrap{height:62px; padding:0 14px;} .wrap{padding:0 16px;} .logo{font-size:15px;} .head-actions{gap:6px;} .cta{padding:8px 12px; font-size:13px;} .lang-btn{padding:6px 10px;} .theme-btn{width:34px; height:34px;} section.block{padding:30px 0;} }
+</style>
 </head>
 <body>
-  <header class="site-header">
-    <a href="index.html" class="logo">🎓 StPathDZ</a>
-    <nav>
-      <a href="blog.html">المدونة</a>
-      <a href="guide.html">دليل التخصصات</a>
-      <a href="faq.html">الأسئلة الشائعة</a>
-      <a href="about.html">من نحن</a>
-    </nav>
-    <a href="index.html" class="cta">جرب المساعد الذكي 🚀</a>
-  </header>
-
-  <div class="legal-page">
-    <h1>من نحن</h1>
-    <p class="legal-updated">تعرّف على StPathDZ</p>
-
-    <p>
-      StPathDZ هو مساعد ذكي مجاني، مصمم خصيصًا لمساعدة طلبة السنة الأولى جذع مشترك علوم وتكنولوجيا (ST)
-      في الجزائر على اختيار التخصص الأنسب لهم بعد السنة التمهيدية.
-    </p>
-    <p>
-      عن طريق الذكاء الاصطناعي، يجيب الموقع على أسئلة الطلبة حول الفروقات بين التخصصات
-      (الإلكترونيك، الأتوماتيك، هندسة الطرائق، الهندسة المدنية، والهندسة الميكانيكية)،
-      ويحلل كشف النقاط عند رفعه لاقتراح التخصص الأنسب حسب النتائج والميولات الشخصية،
-      كما يوضح فرص العمل والدراسات العليا المرتبطة بكل تخصص.
-    </p>
-
-    <h2>هدفنا</h2>
-    <p>
-      نؤمن أن اختيار التخصص الجامعي قرار مصيري لا يجب أن يُترك للصدفة أو لضغط المحيط.
-      هدفنا هو تقديم معلومة واضحة وموثوقة، بلغة بسيطة، تساعد كل طالب على اتخاذ قرار مبني على فهم حقيقي
-      لا على تخمين.
-    </p>
-
-    <h2>من طوّر الموقع</h2>
-    <p>
-      تم تطوير وتصميم StPathDZ من طرف <strong>Fertas Mohammed Redha</strong>،
-      كمشروع مستقل موجّه لخدمة الطلبة الجزائريين.
-    </p>
-
-    <p style="margin-top:24px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text3);">
-      ⚠️ تنبيه: لا يمثل StPathDZ أي جامعة أو جهة حكومية، وإنما هو مشروع مستقل يهدف إلى مساعدة الطلبة في اتخاذ قرارهم.
-    </p>
-  </div>
-
-  <footer class="site-footer">
-    <div class="links">
-      <a href="about.html">من نحن</a>
-      <a href="privacy.html">سياسة الخصوصية</a>
-      <a href="terms.html">شروط الاستخدام</a>
-      <a href="contact.html">تواصل معنا</a>
-      <a href="blog.html">المدونة</a>
+<header class="site">
+  <div class="wrap">
+    <a class="logo" href="index.html" data-er-logo="full" aria-label="ElectroRed AI"></a>
+    <nav class="site-nav" aria-label="Primary"><a href="index.html" id="navHome"></a><a href="about.html" id="navAbout" aria-current="page"></a></nav>
+    <div class="head-actions">
+      <button class="theme-btn" id="themeToggle" type="button" aria-label="Theme">🌙</button>
+      <button class="lang-btn" id="langToggle" type="button">EN</button>
+      <a href="auth.html" class="cta" id="navCta"></a>
     </div>
-    <p>© 2026 StPathDZ — developed by fertas Mohammed Redha</p>
-  </footer>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="about-hero">
+    <div class="kicker">ABOUT</div>
+    <h1 id="h1"></h1>
+    <p class="lead" id="lead"></p>
+  </section>
+
+  <section class="block">
+    <div class="section-head"><div class="kicker">WHY</div><h2 id="whyH"></h2><p id="whyP"></p></div>
+  </section>
+
+  <section class="block">
+    <div class="section-head"><div class="kicker">WHAT</div><h2 id="whatH"></h2></div>
+    <div class="two">
+      <div class="card yes"><h3><i>✓</i><span id="yesH"></span></h3><ul id="yesList"></ul></div>
+      <div class="card no"><h3><i>!</i><span id="noH"></span></h3><ul id="noList"></ul></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="section-head"><div class="kicker">HOW</div><h2 id="howH"></h2></div>
+    <div class="steps" id="steps"></div>
+  </section>
+
+  <section class="block">
+    <div class="section-head"><div class="kicker">DATA</div><h2 id="dataH"></h2></div>
+    <div class="card"><ul id="dataList"></ul></div>
+  </section>
+
+  <section class="block">
+    <div class="section-head"><div class="kicker">DEVELOPER</div><h2 id="devH"></h2></div>
+    <div class="dev"><span data-er-logo="static" aria-hidden="true"></span><div><h3>Fertas Mohammed Redha</h3><p id="devP"></p></div></div>
+  </section>
+
+  <section class="block">
+    <div class="banner"><h2 id="banH"></h2><a href="auth.html" class="btn-primary" id="banBtn"></a></div>
+  </section>
+</main>
+
+<footer><div class="wrap">
+  <div class="foot-brand"><span data-er-logo="compact" data-size="26"></span><span class="er-wm" data-er-logo="word"></span></div>
+  <span>© 2026 ElectroRed AI · <span class="mono" dir="ltr" style="font-size:12px">Electronic Engineering AI Workspace</span></span>
+  <span class="dev-credit">Developed by <b>Fertas Mohammed Redha</b></span>
+</div></footer>
+
+<script src="assets/brand.js"></script>
+<script src="assets/lang.js"></script>
+<script type="module" src="assets/analytics.js"></script>
+<script>
+const CONTENT = {
+  ar: { navHome:"الرئيسية", navAbout:"عن المشروع", navCta:"ابدأ الآن",
+    h1:'شريك دراسة في الإلكترونيك، <span>صنعه طالب لزملائه.</span>',
+    lead:"يساعدك ElectroRed AI على فهم الدارات والمنطق الرقمي والكود، وتحليل المسائل من الصور والملفات، وتجهيز تقارير المخبر — بالعربية والإنجليزية.",
+    whyH:"الإلكترونيك صعب لو درسته وحدك", whyP:"المحتوى الدراسي يأتي على شكل شرائح وأوراق مخبر ولقطات شاشة وكود، وغالباً بلغات مختلطة. ElectroRed AI يشرحه خطوة بخطوة باللغة التي تختارها، ويتذكّر سياق محادثتك لتتابع بأسئلتك بشكل طبيعي.",
+    whatH:"ما الذي يستطيعه، وما الذي لا يستطيعه", yesH:"يستطيع", noH:"لا يستطيع / انتبه",
+    yes:["شرح الدروس والتمارين خطوة بخطوة","تحليل الدارات من وصف أو من صورة","قراءة وشرح وكتابة كود MATLAB وPython وC وAssembly وVHDL وArduino وملفات SPICE netlist","التعامل مع الصور وملفات PDF وWord وPowerPoint وExcel والملفات النصية والكود","إنشاء ملفات Word وPDF وExcel وPowerPoint، أو تصدير أي رد"],
+    no:["لا يشغّل المحاكاة (SPICE أو Proteus أو Multisim)؛ يقرأ لقطات الشاشة والملفات المصدَّرة فقط","لا يفتح ملفات المشاريع المغلقة مثل ‎.pdsprj و‎.pkt","قد يخطئ: تحقق دائماً من النتائج المهمة مع مقررك وأستاذك"],
+    howH:"كيف يعمل",
+    steps:[["01","اسأل أو أرفق","اكتب سؤالك أو انطقه، أو أرفق صورة أو ملفاً."],["02","يحلّل المساعد","تُعالَج رسالتك بنماذج لغوية كبيرة من مزوّدي ذكاء اصطناعي خارجيين، وفق تعليمات كُتبت لطلبة الإلكترونيك."],["03","احصل على جواب واضح","شرح خطوة بخطوة مع معادلات وكود يمكنك نسخه أو تحميله أو تصديره."]],
+    dataH:"بياناتك",
+    data:["المحادثات التي تجريها وأنت مسجّل تُحفظ في حسابك لتعود إليها، ويمكنك حذف محادثة أو كل المحادثات من التطبيق.","محادثات الزائر تبقى في متصفحك فقط.","للإجابة، تُرسَل رسائلك ومرفقاتك إلى مزوّدي ذكاء اصطناعي خارجيين. لا تشارك كلمات سر أو معلومات شخصية حساسة.","ستُضاف سياسة خصوصية وشروط استخدام مفصّلة."],
+    devH:"المطوّر", devP:"طوّر ElectroRed AI الطالب Fertas Mohammed Redha، طالب إلكترونيك ومطوّر ويب وتطبيقات، كمشروع جامعي. ملاحظاتك تهمّه: استعمل زرّي 👍 و👎 تحت كل إجابة.",
+    banH:"جرّبه الآن", banBtn:"ابدأ الآن" },
+  en: { navHome:"Home", navAbout:"About", navCta:"Get started",
+    h1:'A study partner for electronics students, <span>built by a student.</span>',
+    lead:"ElectroRed AI helps you understand circuits, digital logic and code, analyze problems from images and files, and prepare lab reports — in Arabic and English.",
+    whyH:"Electronics is hard to learn alone", whyP:"Course material arrives as slides, lab sheets, screenshots and code, often mixed across languages. ElectroRed AI explains it step by step in the language you choose, and keeps the context of your conversation so you can ask follow-up questions naturally.",
+    whatH:"What it can do, and what it can't", yesH:"It can", noH:"It can't / be careful",
+    yes:["Explain lessons and exercises step by step","Analyze circuits from a description or a photo","Read, explain and write MATLAB, Python, C, Assembly, VHDL and Arduino code, and SPICE netlists","Work with images, PDF, Word, PowerPoint, Excel, text and code files","Create Word, PDF, Excel and PowerPoint files, or export any reply"],
+    no:["It does not run simulations (SPICE, Proteus, Multisim); it reads screenshots and exported files","It cannot open closed project files such as .pdsprj or .pkt","It can make mistakes: always check important results against your course and your professor"],
+    howH:"How it works",
+    steps:[["01","Ask or attach","Type or speak your question, or attach an image or a file."],["02","The assistant analyzes","Your message is processed by large language models from third-party AI providers, guided by instructions written for electronics students."],["03","Get a clear answer","Step-by-step explanations with equations and code you can copy, download or export."]],
+    dataH:"Your data",
+    data:["Conversations you have while signed in are saved to your account so you can come back to them; you can delete a chat, or all chats, from the app.","Guest conversations stay in your browser only.","To answer, your messages and attachments are sent to third-party AI providers. Don't share passwords or sensitive personal information.","A detailed privacy policy and terms of use will be added."],
+    devH:"The developer", devP:"ElectroRed AI is developed by Fertas Mohammed Redha, an electronics student and web/app developer, as a university project. Feedback is welcome: use the 👍 and 👎 buttons under each answer.",
+    banH:"Try it now", banBtn:"Start now" }
+};
+const el = (tag, cls, text) => { const n = document.createElement(tag); if(cls) n.className = cls; if(text !== undefined) n.textContent = text; return n; };
+function render(){
+  const c = CONTENT[getLang()]; const set = (id, v) => { document.getElementById(id).textContent = v; };
+  ['navHome','navAbout','navCta','lead','whyH','whyP','whatH','yesH','noH','howH','dataH','devH','devP','banH','banBtn'].forEach(id => set(id, c[id] !== undefined ? c[id] : c[id]));
+  document.getElementById('h1').innerHTML = c.h1;
+  const fill = (id, arr) => { const ul = document.getElementById(id); ul.innerHTML = ''; arr.forEach(t => ul.appendChild(el('li', '', t))); };
+  fill('yesList', c.yes); fill('noList', c.no); fill('dataList', c.data);
+  const st = document.getElementById('steps'); st.innerHTML = '';
+  c.steps.forEach(([n, h, p]) => { const d = el('div', 'step'); d.append(el('div', 'n', n), el('h3', '', h), el('p', '', p)); st.appendChild(d); });
+}
+document.addEventListener('DOMContentLoaded', render);
+document.getElementById('langToggle')?.addEventListener('click', () => setTimeout(render, 0));
+</script>
 </body>
 </html>
