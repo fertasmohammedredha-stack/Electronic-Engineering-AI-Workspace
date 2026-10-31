@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy Policy · ElectroRed AI</title>
+<meta name="description" content="How ElectroRed AI uses your information: accounts, conversations, AI providers, analytics, voice input and how to delete your data.">
+<meta name="theme-color" content="#07111F">
+<link rel="icon" href="/favicon.ico?v=19" sizes="48x48">
+<link rel="icon" href="/favicon.svg?v=19" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=19">
+<link rel="manifest" href="/site.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ElectroRed AI">
+<meta property="og:title" content="Privacy Policy · ElectroRed AI">
+<meta property="og:image" content="https://electronic-engineering-ai-workspace.vercel.app/assets/brand/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  header.site .wrap{height:70px;}
+  .site-nav{display:flex; gap:26px; margin-inline-start:34px; margin-inline-end:auto;}
+  .site-nav a{font-size:14.5px; color:var(--ink-soft); text-decoration:none; padding:6px 2px; border-bottom:2px solid transparent;}
+  .site-nav a:hover, .site-nav a[aria-current="page"]{color:var(--ink); border-bottom-color:var(--red);}
+  .head-actions{display:flex; gap:10px; align-items:center;}
+  .doc{max-width:800px; margin:0 auto; padding:56px 24px 30px;}
+  .kicker{font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--red); margin-bottom:12px; direction:ltr; text-align:start;}
+  html[dir="rtl"] .kicker{text-align:right;}
+  .doc h1{font-size:clamp(30px,4.4vw,44px); line-height:1.15; margin-bottom:10px;}
+  .updated{font-size:13.5px; color:var(--ink-soft); margin-bottom:22px;}
+  .intro{font-size:16.5px; color:var(--ink-soft); margin-bottom:26px;}
+  .toc{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 20px; margin-bottom:34px;}
+  .toc b{display:block; font-size:13px; font-family:'JetBrains Mono',monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:8px;}
+  .toc ol{padding-inline-start:20px; display:grid; grid-template-columns:repeat(2,1fr); gap:4px 24px;}
+  .toc a{color:var(--blue); text-decoration:none; font-size:14.5px;} .toc a:hover{text-decoration:underline;}
+  .doc section{padding:20px 0; border-top:1px solid var(--line); scroll-margin-top:84px;}
+  .doc h2{font-size:21px; margin-bottom:10px;}
+  .doc p{color:var(--ink-soft); font-size:15.5px; margin-bottom:10px;}
+  .doc ul{list-style:none; display:flex; flex-direction:column; gap:9px; margin:6px 0;}
+  .doc li{color:var(--ink-soft); font-size:15.5px; padding-inline-start:20px; position:relative; line-height:1.7;}
+  .doc li::before{content:""; position:absolute; inset-inline-start:0; top:.72em; width:7px; height:7px; border-radius:50%; background:var(--cyan);}
+  .doc li b, .doc p b{color:var(--ink);}
+  footer{border-top:1px solid var(--line); padding:26px 0; font-size:13px; color:var(--ink-soft); margin-top:30px;}
+  footer .wrap{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;}
+  footer .foot-brand{display:flex; align-items:center; gap:10px; font-size:15px;}
+  footer a{color:var(--ink-soft); text-decoration:underline;} footer a:hover{color:var(--ink);}
+  @media (max-width:800px){ .site-nav{display:none;} .doc{padding:34px 18px 20px;} .toc ol{grid-template-columns:1fr;} }
+  @media (max-width:560px){ header.site .wrap{height:62px; padding:0 14px;} .logo{font-size:15px;} .head-actions{gap:6px;} .cta{padding:8px 12px; font-size:13px;} .lang-btn{padding:6px 10px;} .theme-btn{width:34px; height:34px;} }
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <a class="logo" href="index.html" data-er-logo="full" aria-label="ElectroRed AI"></a>
+    <nav class="site-nav" aria-label="Primary"><a href="index.html" id="navHome"></a><a href="about.html" id="navAbout"></a><a href="privacy.html" id="navPrivacy"></a><a href="terms.html" id="navTerms"></a></nav>
+    <div class="head-actions">
+      <button class="theme-btn" id="themeToggle" type="button" aria-label="Theme">🌙</button>
+      <button class="lang-btn" id="langToggle" type="button">EN</button>
+      <a href="auth.html" class="cta" id="navCta"></a>
+    </div>
+  </div>
+</header>
+<main class="doc">
+  <div class="kicker">LEGAL</div>
+  <h1 id="h1"></h1>
+  <div class="updated" id="updated"></div>
+  <p class="intro" id="intro"></p>
+  <nav class="toc" aria-label="Contents"><b id="tocT"></b><ol id="toc"></ol></nav>
+  <div id="sections"></div>
+</main>
+<footer><div class="wrap">
+  <div class="foot-brand"><span data-er-logo="compact" data-size="26"></span><span class="er-wm" data-er-logo="word"></span></div>
+  <span>© 2026 ElectroRed AI · <a href="about.html" id="fAbout"></a> · <a href="privacy.html" id="fPrivacy"></a> · <a href="terms.html" id="fTerms"></a></span>
+  <span class="dev-credit">Developed by <b>Fertas Mohammed Redha</b></span>
+</div></footer>
+<script src="assets/brand.js"></script>
+<script src="assets/lang.js"></script>
+<script type="module" src="assets/analytics.js"></script>
+<script>
+const COMMON = {
+  ar:{ navHome:"الرئيسية", navAbout:"عن المشروع", navPrivacy:"الخصوصية", navTerms:"الشروط", navCta:"ابدأ الآن", fAbout:"عن المشروع", fPrivacy:"الخصوصية", fTerms:"الشروط", tocT:"المحتويات" },
+  en:{ navHome:"Home", navAbout:"About", navPrivacy:"Privacy", navTerms:"Terms", navCta:"Get started", fAbout:"About", fPrivacy:"Privacy", fTerms:"Terms", tocT:"Contents" }
+};
+const DOC = {"en": {"h1": "Privacy Policy", "updated": "Last updated: 31 October 2026", "intro": "ElectroRed AI is a study tool for electronics students, developed by Fertas Mohammed Redha as a university project. This page explains, in plain language, what information the service uses and why.", "sections": [{"h": "What we collect", "ul": ["<b>Account.</b> When you create an account we receive your email address and your name (from the form, or from Google if you sign in with Google). Sign-in is handled by Firebase Authentication (Google). We never see or store your password.", "<b>Conversations.</b> If you are signed in, your messages and the answers are saved to your account so you can reopen them. This includes the text of your messages, small images you attach, the names of attached files, a short excerpt of attached text that keeps follow-up questions working, and your 👍/👎 ratings.", "<b>Guests.</b> If you use the app as a guest, your conversation and the number of questions you have used stay in your browser (local storage), on your device only.", "<b>Preferences.</b> Your language and theme choices are kept in your browser.", "<b>Usage statistics.</b> We use Firebase Analytics (Google) to count things such as page views, sign-ins, messages sent and errors. These events do not contain the text of your messages.", "<b>Technical data.</b> Like any website, our hosting provider and the services we use receive technical data such as your IP address and browser type. We use IP addresses to limit abuse (rate limiting)."]}, {"h": "How your messages are answered", "p": ["To produce an answer, your message, the recent conversation and any image or file you attach are sent from your browser to our server and then to third-party AI providers (currently Groq and Google). Their processing is subject to their own terms and privacy policies.", "ElectroRed AI does not store your messages on its own server; the server only passes them on. Please do not send passwords, ID numbers or other sensitive personal information."]}, {"h": "Voice input", "p": ["If you use the microphone button, speech recognition is performed by your browser’s built-in service (in Chrome and Edge this sends audio to the browser vendor’s servers). ElectroRed AI only receives the resulting text."]}, {"h": "Files you create", "p": ["Word, PDF, Excel, PowerPoint and code files are generated in your browser. They are not uploaded anywhere by ElectroRed AI."]}, {"h": "Third-party services", "p": ["The service relies on:"], "ul": ["Google Firebase (sign-in, database, analytics)", "Vercel (hosting)", "Groq and Google (AI processing)", "Google Fonts and public code libraries from CDNs such as jsDelivr and cdnjs. These may receive your IP address when your browser loads them."]}, {"h": "Cookies and local storage", "p": ["We use local storage for your preferences and your guest conversation. Firebase and Google Analytics may use identifiers (cookies or local storage) to keep you signed in and to count visits."]}, {"h": "Keeping and deleting your data", "ul": ["Conversations stay in your account until you delete them.", "You can delete one conversation from its menu in the chat, or all your conversations from Settings. Deleting a conversation removes its messages.", "Guest data can be removed by clearing this site’s data in your browser.", "Deleting your whole account is not yet available inside the app."]}, {"h": "Security", "p": ["Access to your saved conversations is limited to your account by database security rules, and all traffic uses HTTPS. No online service is perfectly secure, so please share responsibly."]}, {"h": "Children", "p": ["ElectroRed AI is meant for university-level students. It is not directed to children under 13."]}, {"h": "Changes to this policy", "p": ["We may update this page. The date at the top shows the latest version."]}]}, "ar": {"h1": "سياسة الخصوصية", "updated": "آخر تحديث: 31 أكتوبر 2026", "intro": "ElectroRed AI أداة دراسة لطلبة الإلكترونيك، طوّرها Fertas Mohammed Redha كمشروع جامعي. توضّح هذه الصفحة بلغة بسيطة ما المعلومات التي تستخدمها الخدمة ولماذا.", "sections": [{"h": "ما الذي نجمعه", "ul": ["<b>الحساب.</b> عند إنشاء حساب نستلم بريدك الإلكتروني واسمك (من النموذج أو من Google إن سجّلت بها). يتم تسجيل الدخول عبر Firebase Authentication من Google. لا نرى كلمة السر ولا نخزّنها.", "<b>المحادثات.</b> إن كنت مسجّلاً، تُحفظ رسائلك والإجابات في حسابك لتعود إليها. يشمل ذلك نص رسائلك، والصور الصغيرة التي ترفقها، وأسماء الملفات المرفقة، ومقتطفاً قصيراً من النص المرفق يبقي الأسئلة التالية تعمل، وتقييماتك 👍/👎.", "<b>الزوار.</b> إن استعملت التطبيق كزائر، تبقى محادثتك وعدد الأسئلة المستخدمة في متصفحك (التخزين المحلي) وعلى جهازك فقط.", "<b>التفضيلات.</b> اختياراتك للغة والمظهر تُحفظ في متصفحك.", "<b>إحصاءات الاستخدام.</b> نستخدم Firebase Analytics (من Google) لعدّ أمور مثل مشاهدات الصفحات وتسجيلات الدخول والرسائل المرسلة والأخطاء. هذه الأحداث لا تتضمن نص رسائلك.", "<b>بيانات تقنية.</b> كأي موقع، يستلم مزوّد الاستضافة والخدمات التي نستعملها بيانات تقنية مثل عنوان IP ونوع المتصفح. نستخدم عناوين IP للحد من إساءة الاستخدام (تحديد معدل الطلبات)."]}, {"h": "كيف تتم الإجابة على رسائلك", "p": ["لإنتاج الإجابة، تُرسَل رسالتك والمحادثة الأخيرة وأي صورة أو ملف ترفقه من متصفحك إلى خادمنا ثم إلى مزوّدي ذكاء اصطناعي خارجيين (حالياً Groq وGoogle). تخضع معالجتهم لشروطهم وسياسات الخصوصية الخاصة بهم.", "لا يخزّن ElectroRed AI رسائلك على خادمه الخاص؛ الخادم يمرّرها فقط. يرجى عدم إرسال كلمات السر أو أرقام الهوية أو معلومات شخصية حساسة."]}, {"h": "الإدخال الصوتي", "p": ["إن استعملت زر الميكروفون، يتم التعرف على الكلام بالخدمة المدمجة في متصفحك (في Chrome وEdge يُرسَل الصوت إلى خوادم مطوّر المتصفح). ElectroRed AI يستلم النص الناتج فقط."]}, {"h": "الملفات التي تنشئها", "p": ["ملفات Word وPDF وExcel وPowerPoint والكود تُنشَأ داخل متصفحك. لا يرفعها ElectroRed AI إلى أي مكان."]}, {"h": "خدمات الأطراف الخارجية", "p": ["تعتمد الخدمة على:"], "ul": ["Google Firebase (تسجيل الدخول وقاعدة البيانات والتحليلات)", "Vercel (الاستضافة)", "Groq وGoogle (معالجة الذكاء الاصطناعي)", "خطوط Google ومكتبات برمجية عامة من شبكات CDN مثل jsDelivr وcdnjs. قد تستلم هذه عنوان IP الخاص بك عندما يحمّلها متصفحك."]}, {"h": "ملفات الارتباط والتخزين المحلي", "p": ["نستخدم التخزين المحلي لتفضيلاتك ومحادثة الزائر. وقد تستخدم Firebase وGoogle Analytics معرّفات (ملفات ارتباط أو تخزين محلي) لإبقائك مسجّلاً الدخول ولعدّ الزيارات."]}, {"h": "الاحتفاظ ببياناتك وحذفها", "ul": ["تبقى المحادثات في حسابك حتى تحذفها.", "يمكنك حذف محادثة من قائمتها في الدردشة، أو حذف كل محادثاتك من الإعدادات. حذف المحادثة يحذف رسائلها.", "يمكن إزالة بيانات الزائر بمسح بيانات هذا الموقع من متصفحك.", "حذف حسابك بالكامل غير متاح بعد داخل التطبيق."]}, {"h": "الأمان", "p": ["الوصول إلى محادثاتك المحفوظة مقصور على حسابك بقواعد أمان قاعدة البيانات، وكل الاتصالات عبر HTTPS. لا توجد خدمة إلكترونية آمنة تماماً، فاحرص على ما تشاركه."]}, {"h": "الأطفال", "p": ["ElectroRed AI موجّه لطلبة المستوى الجامعي، وليس موجّهاً للأطفال دون 13 سنة."]}, {"h": "تغييرات هذه السياسة", "p": ["قد نحدّث هذه الصفحة. يوضّح التاريخ في الأعلى آخر نسخة."]}]}};
+const el = (tag, cls, html) => { const n = document.createElement(tag); if(cls) n.className = cls; if(html !== undefined) n.innerHTML = html; return n; };
+function render(){
+  const lang = getLang(), c = COMMON[lang], d = DOC[lang];
+  Object.keys(c).forEach(id => { const n = document.getElementById(id); if(n) n.textContent = c[id]; });
+  document.getElementById('h1').textContent = d.h1; document.getElementById('updated').textContent = d.updated; document.getElementById('intro').textContent = d.intro;
+  const toc = document.getElementById('toc'), box = document.getElementById('sections'); toc.innerHTML = ''; box.innerHTML = '';
+  d.sections.forEach((s, i) => {
+    const li = el('li'); const a = el('a', '', s.h); a.href = '#s' + (i + 1); li.appendChild(a); toc.appendChild(li);
+    const sec = el('section'); sec.id = 's' + (i + 1); sec.appendChild(el('h2', '', (i + 1) + '. ' + s.h));
+    (s.p || []).forEach(t => sec.appendChild(el('p', '', t)));
+    if(s.ul){ const ul = el('ul'); s.ul.forEach(t => ul.appendChild(el('li', '', t))); sec.appendChild(ul); }
+    (s.p2 || []).forEach(t => sec.appendChild(el('p', '', t)));
+    box.appendChild(sec);
+  });
+}
+document.addEventListener('DOMContentLoaded', render);
+document.getElementById('langToggle')?.addEventListener('click', () => setTimeout(render, 0));
+</script>
+</body>
+</html>

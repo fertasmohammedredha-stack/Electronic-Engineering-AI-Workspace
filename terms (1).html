@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Terms of Service · ElectroRed AI</title>
+<meta name="description" content="The terms for using ElectroRed AI, the electronics AI study assistant.">
+<meta name="theme-color" content="#07111F">
+<link rel="icon" href="/favicon.ico?v=19" sizes="48x48">
+<link rel="icon" href="/favicon.svg?v=19" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=19">
+<link rel="manifest" href="/site.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ElectroRed AI">
+<meta property="og:title" content="Terms of Service · ElectroRed AI">
+<meta property="og:image" content="https://electronic-engineering-ai-workspace.vercel.app/assets/brand/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  header.site .wrap{height:70px;}
+  .site-nav{display:flex; gap:26px; margin-inline-start:34px; margin-inline-end:auto;}
+  .site-nav a{font-size:14.5px; color:var(--ink-soft); text-decoration:none; padding:6px 2px; border-bottom:2px solid transparent;}
+  .site-nav a:hover, .site-nav a[aria-current="page"]{color:var(--ink); border-bottom-color:var(--red);}
+  .head-actions{display:flex; gap:10px; align-items:center;}
+  .doc{max-width:800px; margin:0 auto; padding:56px 24px 30px;}
+  .kicker{font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--red); margin-bottom:12px; direction:ltr; text-align:start;}
+  html[dir="rtl"] .kicker{text-align:right;}
+  .doc h1{font-size:clamp(30px,4.4vw,44px); line-height:1.15; margin-bottom:10px;}
+  .updated{font-size:13.5px; color:var(--ink-soft); margin-bottom:22px;}
+  .intro{font-size:16.5px; color:var(--ink-soft); margin-bottom:26px;}
+  .toc{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 20px; margin-bottom:34px;}
+  .toc b{display:block; font-size:13px; font-family:'JetBrains Mono',monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:8px;}
+  .toc ol{padding-inline-start:20px; display:grid; grid-template-columns:repeat(2,1fr); gap:4px 24px;}
+  .toc a{color:var(--blue); text-decoration:none; font-size:14.5px;} .toc a:hover{text-decoration:underline;}
+  .doc section{padding:20px 0; border-top:1px solid var(--line); scroll-margin-top:84px;}
+  .doc h2{font-size:21px; margin-bottom:10px;}
+  .doc p{color:var(--ink-soft); font-size:15.5px; margin-bottom:10px;}
+  .doc ul{list-style:none; display:flex; flex-direction:column; gap:9px; margin:6px 0;}
+  .doc li{color:var(--ink-soft); font-size:15.5px; padding-inline-start:20px; position:relative; line-height:1.7;}
+  .doc li::before{content:""; position:absolute; inset-inline-start:0; top:.72em; width:7px; height:7px; border-radius:50%; background:var(--cyan);}
+  .doc li b, .doc p b{color:var(--ink);}
+  footer{border-top:1px solid var(--line); padding:26px 0; font-size:13px; color:var(--ink-soft); margin-top:30px;}
+  footer .wrap{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;}
+  footer .foot-brand{display:flex; align-items:center; gap:10px; font-size:15px;}
+  footer a{color:var(--ink-soft); text-decoration:underline;} footer a:hover{color:var(--ink);}
+  @media (max-width:800px){ .site-nav{display:none;} .doc{padding:34px 18px 20px;} .toc ol{grid-template-columns:1fr;} }
+  @media (max-width:560px){ header.site .wrap{height:62px; padding:0 14px;} .logo{font-size:15px;} .head-actions{gap:6px;} .cta{padding:8px 12px; font-size:13px;} .lang-btn{padding:6px 10px;} .theme-btn{width:34px; height:34px;} }
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <a class="logo" href="index.html" data-er-logo="full" aria-label="ElectroRed AI"></a>
+    <nav class="site-nav" aria-label="Primary"><a href="index.html" id="navHome"></a><a href="about.html" id="navAbout"></a><a href="privacy.html" id="navPrivacy"></a><a href="terms.html" id="navTerms"></a></nav>
+    <div class="head-actions">
+      <button class="theme-btn" id="themeToggle" type="button" aria-label="Theme">🌙</button>
+      <button class="lang-btn" id="langToggle" type="button">EN</button>
+      <a href="auth.html" class="cta" id="navCta"></a>
+    </div>
+  </div>
+</header>
+<main class="doc">
+  <div class="kicker">LEGAL</div>
+  <h1 id="h1"></h1>
+  <div class="updated" id="updated"></div>
+  <p class="intro" id="intro"></p>
+  <nav class="toc" aria-label="Contents"><b id="tocT"></b><ol id="toc"></ol></nav>
+  <div id="sections"></div>
+</main>
+<footer><div class="wrap">
+  <div class="foot-brand"><span data-er-logo="compact" data-size="26"></span><span class="er-wm" data-er-logo="word"></span></div>
+  <span>© 2026 ElectroRed AI · <a href="about.html" id="fAbout"></a> · <a href="privacy.html" id="fPrivacy"></a> · <a href="terms.html" id="fTerms"></a></span>
+  <span class="dev-credit">Developed by <b>Fertas Mohammed Redha</b></span>
+</div></footer>
+<script src="assets/brand.js"></script>
+<script src="assets/lang.js"></script>
+<script type="module" src="assets/analytics.js"></script>
+<script>
+const COMMON = {
+  ar:{ navHome:"الرئيسية", navAbout:"عن المشروع", navPrivacy:"الخصوصية", navTerms:"الشروط", navCta:"ابدأ الآن", fAbout:"عن المشروع", fPrivacy:"الخصوصية", fTerms:"الشروط", tocT:"المحتويات" },
+  en:{ navHome:"Home", navAbout:"About", navPrivacy:"Privacy", navTerms:"Terms", navCta:"Get started", fAbout:"About", fPrivacy:"Privacy", fTerms:"Terms", tocT:"Contents" }
+};
+const DOC = {"en": {"h1": "Terms of Service", "updated": "Last updated: 31 October 2026", "intro": "By using ElectroRed AI you agree to these terms. If you do not agree, please do not use the service.", "sections": [{"h": "The service", "p": ["ElectroRed AI is a free AI study assistant for electronics. It explains concepts, helps with exercises and code, analyzes images and files you provide, and can create documents. It is a learning aid, not professional engineering advice."]}, {"h": "AI can be wrong", "p": ["Answers are generated by AI and may be incomplete, outdated or incorrect, including calculations, code and component values. Always verify important results with your course material, your professor or datasheets.", "Never rely on it alone for safety-critical designs (mains or high voltage, medical, automotive, aviation) or anything where an error could cause harm."]}, {"h": "Academic integrity", "p": ["Use ElectroRed AI to learn. Follow your university’s rules about AI assistance and about which work must be your own. You are responsible for how you use the answers."]}, {"h": "Your account", "p": ["Give accurate information, keep your password private, and stop using the account if you suspect misuse. Guests can ask a limited number of questions (currently 15) without an account."]}, {"h": "Acceptable use", "p": ["You agree not to:"], "ul": ["use the service for unlawful, harmful or abusive purposes", "try to break, overload or bypass the limits of the service (including automated or scripted use)", "upload content you have no right to share", "try to extract hidden instructions or keys, or use the service to harm others"]}, {"h": "Your content", "p": ["You keep ownership of what you write and upload. You allow ElectroRed AI to process it, including sending it to AI providers, in order to provide the service. Answers you receive may resemble answers given to other people."]}, {"h": "Fair use and limits", "p": ["To keep the service free for everyone, we may limit the number of requests, file sizes or access, and we may change or stop features at any time."]}, {"h": "Ownership", "p": ["The ElectroRed AI name, logo and design belong to its developer. Please do not use them in a way that suggests you are affiliated with the project."]}, {"h": "No warranty", "p": ["The service is provided “as is” and “as available”, without any guarantee of accuracy, availability or fitness for a particular purpose."]}, {"h": "Limitation of liability", "p": ["To the extent allowed by law, the developer is not liable for losses resulting from using, or being unable to use, the service, or from relying on its answers."]}, {"h": "Suspension", "p": ["We may suspend or remove access if these terms are broken or to protect the service and other users."]}, {"h": "Changes to these terms", "p": ["We may update these terms. The date at the top shows the latest version, and continuing to use the service means you accept the update."]}]}, "ar": {"h1": "شروط الاستخدام", "updated": "آخر تحديث: 31 أكتوبر 2026", "intro": "باستخدامك ElectroRed AI فإنك توافق على هذه الشروط. إن لم توافق فلا تستخدم الخدمة.", "sections": [{"h": "الخدمة", "p": ["ElectroRed AI مساعد دراسي مجاني بالذكاء الاصطناعي في الإلكترونيك. يشرح المفاهيم، ويساعد في التمارين والكود، ويحلل الصور والملفات التي تقدمها، ويمكنه إنشاء مستندات. هو أداة تعلّم وليس استشارة هندسية مهنية."]}, {"h": "الذكاء الاصطناعي قد يخطئ", "p": ["الإجابات يولّدها الذكاء الاصطناعي وقد تكون ناقصة أو قديمة أو خاطئة، بما في ذلك الحسابات والكود وقيم العناصر. تحقق دائماً من النتائج المهمة من مقرراتك أو من أستاذك أو من أوراق البيانات (datasheets).", "لا تعتمد عليه وحده في تصاميم حساسة للسلامة (الجهد العالي أو الكهرباء المنزلية، الطب، السيارات، الطيران) ولا في أي أمر قد يسبب خطؤه ضرراً."]}, {"h": "النزاهة الأكاديمية", "p": ["استخدم ElectroRed AI لتتعلّم. التزم بقواعد جامعتك حول الاستعانة بالذكاء الاصطناعي وحول الأعمال التي يجب أن تكون من إنجازك. أنت مسؤول عن كيفية استعمالك للإجابات."]}, {"h": "حسابك", "p": ["قدّم معلومات صحيحة، وأبقِ كلمة السر سرية، وتوقف عن استخدام الحساب إن شككت في إساءة استعماله. يمكن للزوار طرح عدد محدود من الأسئلة (حالياً 15) بدون حساب."]}, {"h": "الاستخدام المقبول", "p": ["توافق على ألا:"], "ul": ["تستخدم الخدمة لأغراض غير قانونية أو ضارة أو مسيئة", "تحاول تعطيل الخدمة أو إغراقها أو تجاوز حدودها (بما في ذلك الاستخدام الآلي أو بالسكربتات)", "ترفع محتوى لا تملك حق مشاركته", "تحاول استخراج التعليمات الخفية أو المفاتيح، أو تستخدم الخدمة لإيذاء الآخرين"]}, {"h": "محتواك", "p": ["تبقى ملكية ما تكتبه وترفعه لك. وتسمح لـ ElectroRed AI بمعالجته، بما في ذلك إرساله إلى مزوّدي الذكاء الاصطناعي، من أجل تقديم الخدمة. قد تشبه الإجابات التي تستلمها إجابات أُعطيت لأشخاص آخرين."]}, {"h": "الاستخدام العادل والحدود", "p": ["لإبقاء الخدمة مجانية للجميع، قد نحدّ عدد الطلبات أو أحجام الملفات أو الوصول، وقد نغيّر الميزات أو نوقفها في أي وقت."]}, {"h": "الملكية", "p": ["اسم ElectroRed AI وشعاره وتصميمه ملك لمطوّره. يرجى عدم استعمالها بشكل يوحي بأنك مرتبط بالمشروع."]}, {"h": "عدم وجود ضمان", "p": ["تُقدَّم الخدمة «كما هي» و«حسب توفرها»، دون أي ضمان للدقة أو التوفر أو الملاءمة لغرض معيّن."]}, {"h": "حدود المسؤولية", "p": ["بالقدر الذي يسمح به القانون، لا يتحمل المطوّر مسؤولية الخسائر الناتجة عن استخدام الخدمة أو عدم القدرة على استخدامها أو الاعتماد على إجاباتها."]}, {"h": "التعليق", "p": ["قد نعلّق الوصول أو نزيله إن خُرقت هذه الشروط أو لحماية الخدمة والمستخدمين الآخرين."]}, {"h": "تغيير الشروط", "p": ["قد نحدّث هذه الشروط. يوضّح التاريخ في الأعلى آخر نسخة، واستمرارك في استخدام الخدمة يعني قبولك للتحديث."]}]}};
+const el = (tag, cls, html) => { const n = document.createElement(tag); if(cls) n.className = cls; if(html !== undefined) n.innerHTML = html; return n; };
+function render(){
+  const lang = getLang(), c = COMMON[lang], d = DOC[lang];
+  Object.keys(c).forEach(id => { const n = document.getElementById(id); if(n) n.textContent = c[id]; });
+  document.getElementById('h1').textContent = d.h1; document.getElementById('updated').textContent = d.updated; document.getElementById('intro').textContent = d.intro;
+  const toc = document.getElementById('toc'), box = document.getElementById('sections'); toc.innerHTML = ''; box.innerHTML = '';
+  d.sections.forEach((s, i) => {
+    const li = el('li'); const a = el('a', '', s.h); a.href = '#s' + (i + 1); li.appendChild(a); toc.appendChild(li);
+    const sec = el('section'); sec.id = 's' + (i + 1); sec.appendChild(el('h2', '', (i + 1) + '. ' + s.h));
+    (s.p || []).forEach(t => sec.appendChild(el('p', '', t)));
+    if(s.ul){ const ul = el('ul'); s.ul.forEach(t => ul.appendChild(el('li', '', t))); sec.appendChild(ul); }
+    (s.p2 || []).forEach(t => sec.appendChild(el('p', '', t)));
+    box.appendChild(sec);
+  });
+}
+document.addEventListener('DOMContentLoaded', render);
+document.getElementById('langToggle')?.addEventListener('click', () => setTimeout(render, 0));
+</script>
+</body>
+</html>
