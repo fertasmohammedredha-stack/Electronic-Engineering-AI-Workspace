@@ -19,7 +19,7 @@ import crypto from "node:crypto";
 
 // Bump together with APP_VERSION in assets/lang.js on every delivery: the settings page compares the two,
 // which immediately shows when only SOME of the files were uploaded (a mixed deployment).
-const API_VERSION = "2026.10.18";
+const API_VERSION = "2026.10.19";
 
 const ASSISTANT_NAME = "ElectroRed AI";
 const CREATOR = "Fertas Mohammed Redha";
