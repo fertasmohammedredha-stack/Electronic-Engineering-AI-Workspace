@@ -137,7 +137,7 @@
     <div class="s-group">
       <div class="s-row link" id="tosLink"><span data-i="tos"></span><span class="chev">›</span></div>
       <div class="s-row link" id="privacyLink"><span data-i="privacy"></span><span class="chev">›</span></div>
-      <div class="s-row link" id="aboutLink"><span data-i="aboutUs"></span><span class="chev">›</span></div>
+      <div class="s-row link" id="aboutLink" role="link" tabindex="0"><span data-i="aboutUs"></span><span class="chev">›</span></div>
       <div class="s-row link" id="contactLink"><span data-i="contact"></span><span class="chev">›</span></div>
     </div>
   </div>
@@ -287,8 +287,11 @@ document.getElementById('themeDark').addEventListener('click', ()=>{ setTheme('d
 document.getElementById('themeSystem').addEventListener('click', ()=>{ setTheme('system'); syncThemeUI(); });
 
 const placeholderLinks = {
-  tosLink: 'tos', privacyLink: 'privacy', aboutLink: 'aboutUs', contactLink: 'contact'
+  tosLink: 'tos', privacyLink: 'privacy', contactLink: 'contact'
 };
+const goAbout = () => { location.href = 'about.html'; };
+document.getElementById('aboutLink').addEventListener('click', goAbout);
+document.getElementById('aboutLink').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); goAbout(); } });
 Object.keys(placeholderLinks).forEach(id=>{
   document.getElementById(id).addEventListener('click', ()=>{
     alert(getLang()==='ar' ? 'هذه الصفحة قيد الإعداد.' : 'This page is coming soon.');
