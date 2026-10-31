@@ -7,9 +7,9 @@
 <meta name="description" content="ElectroRed AI — Electronic Engineering AI Workspace. Your Intelligent Partner in Electronics: circuit analysis, digital logic, MATLAB and code help, file understanding and lab reports, in Arabic and English.">
 <link rel="canonical" href="https://electronic-engineering-ai-workspace.vercel.app/">
 <meta name="theme-color" content="#07111F">
-<link rel="icon" href="/favicon.ico" sizes="48x48">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/favicon.ico?v=19" sizes="48x48">
+<link rel="icon" href="/favicon.svg?v=19" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=19">
 <link rel="manifest" href="/site.webmanifest">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ElectroRed AI">
@@ -212,7 +212,7 @@
 
 <footer><div class="wrap">
   <div class="foot-brand"><span data-er-logo="compact" data-size="26"></span><span class="er-wm" data-er-logo="word"></span></div>
-  <span>© 2026 ElectroRed AI · <a href="about.html" id="footAbout" style="text-decoration:underline"></a> · <span class="mono" dir="ltr" style="font-size:12px">Electronic Engineering AI Workspace</span></span>
+  <span>© 2026 ElectroRed AI · <a href="about.html" id="footAbout" style="text-decoration:underline"></a> · <a href="privacy.html" id="footPrivacy" style="text-decoration:underline"></a> · <a href="terms.html" id="footTerms" style="text-decoration:underline"></a> · <span class="mono" dir="ltr" style="font-size:12px">Electronic Engineering AI Workspace</span></span>
   <span class="dev-credit">Developed by <b>Fertas Mohammed Redha</b></span>
 </div></footer>
 
@@ -235,6 +235,10 @@ const UPDATES = [
              en: "Ohm's law, voltage dividers and RC circuits with sliders you control and results you see instantly." } },
 
   // ----- Released (newest first) -----
+  { date: "2026-10", tag: "new",
+    title: { ar: "سياسة الخصوصية وشروط الاستخدام", en: "Privacy Policy and Terms of Service" },
+    text:  { ar: "صفحتان تشرحان بوضوح ما الذي يُحفظ وما الذي يُرسَل لمزوّدي الذكاء الاصطناعي وكيف تحذف بياناتك.",
+             en: "Two plain-language pages explaining what is saved, what is sent to the AI providers, and how to delete your data." } },
   { date: "2026-10", tag: "new",
     title: { ar: "صفحة «عن المشروع»", en: "The About page" },
     text:  { ar: "تعرّف على ElectroRed AI: لماذا بُني، وكيف يعمل، وما الذي يستطيعه وما لا يستطيعه، ومن صنعه.",
@@ -291,7 +295,7 @@ const SVG = {
   doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></svg>'
 };
 const CONTENT = {
-  ar:{ navTools:"الأدوات", navWhy:"لماذا نحن", navUpdates:"الجديد", navAbout:"عن المشروع", footAbout:"عن المشروع", navLogin:"دخول", navCta:"ابدأ الآن",
+  ar:{ navTools:"الأدوات", navWhy:"لماذا نحن", navUpdates:"الجديد", navAbout:"عن المشروع", footAbout:"عن المشروع", footPrivacy:"الخصوصية", footTerms:"الشروط", navLogin:"دخول", navCta:"ابدأ الآن",
     eyebrow:"Electronic Engineering AI Workspace",
     h1:'شريكك الذكي في <span>الإلكترونيك.</span>',
     p:"افهم الدارات، حلّل مسائلك، اكتب وافهم كود MATLAB، وجهّز تقارير المخبر — بالعربية والإنجليزية، وبشكل أسرع وأذكى.",
@@ -314,7 +318,7 @@ const CONTENT = {
     uk:"WHAT'S NEW", uh:"الجديد في ElectroRed AI", up:"كل ميزة جديدة نضيفها تظهر هنا، لتعرف ما الذي تغيّر وما القادم.",
     banH:'إلكترونيات <em>أذكى.</em> مستقبل <strong>أسطع.</strong>', banP:"ابدأ بدون حساب: جرّب 15 سؤالاً مجاناً كزائر.", banBtn:"ابدأ الآن",
     newLabel:"جديد", soonLabel:"قريبًا", tagNew:"جديد", tagImproved:"تحسين", tagSoon:"قريبًا"},
-  en:{ navTools:"Tools", navWhy:"Why us", navUpdates:"What's new", navAbout:"About", footAbout:"About", navLogin:"Login", navCta:"Get started",
+  en:{ navTools:"Tools", navWhy:"Why us", navUpdates:"What's new", navAbout:"About", footAbout:"About", footPrivacy:"Privacy", footTerms:"Terms", navLogin:"Login", navCta:"Get started",
     eyebrow:"Electronic Engineering AI Workspace",
     h1:'Your Intelligent Partner in <span>Electronics.</span>',
     p:"Understand circuits, analyze your problems, write and explain MATLAB code, and prepare lab reports — in Arabic and English, faster and smarter.",
@@ -382,7 +386,7 @@ function renderUpdates(){
 function renderContent(){
   const c = CONTENT[getLang()];
   const set = (id, v) => { document.getElementById(id).textContent = v; };
-  ['navTools','navWhy','navUpdates','navAbout','footAbout','navLogin','navCta','eyebrow','btn1','btn2','tk','th','tp','fk','fh','fp','banP','banBtn'].forEach(id => set(id, c[id] !== undefined ? c[id] : ({tk:c.tk,th:c.th}[id])));
+  ['navTools','navWhy','navUpdates','navAbout','footAbout','footPrivacy','footTerms','navLogin','navCta','eyebrow','btn1','btn2','tk','th','tp','fk','fh','fp','banP','banBtn'].forEach(id => set(id, c[id] !== undefined ? c[id] : ({tk:c.tk,th:c.th}[id])));
   document.getElementById('heroH1').innerHTML = c.h1;
   set('heroP', c.p); set('toolsNote', c.note);
   document.getElementById('banH').innerHTML = c.banH;
