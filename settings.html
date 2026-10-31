@@ -6,9 +6,9 @@
 <title>Settings · ElectroRed AI</title>
 <meta name="description" content="ElectroRed AI account and preferences.">
 <meta name="theme-color" content="#07111F">
-<link rel="icon" href="/favicon.ico" sizes="48x48">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/favicon.ico?v=19" sizes="48x48">
+<link rel="icon" href="/favicon.svg?v=19" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=19">
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -135,8 +135,8 @@
   <div class="s-section">
     <div class="s-label" data-i="about"></div>
     <div class="s-group">
-      <div class="s-row link" id="tosLink"><span data-i="tos"></span><span class="chev">›</span></div>
-      <div class="s-row link" id="privacyLink"><span data-i="privacy"></span><span class="chev">›</span></div>
+      <div class="s-row link" id="tosLink" role="link" tabindex="0"><span data-i="tos"></span><span class="chev">›</span></div>
+      <div class="s-row link" id="privacyLink" role="link" tabindex="0"><span data-i="privacy"></span><span class="chev">›</span></div>
       <div class="s-row link" id="aboutLink" role="link" tabindex="0"><span data-i="aboutUs"></span><span class="chev">›</span></div>
       <div class="s-row link" id="contactLink"><span data-i="contact"></span><span class="chev">›</span></div>
     </div>
@@ -287,11 +287,13 @@ document.getElementById('themeDark').addEventListener('click', ()=>{ setTheme('d
 document.getElementById('themeSystem').addEventListener('click', ()=>{ setTheme('system'); syncThemeUI(); });
 
 const placeholderLinks = {
-  tosLink: 'tos', privacyLink: 'privacy', contactLink: 'contact'
+  contactLink: 'contact'
 };
-const goAbout = () => { location.href = 'about.html'; };
-document.getElementById('aboutLink').addEventListener('click', goAbout);
-document.getElementById('aboutLink').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); goAbout(); } });
+[['aboutLink', 'about.html'], ['tosLink', 'terms.html'], ['privacyLink', 'privacy.html']].forEach(([id, url]) => {
+  const row = document.getElementById(id);
+  row.addEventListener('click', () => { location.href = url; });
+  row.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); location.href = url; } });
+});
 Object.keys(placeholderLinks).forEach(id=>{
   document.getElementById(id).addEventListener('click', ()=>{
     alert(getLang()==='ar' ? 'هذه الصفحة قيد الإعداد.' : 'This page is coming soon.');
