@@ -76,17 +76,17 @@ a{color:inherit;}
 .er-sub::before{background:linear-gradient(90deg,var(--er-red),transparent);} .er-sub::after{background:linear-gradient(90deg,transparent,var(--er-cyan));}
 
 /* the logo follows the REAL generation state (set by ElectroRed.setActivity) */
-html[data-ai-state="active"] .er-mark.er-live{filter:none;}
-html[data-ai-state="active"] .er-live .er-pulse, html[data-ai-state="active"] .er-live .er-pulse-glow{opacity:1; animation:er-run 1.7s linear infinite;}
-html[data-ai-state="active"] .er-live .er-pulse-glow{opacity:.5;}
-html[data-ai-state="active"] .er-live .er-hot{animation:er-hot 1.7s ease-in-out infinite;}
-html[data-ai-state="active"] .er-live .er-hot1{animation-delay:.85s;}
+html[data-ai-state="active"] .er-mark.er-live, body[data-logo-motion="always"] .er-mark.er-live{filter:none;}
+html[data-ai-state="active"] .er-live .er-pulse, html[data-ai-state="active"] .er-live .er-pulse-glow, body[data-logo-motion="always"] .er-live .er-pulse, body[data-logo-motion="always"] .er-live .er-pulse-glow{opacity:1; animation:er-run 1.7s linear infinite;}
+html[data-ai-state="active"] .er-live .er-pulse-glow, body[data-logo-motion="always"] .er-live .er-pulse-glow{opacity:.5;}
+html[data-ai-state="active"] .er-live .er-hot, body[data-logo-motion="always"] .er-live .er-hot{animation:er-hot 1.7s ease-in-out infinite;}
+html[data-ai-state="active"] .er-live .er-hot1, body[data-logo-motion="always"] .er-live .er-hot1{animation-delay:.85s;}
 @keyframes er-run{from{stroke-dashoffset:22;} to{stroke-dashoffset:-178;}}
 @keyframes er-hot{0%,100%{opacity:.6;} 30%,55%{opacity:1;}}
 @media (prefers-reduced-motion: reduce){
-  html[data-ai-state="active"] .er-live .er-pulse, html[data-ai-state="active"] .er-live .er-pulse-glow{animation:none; stroke-dasharray:none; opacity:.85;}
-  html[data-ai-state="active"] .er-live .er-pulse-glow{opacity:.3;}
-  html[data-ai-state="active"] .er-live .er-hot{animation:none;}
+  html[data-ai-state="active"] .er-live .er-pulse, html[data-ai-state="active"] .er-live .er-pulse-glow, body[data-logo-motion="always"] .er-live .er-pulse, body[data-logo-motion="always"] .er-live .er-pulse-glow{animation:none; stroke-dasharray:none; opacity:.85;}
+  html[data-ai-state="active"] .er-live .er-pulse-glow, body[data-logo-motion="always"] .er-live .er-pulse-glow{opacity:.3;}
+  html[data-ai-state="active"] .er-live .er-hot, body[data-logo-motion="always"] .er-live .er-hot{animation:none;}
   *{scroll-behavior:auto !important;}
 }
 
