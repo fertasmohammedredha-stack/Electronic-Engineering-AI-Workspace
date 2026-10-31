@@ -4,7 +4,7 @@
 
 ## Files (upload ALL of them together — they depend on each other)
 ```
-index.html  auth.html  login.html  chat.html  settings.html
+index.html  about.html  auth.html  login.html  chat.html  settings.html
 favicon.ico  favicon.svg  favicon-active.svg  apple-touch-icon.png  site.webmanifest
 firestore.rules                      ← paste into Firebase Console → Firestore → Rules → Publish
 api/chat.js                          ← Vercel serverless function (Groq + Gemini)
@@ -20,6 +20,12 @@ assets/brand/  logo-mark.svg  logo-mark-light.svg  logo-full.svg  og-image.png  
 - Logo variants: full lockup (`data-er-logo="full"`), mark only (`compact`), never-animated (`static`), wordmark only (`word`).
 - Tab icon: static `favicon.ico` / `favicon.svg`; while the AI answers, a few pre-drawn frames cycle (one timer, removed the moment the answer ends).
   Safari and some mobile browsers ignore dynamically-changed tab icons; Google Search shows its own copy of the icon and updates it on its own schedule.
+
+## Short link
+A web address can't contain spaces or capital letters, so "ElectroRed AI.vercel.app" is not possible. Use e.g. `electroredai.vercel.app`:
+1. Vercel → your project → **Settings → Domains → Add** → type `electroredai.vercel.app` (if it's taken try `electrored-ai.vercel.app`).
+2. Firebase Console → Authentication → Settings → **Authorized domains** → add the same domain (otherwise Google sign-in fails there).
+3. Replace `electronic-engineering-ai-workspace.vercel.app` with the new domain in the `canonical`, `og:url`, `og:image` and `twitter:image` tags of `index.html`, and in the `og:image` tag of `about.html`.
 
 ## Vercel → Settings → Environment Variables
 - `GROQ_API_KEY_1` … and `GEMINI_API_KEY_1` … (Gemini is REQUIRED for images and PDFs)
