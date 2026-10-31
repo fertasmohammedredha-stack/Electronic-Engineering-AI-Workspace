@@ -1,7 +1,7 @@
 // Shared bilingual dictionary — used by index.html and chat.html
 // Build stamp. Bump it (together with API_VERSION in api/chat.js) on every delivery: the settings page shows both,
 // so a half-uploaded deployment is obvious at a glance.
-const APP_VERSION = "2026.10.17";
+const APP_VERSION = "2026.10.18";
 
 const DICT = {
   ar: {
