@@ -4,7 +4,7 @@
 
 ## Files (upload ALL of them together — they depend on each other)
 ```
-index.html  about.html  auth.html  login.html  chat.html  settings.html
+index.html  about.html  privacy.html  terms.html  auth.html  login.html  chat.html  settings.html
 favicon.ico  favicon.svg  favicon-active.svg  apple-touch-icon.png  site.webmanifest
 firestore.rules                      ← paste into Firebase Console → Firestore → Rules → Publish
 api/chat.js                          ← Vercel serverless function (Groq + Gemini)
@@ -35,6 +35,11 @@ A web address can't contain spaces or capital letters, so "ElectroRed AI.vercel.
 - Authentication → Sign-in method: **Google** and **Email/Password** enabled
 - Authentication → Settings → Authorized domains: your `*.vercel.app` domain
 - Firestore rules: publish `firestore.rules`
+
+## Tab icon not showing? (browser shows a grey globe)
+1. The icon files must sit in the SAME folder as `index.html` (repo root): `favicon.ico`, `favicon.svg`, `apple-touch-icon.png`, `site.webmanifest`; plus the `assets/brand/` folder.
+2. Open `https://YOUR-SITE/favicon.ico` — you must see the H icon. If you get a 404 the file was not uploaded.
+3. Browsers remember "this site has no icon". The links carry `?v=19` to force a fresh download; after changing the icon bump that number in every page, then hard-refresh (Ctrl+Shift+R).
 
 ## Check that the deployment is in sync (30 seconds)
 1. Open `https://YOUR-SITE/api/chat` → must show JSON with `"version"` and `"providers"` (`groq`/`gemini` should be `true`).
