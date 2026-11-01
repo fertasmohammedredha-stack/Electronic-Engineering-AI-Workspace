@@ -1,7 +1,7 @@
 // Shared bilingual dictionary — used by index.html and chat.html
 // Build stamp. Bump it (together with API_VERSION in api/chat.js) on every delivery: the settings page shows both,
 // so a half-uploaded deployment is obvious at a glance.
-const APP_VERSION = "2026.10.19";
+const APP_VERSION = "2026.10.20";
 
 const DICT = {
   ar: {
@@ -45,7 +45,7 @@ const DICT = {
     exProteus: "أخطاء Proteus", exProteusQ: "دارتي في Proteus لا تعطي النتيجة المتوقعة. سأرفق لقطة شاشة، ساعدني أجد الخطأ.",
     exDiagram: "فهم المخططات", exDiagramQ: "اشرح لي كيف تعمل هذه الدارة خطوة بخطوة (سأرفق صورة المخطط).",
     exReport: "تقارير المخبر", exReportQ: "ساعدني في كتابة تقرير مخبري عن تجربة قانون أوم، ثم جهّزه كملف Word.",
-    agreePre: "بمتابعتك فإنك توافق على", andWord: "و",
+    agreePre: "بمتابعتك فإنك توافق على", andWord: "و", openChat: "افتح المحادثة",
     stopGen: "إيقاف التوليد", sendMsg: "إرسال", attachFile: "إرفاق ملف", voiceInput: "إدخال صوتي", toggleSidebar: "القائمة الجانبية", genStopped: "تم إيقاف التوليد.",
     versionMismatch: "النسختان مختلفتان: ارفع كل الملفات", versionUnknown: "غير معروفة (ملف api/chat.js قديم أو غير مرفوع)",
   },
@@ -90,7 +90,7 @@ const DICT = {
     exProteus: "Proteus troubleshooting", exProteusQ: "My Proteus circuit doesn't give the expected output. I'll attach a screenshot — help me find the mistake.",
     exDiagram: "Reading diagrams", exDiagramQ: "Explain how this circuit works step by step (I'll attach the diagram image).",
     exReport: "Lab reports", exReportQ: "Help me write a lab report on an Ohm's law experiment, then prepare it as a Word file.",
-    agreePre: "By continuing you agree to the", andWord: "and",
+    agreePre: "By continuing you agree to the", andWord: "and", openChat: "Open chat",
     stopGen: "Stop generating", sendMsg: "Send", attachFile: "Attach a file", voiceInput: "Voice input", toggleSidebar: "Sidebar", genStopped: "Generation stopped.",
     versionMismatch: "versions differ: upload all the files", versionUnknown: "unknown (api/chat.js is old or missing)",
   }
