@@ -68,7 +68,7 @@
     <div class="head-actions">
       <button class="theme-btn" id="themeToggle" type="button" aria-label="Theme">🌙</button>
       <button class="lang-btn" id="langToggle" type="button">EN</button>
-      <a href="auth.html" class="cta" id="navCta"></a>
+      <a href="auth.html" class="cta" id="navCta" data-session-cta></a>
     </div>
   </div>
 </header>
@@ -104,17 +104,17 @@
 
   <section class="block">
     <div class="section-head"><div class="kicker">DEVELOPER</div><h2 id="devH"></h2></div>
-    <div class="dev"><span data-er-logo="static" aria-hidden="true"></span><div><h3>Fertas Mohammed Redha</h3><p id="devP"></p></div></div>
+    <div class="dev"><span data-er-logo="static" aria-hidden="true"></span><div><h3>Fertas Mohammed Redha</h3><p id="devP"></p><p><a href="contact.html" id="devLink" style="color:var(--blue); text-decoration:underline"></a></p></div></div>
   </section>
 
   <section class="block">
-    <div class="banner"><h2 id="banH"></h2><a href="auth.html" class="btn-primary" id="banBtn"></a></div>
+    <div class="banner"><h2 id="banH"></h2><a href="auth.html" class="btn-primary" id="banBtn" data-session-cta></a></div>
   </section>
 </main>
 
 <footer><div class="wrap">
   <div class="foot-brand"><span data-er-logo="compact" data-size="26"></span><span class="er-wm" data-er-logo="word"></span></div>
-  <span>© 2026 ElectroRed AI · <a href="privacy.html" id="fPrivacy" style="text-decoration:underline"></a> · <a href="terms.html" id="fTerms" style="text-decoration:underline"></a> · <span class="mono" dir="ltr" style="font-size:12px">Electronic Engineering AI Workspace</span></span>
+  <span>© 2026 ElectroRed AI · <a href="privacy.html" id="fPrivacy" style="text-decoration:underline"></a> · <a href="terms.html" id="fTerms" style="text-decoration:underline"></a> · <a href="contact.html" id="fContact" style="text-decoration:underline"></a> · <span class="mono" dir="ltr" style="font-size:12px">Electronic Engineering AI Workspace</span></span>
   <span class="dev-credit">Developed by <b>Fertas Mohammed Redha</b></span>
 </div></footer>
 
@@ -123,7 +123,7 @@
 <script type="module" src="assets/analytics.js"></script>
 <script>
 const CONTENT = {
-  ar: { navHome:"الرئيسية", navAbout:"عن المشروع", navCta:"ابدأ الآن", fPrivacy:"الخصوصية", fTerms:"الشروط",
+  ar: { navHome:"الرئيسية", navAbout:"عن المشروع", navCta:"ابدأ الآن", fPrivacy:"الخصوصية", fTerms:"الشروط", fContact:"اتصل بنا", devLink:"تواصل معه",
     h1:'شريك دراسة في الإلكترونيك، <span>صنعه طالب لزملائه.</span>',
     lead:"يساعدك ElectroRed AI على فهم الدارات والمنطق الرقمي والكود، وتحليل المسائل من الصور والملفات، وتجهيز تقارير المخبر — بالعربية والإنجليزية.",
     whyH:"الإلكترونيك صعب لو درسته وحدك", whyP:"المحتوى الدراسي يأتي على شكل شرائح وأوراق مخبر ولقطات شاشة وكود، وغالباً بلغات مختلطة. ElectroRed AI يشرحه خطوة بخطوة باللغة التي تختارها، ويتذكّر سياق محادثتك لتتابع بأسئلتك بشكل طبيعي.",
@@ -136,7 +136,7 @@ const CONTENT = {
     data:["المحادثات التي تجريها وأنت مسجّل تُحفظ في حسابك لتعود إليها، ويمكنك حذف محادثة أو كل المحادثات من التطبيق.","محادثات الزائر تبقى في متصفحك فقط.","للإجابة، تُرسَل رسائلك ومرفقاتك إلى مزوّدي ذكاء اصطناعي خارجيين. لا تشارك كلمات سر أو معلومات شخصية حساسة.","اقرأ سياسة الخصوصية وشروط الاستخدام كاملة في صفحتيهما."],
     devH:"المطوّر", devP:"طوّر ElectroRed AI الطالب Fertas Mohammed Redha، طالب إلكترونيك ومطوّر ويب وتطبيقات، كمشروع جامعي. ملاحظاتك تهمّه: استعمل زرّي 👍 و👎 تحت كل إجابة.",
     banH:"جرّبه الآن", banBtn:"ابدأ الآن" },
-  en: { navHome:"Home", navAbout:"About", navCta:"Get started", fPrivacy:"Privacy", fTerms:"Terms",
+  en: { navHome:"Home", navAbout:"About", navCta:"Get started", fPrivacy:"Privacy", fTerms:"Terms", fContact:"Contact", devLink:"Contact the developer",
     h1:'A study partner for electronics students, <span>built by a student.</span>',
     lead:"ElectroRed AI helps you understand circuits, digital logic and code, analyze problems from images and files, and prepare lab reports — in Arabic and English.",
     whyH:"Electronics is hard to learn alone", whyP:"Course material arrives as slides, lab sheets, screenshots and code, often mixed across languages. ElectroRed AI explains it step by step in the language you choose, and keeps the context of your conversation so you can ask follow-up questions naturally.",
@@ -153,12 +153,13 @@ const CONTENT = {
 const el = (tag, cls, text) => { const n = document.createElement(tag); if(cls) n.className = cls; if(text !== undefined) n.textContent = text; return n; };
 function render(){
   const c = CONTENT[getLang()]; const set = (id, v) => { document.getElementById(id).textContent = v; };
-  ['navHome','navAbout','navCta','fPrivacy','fTerms','lead','whyH','whyP','whatH','yesH','noH','howH','dataH','devH','devP','banH','banBtn'].forEach(id => set(id, c[id] !== undefined ? c[id] : c[id]));
+  ['navHome','navAbout','navCta','fPrivacy','fTerms','fContact','devLink','lead','whyH','whyP','whatH','yesH','noH','howH','dataH','devH','devP','banH','banBtn'].forEach(id => set(id, c[id] !== undefined ? c[id] : c[id]));
   document.getElementById('h1').innerHTML = c.h1;
   const fill = (id, arr) => { const ul = document.getElementById(id); ul.innerHTML = ''; arr.forEach(t => ul.appendChild(el('li', '', t))); };
   fill('yesList', c.yes); fill('noList', c.no); fill('dataList', c.data);
   const st = document.getElementById('steps'); st.innerHTML = '';
   c.steps.forEach(([n, h, p]) => { const d = el('div', 'step'); d.append(el('div', 'n', n), el('h3', '', h), el('p', '', p)); st.appendChild(d); });
+  ElectroRed.applySession();
 }
 document.addEventListener('DOMContentLoaded', render);
 document.getElementById('langToggle')?.addEventListener('click', () => setTimeout(render, 0));
