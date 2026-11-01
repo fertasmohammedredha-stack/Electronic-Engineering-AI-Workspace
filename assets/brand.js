@@ -169,10 +169,19 @@
     if (on) startFavicon(); else restoreFavicon();
   }
 
+  // ------------------------------------------------------------------ signed-in visitors on the public pages
+  // Buttons marked data-session-cta become "Open chat" → chat.html; data-session-hide elements (e.g. "Login") disappear.
+  function isSignedIn() { try { return localStorage.getItem('erSignedIn') === '1'; } catch (e) { return false; } }
+  function applySession() {
+    const on = isSignedIn();
+    document.querySelectorAll('[data-session-cta]').forEach(a => { if (on) { a.setAttribute('href', 'chat.html'); a.textContent = typeof tr === 'function' ? tr('openChat') : 'Open chat'; } });
+    document.querySelectorAll('[data-session-hide]').forEach(e => { e.hidden = on; });
+  }
+
   document.documentElement.setAttribute('data-ai-state', 'idle');
   window.addEventListener('pagehide', () => { if (S.timer) { clearInterval(S.timer); S.timer = null; } });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => mount());
   else mount();
 
-  window.ElectroRed = { name: NAME, descriptor: DESCRIPTOR, geometry: GEO, markSVG, logoHTML, mount, iconSVG, standaloneMarkSVG, faviconFrame, setActivity, isActive: () => S.active, _state: S };
+  window.ElectroRed = { name: NAME, descriptor: DESCRIPTOR, geometry: GEO, markSVG, logoHTML, mount, applySession, isSignedIn, iconSVG, standaloneMarkSVG, faviconFrame, setActivity, isActive: () => S.active, _state: S };
 })();
