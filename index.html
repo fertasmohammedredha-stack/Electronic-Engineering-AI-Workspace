@@ -133,8 +133,8 @@
     <div class="head-actions">
       <button class="theme-btn" id="themeToggle" type="button" aria-label="Theme">🌙</button>
       <button class="lang-btn" id="langToggle" type="button">EN</button>
-      <a href="login.html" class="lang-btn login-link" id="navLogin"></a>
-      <a href="auth.html" class="cta" id="navCta"></a>
+      <a href="login.html" class="lang-btn login-link" id="navLogin" data-session-hide></a>
+      <a href="auth.html" class="cta" id="navCta" data-session-cta></a>
     </div>
   </div>
 </header>
@@ -149,7 +149,7 @@
       <p class="lead" id="heroP"></p>
       <div class="hero-pills" id="heroPills"></div>
       <div class="hero-ctas">
-        <a href="auth.html" class="btn-primary" id="btn1"></a>
+        <a href="auth.html" class="btn-primary" id="btn1" data-session-cta></a>
         <a href="#tools" class="btn-ghost" id="btn2"></a>
       </div>
     </div>
@@ -204,7 +204,7 @@
     <div class="banner">
       <h2 id="banH"></h2>
       <p id="banP"></p>
-      <a href="auth.html" class="btn-primary" id="banBtn"></a>
+      <a href="auth.html" class="btn-primary" id="banBtn" data-session-cta></a>
     </div>
   </div>
 </section>
@@ -212,7 +212,7 @@
 
 <footer><div class="wrap">
   <div class="foot-brand"><span data-er-logo="compact" data-size="26"></span><span class="er-wm" data-er-logo="word"></span></div>
-  <span>© 2026 ElectroRed AI · <a href="about.html" id="footAbout" style="text-decoration:underline"></a> · <a href="privacy.html" id="footPrivacy" style="text-decoration:underline"></a> · <a href="terms.html" id="footTerms" style="text-decoration:underline"></a> · <span class="mono" dir="ltr" style="font-size:12px">Electronic Engineering AI Workspace</span></span>
+  <span>© 2026 ElectroRed AI · <a href="about.html" id="footAbout" style="text-decoration:underline"></a> · <a href="privacy.html" id="footPrivacy" style="text-decoration:underline"></a> · <a href="terms.html" id="footTerms" style="text-decoration:underline"></a> · <a href="contact.html" id="footContact" style="text-decoration:underline"></a> · <span class="mono" dir="ltr" style="font-size:12px">Electronic Engineering AI Workspace</span></span>
   <span class="dev-credit">Developed by <b>Fertas Mohammed Redha</b></span>
 </div></footer>
 
@@ -235,6 +235,14 @@ const UPDATES = [
              en: "Ohm's law, voltage dividers and RC circuits with sliders you control and results you see instantly." } },
 
   // ----- Released (newest first) -----
+  { date: "2026-10", tag: "new",
+    title: { ar: "صفحة الاتصال", en: "The Contact page" },
+    text:  { ar: "راسل المطوّر مباشرة بالبريد الإلكتروني للأسئلة والاقتراحات والأخطاء وطلبات البيانات.",
+             en: "Email the developer directly with questions, suggestions, bug reports and data requests." } },
+  { date: "2026-10", tag: "improved",
+    title: { ar: "تعامل أفضل مع الملفات الكبيرة والتنقل", en: "Better handling of large files, and smoother navigation" },
+    text:  { ar: "ينتظر الموقع وقتاً أطول عند تحليل الصور وملفات PDF الكبيرة ويخبرك أنه ما زال يعمل. والضغط على اسم الموقع داخل التطبيق يفتح محادثة جديدة بدل الخروج للصفحة الرئيسية.",
+             en: "The site waits longer when analyzing big images and PDFs and tells you it is still working. Clicking the site name inside the app opens a new chat instead of leaving for the home page." } },
   { date: "2026-10", tag: "new",
     title: { ar: "سياسة الخصوصية وشروط الاستخدام", en: "Privacy Policy and Terms of Service" },
     text:  { ar: "صفحتان تشرحان بوضوح ما الذي يُحفظ وما الذي يُرسَل لمزوّدي الذكاء الاصطناعي وكيف تحذف بياناتك.",
@@ -295,7 +303,7 @@ const SVG = {
   doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></svg>'
 };
 const CONTENT = {
-  ar:{ navTools:"الأدوات", navWhy:"لماذا نحن", navUpdates:"الجديد", navAbout:"عن المشروع", footAbout:"عن المشروع", footPrivacy:"الخصوصية", footTerms:"الشروط", navLogin:"دخول", navCta:"ابدأ الآن",
+  ar:{ navTools:"الأدوات", navWhy:"لماذا نحن", navUpdates:"الجديد", navAbout:"عن المشروع", footAbout:"عن المشروع", footPrivacy:"الخصوصية", footTerms:"الشروط", footContact:"اتصل بنا", navLogin:"دخول", navCta:"ابدأ الآن",
     eyebrow:"Electronic Engineering AI Workspace",
     h1:'شريكك الذكي في <span>الإلكترونيك.</span>',
     p:"افهم الدارات، حلّل مسائلك، اكتب وافهم كود MATLAB، وجهّز تقارير المخبر — بالعربية والإنجليزية، وبشكل أسرع وأذكى.",
@@ -318,7 +326,7 @@ const CONTENT = {
     uk:"WHAT'S NEW", uh:"الجديد في ElectroRed AI", up:"كل ميزة جديدة نضيفها تظهر هنا، لتعرف ما الذي تغيّر وما القادم.",
     banH:'إلكترونيات <em>أذكى.</em> مستقبل <strong>أسطع.</strong>', banP:"ابدأ بدون حساب: جرّب 15 سؤالاً مجاناً كزائر.", banBtn:"ابدأ الآن",
     newLabel:"جديد", soonLabel:"قريبًا", tagNew:"جديد", tagImproved:"تحسين", tagSoon:"قريبًا"},
-  en:{ navTools:"Tools", navWhy:"Why us", navUpdates:"What's new", navAbout:"About", footAbout:"About", footPrivacy:"Privacy", footTerms:"Terms", navLogin:"Login", navCta:"Get started",
+  en:{ navTools:"Tools", navWhy:"Why us", navUpdates:"What's new", navAbout:"About", footAbout:"About", footPrivacy:"Privacy", footTerms:"Terms", footContact:"Contact", navLogin:"Login", navCta:"Get started",
     eyebrow:"Electronic Engineering AI Workspace",
     h1:'Your Intelligent Partner in <span>Electronics.</span>',
     p:"Understand circuits, analyze your problems, write and explain MATLAB code, and prepare lab reports — in Arabic and English, faster and smarter.",
@@ -386,7 +394,7 @@ function renderUpdates(){
 function renderContent(){
   const c = CONTENT[getLang()];
   const set = (id, v) => { document.getElementById(id).textContent = v; };
-  ['navTools','navWhy','navUpdates','navAbout','footAbout','footPrivacy','footTerms','navLogin','navCta','eyebrow','btn1','btn2','tk','th','tp','fk','fh','fp','banP','banBtn'].forEach(id => set(id, c[id] !== undefined ? c[id] : ({tk:c.tk,th:c.th}[id])));
+  ['navTools','navWhy','navUpdates','navAbout','footAbout','footPrivacy','footTerms','footContact','navLogin','navCta','eyebrow','btn1','btn2','tk','th','tp','fk','fh','fp','banP','banBtn'].forEach(id => set(id, c[id] !== undefined ? c[id] : ({tk:c.tk,th:c.th}[id])));
   document.getElementById('heroH1').innerHTML = c.h1;
   set('heroP', c.p); set('toolsNote', c.note);
   document.getElementById('banH').innerHTML = c.banH;
@@ -397,6 +405,7 @@ function renderContent(){
   const flist = document.getElementById('flist'); flist.innerHTML = '';
   c.features.forEach((f, i) => { const row = el('div', 'frow'); const n = el('div', 'num', String(i + 1).padStart(2, '0')); const b = el('div'); b.append(el('h3', '', f[0]), el('p', '', f[1])); row.append(n, b); flist.appendChild(row); });
   renderUpdates();
+  ElectroRed.applySession();
 }
 document.addEventListener('DOMContentLoaded', renderContent);
 document.getElementById('langToggle')?.addEventListener('click', () => setTimeout(renderContent, 0));
