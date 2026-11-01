@@ -19,7 +19,7 @@ import crypto from "node:crypto";
 
 // Bump together with APP_VERSION in assets/lang.js on every delivery: the settings page compares the two,
 // which immediately shows when only SOME of the files were uploaded (a mixed deployment).
-const API_VERSION = "2026.10.19";
+const API_VERSION = "2026.10.20";
 
 const ASSISTANT_NAME = "ElectroRed AI";
 const CREATOR = "Fertas Mohammed Redha";
@@ -29,7 +29,7 @@ const GROQ_VISION_MODEL = "qwen/qwen3.8-27b"; // confirmed against console.groq.
 const GEMINI_MODEL = "gemini-3.8-flash"; // Google's own 404 told us to move here from 2.5-flash
 
 // ---- Provider timeouts: how long we wait for a provider to START answering before trying the next one ----
-const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 40000; // PDFs/images can take a while to begin
+const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 110000; // PDFs/images can take a long time before the first word (the model reads the whole file first)
 const GROQ_TIMEOUT_MS = Number(process.env.GROQ_TIMEOUT_MS) || 25000;
 
 // ---- Memory budgets (in characters; Arabic/mixed text ≈ 3 chars per token) ----
