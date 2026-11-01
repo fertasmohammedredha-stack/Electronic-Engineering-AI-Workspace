@@ -114,6 +114,7 @@
   .ex-t{font-weight:600; font-size:14px;}
   .ex-p{font-size:12.5px; color:var(--ink-soft); line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
   .bubble.bot.error{border-color:color-mix(in srgb, var(--danger) 55%, var(--line)); background:color-mix(in srgb, var(--danger) 8%, var(--surface));}
+  .wait-hint{font-size:13px; color:var(--ink-soft); margin-inline-start:6px;}
   .stopped-note{display:block; margin-top:8px; font-size:12px; color:var(--ink-soft);}
   .icon-round.send svg{width:19px; height:19px;}
   .icon-round svg.ic{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;}
@@ -124,7 +125,7 @@
 <div class="chat-app">
   <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="setSidebarOpen(false)"></div>
   <aside class="sidebar" id="sidebar">
-    <a href="index.html" class="sidebar-brand" data-er-logo="full" aria-label="ElectroRed AI"></a>
+    <a href="chat.html" class="sidebar-brand" data-er-logo="full" aria-label="ElectroRed AI"></a>
     <div class="sidebar-top">
       <button class="btn-primary new-chat" data-i="startChat" onclick="newChat()"></button>
       <input class="search" data-i-ph="search" oninput="filterChats(this.value)">
@@ -156,7 +157,7 @@
   <main class="chat-main">
     <div class="chat-topbar">
       <button class="icon-btn" id="sidebarToggle" data-i-aria="toggleSidebar" aria-label="Sidebar">☰</button>
-      <a href="index.html" class="topbar-brand" data-er-logo="full" aria-label="ElectroRed AI"></a>
+      <a href="chat.html" class="topbar-brand" data-er-logo="full" aria-label="ElectroRed AI"></a>
       <div class="guest-countdown" id="guestCountdown" style="display:none;">⏳ <b id="guestRemaining">15</b></div>
     </div>
     <div class="chat-scroll" id="chatScroll">
@@ -230,6 +231,14 @@ window.stopGeneration = function(discard){
 window.onSendClick = function(){ if(isStreaming) window.stopGeneration(); else window.sendMessage(); };
 document.addEventListener('keydown', e => { if(e.key === 'Escape' && isStreaming) window.stopGeneration(); });
 setGenerating(false);
+
+// The site name inside the app never leaves the app (and never looks like a logout): it just opens a fresh chat.
+document.querySelectorAll('.sidebar-brand, .topbar-brand').forEach(a => a.addEventListener('click', e => {
+  e.preventDefault();
+  if(isStreaming) return;               // an answer is being written: don't interrupt it
+  window.newChat();
+  document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarBackdrop')?.classList.remove('show');
+}));
 
 // ---- welcome screen: logo, descriptor and examples of what the assistant really supports ----
 const EX_ICONS = {
@@ -1083,7 +1092,9 @@ function makeChatTitle(text){
 }
 
 const MAX_MESSAGE_CHARS = 12000;
-const FIRST_BYTE_TIMEOUT_MS = 60000; // no reply started after this long -> stop waiting and say so
+const FIRST_BYTE_TIMEOUT_MS = 60000;        // plain questions: no reply started after this long -> stop waiting and say so
+const FIRST_BYTE_TIMEOUT_FILE_MS = 150000;  // questions with an image/PDF/file: the model reads the whole file first, so it needs longer
+const WAIT_HINT_MS = 8000;                  // after this long without a word, tell the student the AI is still working
 // Which build of the site this is (set in assets/lang.js). If it differs from the server's, files are out of sync.
 const CLIENT_VERSION = typeof APP_VERSION === 'string' ? APP_VERSION : 'unknown';
 console.info('ElectroRed AI web', CLIENT_VERSION);
@@ -1143,7 +1154,7 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
 
   isStreaming = true; stopRequested = false;
   setGenerating(true);
-  let botBubble = null, stopped = false, savedUser = !showUser, savedBot = false, newBotId = null, ok = false, guestIdx, stallTimer = null;
+  let botBubble = null, stopped = false, savedUser = !showUser, savedBot = false, newBotId = null, ok = false, guestIdx, stallTimer = null, hintTimer = null, gotFirst = false;
   try {
     // 1) Save the student's message. A storage problem must never block the answer.
     if(currentUser){
@@ -1170,7 +1181,14 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
     // Signed-in students prove who they are with their Firebase ID token; guests send none.
     const ctrl = new AbortController();
     activeCtrl = ctrl; if(stopRequested) ctrl.abort();   // Stop pressed while the message was still being saved
-    stallTimer = setTimeout(() => ctrl.abort(), FIRST_BYTE_TIMEOUT_MS); // cleared when the first part of the reply arrives
+    stallTimer = setTimeout(() => ctrl.abort(), attachment ? FIRST_BYTE_TIMEOUT_FILE_MS : FIRST_BYTE_TIMEOUT_MS); // cleared when the first part of the reply arrives
+    hintTimer = setTimeout(() => {   // a long wait is normal for files: say so instead of looking frozen
+      if(gotFirst || !botBubble) return;
+      botBubble.innerHTML = '<span class="cursor-blink"></span> <span class="wait-hint"></span>';
+      botBubble.querySelector('.wait-hint').textContent = attachment
+        ? L('جاري تحليل ملفك… قد يستغرق هذا أكثر من دقيقة أحياناً.', 'Analyzing your file… this can take a minute or more.')
+        : L('ما زال المساعد يفكّر…', 'Still thinking…');
+    }, WAIT_HINT_MS);
     const callApi = token => fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
@@ -1196,7 +1214,7 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
       try { chunk = await reader.read(); }
       catch(readErr){ if(stopRequested){ stopped = true; break; } throw readErr; }   // Stop pressed mid-stream
       const { done, value } = chunk;
-      clearTimeout(stallTimer);
+      clearTimeout(stallTimer); clearTimeout(hintTimer); gotFirst = true;
       if(done) break;
       full += decoder.decode(value, { stream: true });
       renderBotContent(botBubble, full);
@@ -1251,13 +1269,13 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
     }
     console.error('AI turn failed:', e);
     const msg = e.userMessage || (e.name === 'AbortError'
-      ? L('الرد تأخر أكثر من دقيقة. حاول مرة ثانية.', 'The reply took longer than a minute. Please try again.')
+      ? L('تأخر الرد كثيراً. حاول مرة ثانية.', 'The reply took too long. Please try again.')
       : (ar ? 'تعذر الاتصال بالمساعد.' : "Couldn't reach the assistant."));
     if(botBubble){ botBubble.textContent = '⚠️ ' + msg; botBubble.classList.add('error'); } else addBubble('bot', '⚠️ ' + msg).classList.add('error');
     if(!currentUser) rollbackGuestTurn();
     trackEvent('ai_response_error', { error: String(e.message || e).slice(0, 100) });
   } finally {
-    clearTimeout(stallTimer);
+    clearTimeout(stallTimer); clearTimeout(hintTimer);
     activeCtrl = null; stopRequested = false;
     if(oldBot && !ok) oldBot.els.forEach(el => { el.style.display = ''; }); // a failed regeneration restores the old reply
     isStreaming = false;
