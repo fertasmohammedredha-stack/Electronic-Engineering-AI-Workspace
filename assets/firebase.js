@@ -104,7 +104,12 @@ export function signOutUser() {
 }
 
 export function watchAuth(callback) {
-  return onAuthStateChanged(auth, callback);
+  return onAuthStateChanged(auth, user => {
+    // Remember (in this browser only) whether someone is signed in, so the public pages — home, About… — can show
+    // "Open chat" instead of "Login" without loading Firebase. Real access is always decided by Firebase itself.
+    try { localStorage.setItem('erSignedIn', user ? '1' : '0'); } catch (e) {}
+    callback(user);
+  });
 }
 
 // ---- Chats ----
