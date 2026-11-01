@@ -4,7 +4,7 @@
 
 ## Files (upload ALL of them together — they depend on each other)
 ```
-index.html  about.html  privacy.html  terms.html  auth.html  login.html  chat.html  settings.html
+index.html  about.html  privacy.html  terms.html  contact.html  auth.html  login.html  chat.html  settings.html
 favicon.ico  favicon.svg  favicon-active.svg  apple-touch-icon.png  site.webmanifest
 firestore.rules                      ← paste into Firebase Console → Firestore → Rules → Publish
 api/chat.js                          ← Vercel serverless function (Groq + Gemini)
@@ -35,6 +35,9 @@ A web address can't contain spaces or capital letters, so "ElectroRed AI.vercel.
 - Authentication → Sign-in method: **Google** and **Email/Password** enabled
 - Authentication → Settings → Authorized domains: your `*.vercel.app` domain
 - Firestore rules: publish `firestore.rules`
+
+## Contact e-mail
+The address shown on `contact.html` (and in the Privacy Policy / Terms) is set in `contact.html` (`const EMAIL`, and the `mailto:` link) and in the "Contact" sections of `privacy.html` and `terms.html`.
 
 ## Tab icon not showing? (browser shows a grey globe)
 1. The icon files must sit in the SAME folder as `index.html` (repo root): `favicon.ico`, `favicon.svg`, `apple-touch-icon.png`, `site.webmanifest`; plus the `assets/brand/` folder.
