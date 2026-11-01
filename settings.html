@@ -59,7 +59,7 @@
   <div class="s-top">
     <a href="chat.html" class="s-back">→</a>
     <h1 data-i="settingsTitle"></h1>
-    <a href="index.html" class="s-brand" data-er-logo="full" aria-label="ElectroRed AI"></a>
+    <a href="chat.html" class="s-brand" data-er-logo="full" aria-label="ElectroRed AI"></a>
   </div>
 
   <div class="profile-card">
@@ -138,7 +138,7 @@
       <div class="s-row link" id="tosLink" role="link" tabindex="0"><span data-i="tos"></span><span class="chev">›</span></div>
       <div class="s-row link" id="privacyLink" role="link" tabindex="0"><span data-i="privacy"></span><span class="chev">›</span></div>
       <div class="s-row link" id="aboutLink" role="link" tabindex="0"><span data-i="aboutUs"></span><span class="chev">›</span></div>
-      <div class="s-row link" id="contactLink"><span data-i="contact"></span><span class="chev">›</span></div>
+      <div class="s-row link" id="contactLink" role="link" tabindex="0"><span data-i="contact"></span><span class="chev">›</span></div>
     </div>
   </div>
 
@@ -286,18 +286,10 @@ document.getElementById('themeLight').addEventListener('click', ()=>{ setTheme('
 document.getElementById('themeDark').addEventListener('click', ()=>{ setTheme('dark'); syncThemeUI(); });
 document.getElementById('themeSystem').addEventListener('click', ()=>{ setTheme('system'); syncThemeUI(); });
 
-const placeholderLinks = {
-  contactLink: 'contact'
-};
-[['aboutLink', 'about.html'], ['tosLink', 'terms.html'], ['privacyLink', 'privacy.html']].forEach(([id, url]) => {
+[['aboutLink', 'about.html'], ['tosLink', 'terms.html'], ['privacyLink', 'privacy.html'], ['contactLink', 'contact.html']].forEach(([id, url]) => {
   const row = document.getElementById(id);
   row.addEventListener('click', () => { location.href = url; });
   row.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); location.href = url; } });
-});
-Object.keys(placeholderLinks).forEach(id=>{
-  document.getElementById(id).addEventListener('click', ()=>{
-    alert(getLang()==='ar' ? 'هذه الصفحة قيد الإعداد.' : 'This page is coming soon.');
-  });
 });
 
 document.addEventListener('DOMContentLoaded', ()=>{ syncLangUI(); syncThemeUI(); });
