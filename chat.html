@@ -116,6 +116,24 @@
   .bubble.bot.error{border-color:color-mix(in srgb, var(--danger) 55%, var(--line)); background:color-mix(in srgb, var(--danger) 8%, var(--surface));}
   .wait-hint{font-size:13px; color:var(--ink-soft); margin-inline-start:6px;}
   .stopped-note{display:block; margin-top:8px; font-size:12px; color:var(--ink-soft);}
+  .kbd-btn{margin-inline-start:0;}
+  .chat-topbar .guest-countdown{margin-inline-start:0;}
+  @media (max-width:820px), (hover:none){ .kbd-btn{display:none;} }
+  .drop-overlay{position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; background:color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); pointer-events:none;}
+  .drop-card{border:2px dashed var(--cyan); border-radius:22px; padding:38px 46px; text-align:center; background:color-mix(in srgb, var(--surface) 92%, transparent); max-width:min(92vw,460px); box-shadow:0 0 0 6px color-mix(in srgb, var(--blue) 14%, transparent), var(--shadow);}
+  .drop-card svg{width:46px; height:46px; fill:none; stroke:var(--cyan); stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; margin-bottom:10px;}
+  .drop-card b{display:block; font-size:20px; margin-bottom:4px;} .drop-card span{font-size:13.5px; color:var(--ink-soft);}
+  .toast{position:fixed; inset-inline:0; bottom:calc(96px + env(safe-area-inset-bottom,0px)); margin-inline:auto; width:max-content; max-width:min(92vw,520px); z-index:95; background:var(--surface-2); color:var(--ink); border:1px solid var(--line-strong); border-radius:12px; padding:10px 16px; font-size:14px; box-shadow:var(--shadow); text-align:center;}
+  dialog.sc-dialog{border:1px solid var(--line-strong); border-radius:18px; background:var(--surface); color:var(--ink); padding:0; width:min(94vw,640px); max-height:88vh; box-shadow:0 30px 80px -20px rgba(0,0,0,.7); margin:auto;}
+  dialog.sc-dialog::backdrop{background:rgba(2,8,16,.66); backdrop-filter:blur(3px);}
+  .sc-head{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--surface);}
+  .sc-head h2{font-size:18px;}
+  .sc-body{padding:6px 20px 20px; overflow-y:auto; max-height:calc(88vh - 62px);}
+  .sc-group{font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--red); margin:18px 0 6px;}
+  .sc-row{display:flex; align-items:center; justify-content:space-between; gap:16px; padding:8px 0; border-bottom:1px solid color-mix(in srgb, var(--line) 60%, transparent); font-size:14.5px;}
+  .sc-keys{display:flex; gap:5px; align-items:center; flex-shrink:0; direction:ltr; flex-wrap:wrap; justify-content:flex-end;}
+  .sc-keys i{font-style:normal; color:var(--ink-soft); font-size:12px;}
+  kbd{font-family:'JetBrains Mono',monospace; font-size:12px; background:var(--bg-2); border:1px solid var(--line-strong); border-bottom-width:2px; border-radius:6px; padding:2px 7px; min-width:24px; text-align:center; color:var(--ink);}
   .icon-round.send svg{width:19px; height:19px;}
   .icon-round svg.ic{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;}
   html[dir="rtl"] .icon-round.send:not(.stop) svg{transform:scaleX(-1);}
@@ -158,6 +176,7 @@
     <div class="chat-topbar">
       <button class="icon-btn" id="sidebarToggle" data-i-aria="toggleSidebar" aria-label="Sidebar">☰</button>
       <a href="chat.html" class="topbar-brand" data-er-logo="full" aria-label="ElectroRed AI"></a>
+      <button class="icon-btn kbd-btn" id="scBtn" type="button" data-i-title="scBtnTip" data-i-aria="scBtnTip" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg></button>
       <div class="guest-countdown" id="guestCountdown" style="display:none;">⏳ <b id="guestRemaining">15</b></div>
     </div>
     <div class="chat-scroll" id="chatScroll">
@@ -181,8 +200,8 @@
           <input type="file" id="fileInput" accept="image/*,application/pdf,.pdf,text/*,.txt,.csv,.tsv,.md,.json,.xml,.yaml,.yml,.ini,.log,.tex,.m,.mdl,.py,.c,.h,.cpp,.cc,.hpp,.ino,.asm,.s,.v,.sv,.vhd,.vhdl,.cir,.sp,.net,.lib,.sub,.asc,.kicad_sch,.kicad_pcb,.js,.ts,.java,.html,.css,.docx,.xlsx,.pptx,.pdsprj,.pdsclip,.dsn,.opj,.msm,.pkt,.pka,.slx,.mlx,.dwg" style="display:none">
           <button class="icon-round" id="micBtn" data-i-title="voiceInput" data-i-aria="voiceInput" title="Voice input" aria-label="Voice input"><svg class="ic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
         </div>
-        <textarea id="msgInput" rows="1" data-i-ph="placeholder" data-i-aria="placeholder" aria-label="Message" oninput="autoGrow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
-        <button class="icon-round send" id="sendBtn" type="button" data-i-aria="sendMsg" data-i-title="sendMsg" aria-label="Send" title="Send" onclick="onSendClick()"></button>
+        <textarea id="msgInput" rows="1" data-i-ph="placeholder" data-i-aria="placeholder" aria-label="Message" oninput="autoGrow(this)"></textarea>
+        <button class="icon-round send" id="sendBtn" type="button" data-i-aria="sendMsg" aria-label="Send" title="Send (Enter)" onclick="onSendClick()"></button>
       </div>
       <div class="hint" id="disclaimer" data-i="disclaimer"></div>
     </div>
@@ -190,6 +209,9 @@
 </div>
 
 <script src="assets/lang.js"></script>
+<div class="drop-overlay" id="dropOverlay" hidden aria-hidden="true"><div class="drop-card"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg><b data-i="dropTitle"></b><span data-i="dropSub"></span></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<dialog class="sc-dialog" id="shortcutsDialog" aria-labelledby="scTitle"><div class="sc-head"><h2 id="scTitle" data-i="scTitle"></h2><button class="icon-btn" id="scClose" type="button" data-i-aria="scClose" aria-label="Close">✕</button></div><div class="sc-body" id="scBody"></div></dialog>
 <script type="module">
 import { watchAuth, createChat, watchUserChats, watchMessages, addMessage, trackEvent, togglePinChat, renameChat, deleteChat, getIdToken, setMessageFeedback, deleteMessages } from './assets/firebase.js';
 
@@ -212,8 +234,8 @@ function setGenerating(on){
     const key = on ? 'stopGen' : 'sendMsg';
     btn.classList.toggle('stop', on);
     btn.innerHTML = on ? STOP_SVG : SEND_SVG;
-    btn.setAttribute('data-i-aria', key); btn.setAttribute('data-i-title', key);
-    btn.setAttribute('aria-label', tr(key)); btn.title = tr(key);
+    btn.setAttribute('data-i-aria', key);
+    btn.setAttribute('aria-label', tr(key)); btn.title = tr(key) + (on ? ' (Esc)' : ' (Enter)');
   }
   const inner = document.getElementById('chatInner');
   if(inner) inner.setAttribute('aria-busy', on ? 'true' : 'false');
@@ -229,7 +251,6 @@ window.stopGeneration = function(discard){
   if(activeCtrl) activeCtrl.abort();
 };
 window.onSendClick = function(){ if(isStreaming) window.stopGeneration(); else window.sendMessage(); };
-document.addEventListener('keydown', e => { if(e.key === 'Escape' && isStreaming) window.stopGeneration(); });
 setGenerating(false);
 
 // The site name inside the app never leaves the app (and never looks like a logout): it just opens a fresh chat.
@@ -784,6 +805,11 @@ function startEdit(bubbleEl, row, original, meta){
   bar.append(cancel, save);
   bubbleEl.append(ta, bar);
   ta.focus();
+  ta.addEventListener('keydown', ev => {
+    if(ev.isComposing || ev.keyCode === 229) return;
+    if(ev.key === 'Enter' && !ev.shiftKey){ ev.preventDefault(); save.click(); }
+    else if(ev.key === 'Escape'){ ev.preventDefault(); ev.stopPropagation(); cancel.click(); }
+  });
 
   const restore = () => {
     bubbleEl.classList.remove('editing'); bubbleEl.innerHTML = '';
@@ -1007,7 +1033,13 @@ async function parsePptx(file){
 document.getElementById('fileInput').addEventListener('change', async (e)=>{
   const file = e.target.files[0];
   e.target.value = '';
+  if(file) await attachFile(file);
+});
+
+// One entry point for every way of adding a file: the picker, drag & drop and paste.
+async function attachFile(file){
   if(!file) return;
+  if(document.getElementById('fileBtn').disabled){ toast(tr('guestNoFiles')); return; }
   if(CLOSED_FORMAT_RE.test(file.name)){
     alert(getLang()==='ar'
       ? 'هذه صيغة مشروع مغلقة (Proteus / Multisim / Packet Tracer / Simulink…) ولا أقدر أقراها مباشرة.\nصدّرها كـ PDF أو صورة، أو كملف نصي (netlist بصيغة .cir أو كود .m) ثم ارفعها.'
@@ -1071,7 +1103,165 @@ document.getElementById('fileInput').addEventListener('change', async (e)=>{
       ? 'هذه الصيغة غير مدعومة. المدعوم: صور، PDF، Word وPowerPoint وExcel، وملفات نصية وكود (.txt .csv .m .py .c .asm .ino .vhd .cir ...).'
       : "This file type isn't supported. Supported: images, PDF, Word/PowerPoint/Excel, and text or code files (.txt .csv .m .py .c .asm .ino .vhd .cir ...).");
   }
+}
+
+// ====================================================================================================
+// Keyboard shortcuts, drag & drop and paste — the same habits as the well-known AI chat apps
+// ====================================================================================================
+const IS_MAC = /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent || '');
+const MOD_LABEL = IS_MAC ? '⌘' : 'Ctrl';
+const msgInput = document.getElementById('msgInput');
+const isTypingTarget = t => !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+
+let toastTimer = null;
+function toast(msg, ms = 2600){
+  const el = document.getElementById('toast'); if(!el) return;
+  el.textContent = msg; el.hidden = false; clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, ms);
+}
+
+// --- Enter sends, Shift+Enter = new line, ↑ edits your last message ---
+msgInput.addEventListener('keydown', e => {
+  if(e.isComposing || e.keyCode === 229) return;                 // an input method (Arabic/CJK keyboards, suggestions) is still composing
+  if(e.key === 'Enter' && !e.shiftKey && !e.altKey){ e.preventDefault(); window.sendMessage(); return; }   // Enter, Ctrl+Enter, ⌘+Enter
+  if(e.key === 'ArrowUp' && msgInput.value === '' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && !isStreaming){
+    const rows = document.querySelectorAll('#chatInner .user-actions');
+    const edit = rows.length ? rows[rows.length - 1].querySelector('[data-action="edit"]') : null;   // only text-only messages can be edited
+    if(edit){ e.preventDefault(); edit.click(); }
+  }
 });
+
+// --- copy helpers ---
+function lastBotText(){
+  const arr = currentUser ? currentMsgs : getGuestChat();
+  const m = [...arr].reverse().find(x => x.role === 'bot' && x.text && !/^⚠️/.test(x.text));
+  return m ? stripFileBlocks(m.text) : '';
+}
+async function copyToClipboard(text){
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch(e){
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;top:0'; document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch(_){} ta.remove(); return ok;
+  }
+}
+
+// --- the shortcuts list (also shown by "?" or Ctrl+/) ---
+const SC_GROUPS = [
+  ['scGMsg', [[['Enter'], 'scSend'], [['Shift', 'Enter'], 'scNewline'], [['↑'], 'scEditLast'], [['Esc'], 'scStop'], [['/'], 'scFocus']]],
+  ['scGChats', [[['MOD', 'Shift', 'O'], 'scNewChat'], [['MOD', 'K'], 'scSearch'], [['MOD', 'Shift', 'S'], 'scSidebar']]],
+  ['scGFiles', [[['MOD', 'U'], 'scAttach'], [['⬇'], 'scDrop'], [['MOD', 'V'], 'scPaste']]],
+  ['scGAnswers', [[['MOD', 'Shift', 'C'], 'scCopyAnswer'], [['MOD', 'Shift', ';'], 'scCopyCode']]],
+  ['scGHelp', [[['?'], 'scHelp'], [['MOD', '/'], 'scHelp']]]
+];
+function renderShortcuts(){
+  const body = document.getElementById('scBody'); body.innerHTML = '';
+  SC_GROUPS.forEach(([g, rows]) => {
+    const h = document.createElement('div'); h.className = 'sc-group'; h.textContent = tr(g); body.appendChild(h);
+    rows.forEach(([keys, label]) => {
+      const row = document.createElement('div'); row.className = 'sc-row';
+      const t = document.createElement('span'); t.textContent = tr(label);
+      const k = document.createElement('span'); k.className = 'sc-keys';
+      keys.forEach((key, i) => { if(i) { const p = document.createElement('i'); p.textContent = '+'; k.appendChild(p); } const kb = document.createElement('kbd'); kb.textContent = key === 'MOD' ? MOD_LABEL : key; k.appendChild(kb); });
+      row.append(t, k); body.appendChild(row);
+    });
+  });
+}
+const scDialog = document.getElementById('shortcutsDialog');
+function toggleShortcuts(){
+  if(scDialog.open){ scDialog.close(); return; }
+  renderShortcuts(); applyLang();
+  if(typeof scDialog.showModal === 'function') scDialog.showModal(); else scDialog.setAttribute('open', '');
+}
+document.getElementById('scBtn').addEventListener('click', toggleShortcuts);
+document.getElementById('scClose').addEventListener('click', () => scDialog.close());
+scDialog.addEventListener('click', e => { if(e.target === scDialog) scDialog.close(); });   // click on the dimmed area closes it
+
+// --- global shortcuts ---
+function focusSearch(){
+  if(window.innerWidth <= 820) setSidebarOpen(true); else document.querySelector('.chat-app').classList.remove('sidebar-collapsed');
+  const s = document.querySelector('.sidebar .search');
+  if(s && s.offsetParent !== null){ s.focus(); s.select(); }
+}
+document.addEventListener('keydown', async e => {
+  if(e.isComposing || e.keyCode === 229) return;
+  const mod = IS_MAC ? e.metaKey : e.ctrlKey;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+
+  if(k === 'Escape'){
+    if(scDialog.open) return;                                    // the dialog closes itself
+    const dragging = !document.getElementById('dropOverlay').hidden;
+    if(dragging){ document.getElementById('dropOverlay').hidden = true; return; }
+    if(openMenuEl || openExportEl){ closeChatMenu(); closeExportMenu(); return; }
+    if(isStreaming) window.stopGeneration();
+    return;
+  }
+  if(mod && !e.altKey && k === '/'){ e.preventDefault(); toggleShortcuts(); return; }
+  if(scDialog.open) return;                                      // while the list is open nothing else fires
+  if(mod && !e.altKey){
+    if(!e.shiftKey && k === 'k'){ e.preventDefault(); focusSearch(); return; }
+    if(e.shiftKey && k === 'o'){ e.preventDefault(); window.newChat(); return; }
+    if(e.shiftKey && k === 's'){ e.preventDefault(); document.getElementById('sidebarToggle').click(); return; }
+    if(!e.shiftKey && k === 'u'){ e.preventDefault(); if(document.getElementById('fileBtn').disabled) toast(tr('guestNoFiles')); else document.getElementById('fileInput').click(); return; }
+    if(e.shiftKey && k === 'c'){
+      const t = lastBotText(); e.preventDefault();
+      if(!t) { toast(tr('nothingToCopy')); return; }
+      if(await copyToClipboard(t)) toast(tr('copiedAnswer')); return;
+    }
+    if(e.shiftKey && e.code === 'Semicolon'){
+      e.preventDefault(); const codes = document.querySelectorAll('#chatInner .bubble.bot pre code');
+      if(!codes.length){ toast(tr('nothingToCopy')); return; }
+      if(await copyToClipboard(codes[codes.length - 1].textContent)) toast(tr('copiedCode')); return;
+    }
+    return;
+  }
+  if(mod || e.altKey || isTypingTarget(e.target)) return;        // the single-key shortcuts below only fire when you are not typing
+  if(k === '/'){ e.preventDefault(); msgInput.focus(); return; }
+  if(k === '?'){ e.preventDefault(); toggleShortcuts(); return; }
+});
+
+// --- edit box: Enter saves, Esc cancels (handled where the editor is created) ---
+
+// --- drag & drop: drop a file anywhere on the page ---
+const dropOverlay = document.getElementById('dropOverlay');
+const dragHasFiles = e => !!(e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') !== -1);
+let dragDepth = 0, dragTimer = null;
+const hideDrop = () => { dragDepth = 0; clearTimeout(dragTimer); dropOverlay.hidden = true; };
+document.addEventListener('dragenter', e => { if(!dragHasFiles(e)) return; e.preventDefault(); dragDepth++; dropOverlay.hidden = false; });
+document.addEventListener('dragover', e => {
+  if(!dragHasFiles(e)) return;
+  e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; dropOverlay.hidden = false;
+  clearTimeout(dragTimer); dragTimer = setTimeout(hideDrop, 700);   // the drag was cancelled (Esc / left the window): no more dragover events
+});
+document.addEventListener('dragleave', e => { if(!dragHasFiles(e)) return; dragDepth = Math.max(0, dragDepth - 1); if(!dragDepth) hideDrop(); });
+document.addEventListener('dragend', hideDrop);
+document.addEventListener('drop', async e => {
+  if(!dragHasFiles(e)) return;
+  e.preventDefault(); hideDrop();                                // never let the browser open the file instead
+  const files = Array.prototype.slice.call(e.dataTransfer.files || []);
+  if(!files.length) return;
+  if(document.getElementById('fileBtn').disabled){ toast(tr('guestNoFiles')); return; }
+  if(files.length > 1) toast(tr('oneFileOnly') + files[0].name, 3600);
+  await attachFile(files[0]);
+  msgInput.focus();
+});
+
+// --- paste: Ctrl/⌘+V of a screenshot or a copied file attaches it (text is left alone) ---
+document.addEventListener('paste', async e => {
+  const t = e.target;
+  if(isTypingTarget(t) && t !== msgInput) return;                // renaming a chat, searching…: not ours
+  const cd = e.clipboardData; if(!cd) return;
+  const files = Array.prototype.slice.call(cd.files || []);
+  if(!files.length) return;
+  if((cd.getData('text/plain') || '').trim()) return;            // text AND a picture (copied from Word/Excel…): paste the text as usual
+  e.preventDefault();
+  if(document.getElementById('fileBtn').disabled){ toast(tr('guestNoFiles')); return; }
+  let f = files[0];
+  if(f.type.indexOf('image/') === 0 && /^image\.[a-z]+$/i.test(f.name)) f = new File([f], 'screenshot-' + Date.now() + '.' + (f.type.split('/')[1] || 'png').replace('jpeg', 'jpg'), { type: f.type });
+  if(files.length > 1) toast(tr('oneFileOnly') + f.name, 3600);
+  await attachFile(f);
+  msgInput.focus();
+});
+
 document.getElementById('removeImage').addEventListener('click', ()=>{
   pendingAttachment = null;
   document.getElementById('imagePreview').classList.add('hidden');
