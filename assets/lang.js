@@ -1,7 +1,7 @@
 // Shared bilingual dictionary — used by index.html and chat.html
 // Build stamp. Bump it (together with API_VERSION in api/chat.js) on every delivery: the settings page shows both,
 // so a half-uploaded deployment is obvious at a glance.
-const APP_VERSION = "2026.10.20";
+const APP_VERSION = "2026.10.21";
 
 const DICT = {
   ar: {
@@ -45,6 +45,15 @@ const DICT = {
     exProteus: "أخطاء Proteus", exProteusQ: "دارتي في Proteus لا تعطي النتيجة المتوقعة. سأرفق لقطة شاشة، ساعدني أجد الخطأ.",
     exDiagram: "فهم المخططات", exDiagramQ: "اشرح لي كيف تعمل هذه الدارة خطوة بخطوة (سأرفق صورة المخطط).",
     exReport: "تقارير المخبر", exReportQ: "ساعدني في كتابة تقرير مخبري عن تجربة قانون أوم، ثم جهّزه كملف Word.",
+    dropTitle: "أفلت الملف هنا", dropSub: "صور، PDF، Word، PowerPoint، Excel، وملفات نصية وكود",
+    guestNoFiles: "إرفاق الملفات للمستخدمين المسجّلين فقط. سجّل دخولك لتجربته.", oneFileOnly: "يمكن إرفاق ملف واحد في كل رسالة. أُرفق: ",
+    copiedAnswer: "تم نسخ آخر إجابة", copiedCode: "تم نسخ آخر كود", nothingToCopy: "لا يوجد ما يُنسخ بعد.",
+    scTitle: "اختصارات لوحة المفاتيح", scClose: "إغلاق", scBtnTip: "اختصارات لوحة المفاتيح (?)",
+    scGMsg: "الرسائل", scGChats: "المحادثات", scGFiles: "الملفات", scGAnswers: "الإجابات", scGHelp: "المساعدة",
+    scSend: "إرسال الرسالة", scNewline: "سطر جديد", scEditLast: "تعديل آخر رسالة (والحقل فارغ)", scStop: "إيقاف التوليد",
+    scNewChat: "محادثة جديدة", scSearch: "البحث في المحادثات", scSidebar: "إظهار / إخفاء القائمة الجانبية",
+    scAttach: "إرفاق ملف", scDrop: "سحب وإفلات ملف في أي مكان بالصفحة", scPaste: "لصق صورة أو لقطة شاشة في حقل الكتابة",
+    scCopyAnswer: "نسخ آخر إجابة", scCopyCode: "نسخ آخر كود", scFocus: "الانتقال إلى حقل الكتابة", scHelp: "عرض هذه القائمة",
     agreePre: "بمتابعتك فإنك توافق على", andWord: "و", openChat: "افتح المحادثة",
     stopGen: "إيقاف التوليد", sendMsg: "إرسال", attachFile: "إرفاق ملف", voiceInput: "إدخال صوتي", toggleSidebar: "القائمة الجانبية", genStopped: "تم إيقاف التوليد.",
     versionMismatch: "النسختان مختلفتان: ارفع كل الملفات", versionUnknown: "غير معروفة (ملف api/chat.js قديم أو غير مرفوع)",
@@ -90,6 +99,15 @@ const DICT = {
     exProteus: "Proteus troubleshooting", exProteusQ: "My Proteus circuit doesn't give the expected output. I'll attach a screenshot — help me find the mistake.",
     exDiagram: "Reading diagrams", exDiagramQ: "Explain how this circuit works step by step (I'll attach the diagram image).",
     exReport: "Lab reports", exReportQ: "Help me write a lab report on an Ohm's law experiment, then prepare it as a Word file.",
+    dropTitle: "Drop to attach", dropSub: "Images, PDF, Word, PowerPoint, Excel, text and code files",
+    guestNoFiles: "Attaching files is for signed-in users. Sign in to try it.", oneFileOnly: "One file per message. Attached: ",
+    copiedAnswer: "Last answer copied", copiedCode: "Last code block copied", nothingToCopy: "Nothing to copy yet.",
+    scTitle: "Keyboard shortcuts", scClose: "Close", scBtnTip: "Keyboard shortcuts (?)",
+    scGMsg: "Messages", scGChats: "Chats", scGFiles: "Files", scGAnswers: "Answers", scGHelp: "Help",
+    scSend: "Send message", scNewline: "New line", scEditLast: "Edit your last message (when the box is empty)", scStop: "Stop generating",
+    scNewChat: "New chat", scSearch: "Search chats", scSidebar: "Show / hide the sidebar",
+    scAttach: "Attach a file", scDrop: "Drag & drop a file anywhere on the page", scPaste: "Paste a picture or screenshot into the message box",
+    scCopyAnswer: "Copy the last answer", scCopyCode: "Copy the last code block", scFocus: "Jump to the message box", scHelp: "Show this list",
     agreePre: "By continuing you agree to the", andWord: "and", openChat: "Open chat",
     stopGen: "Stop generating", sendMsg: "Send", attachFile: "Attach a file", voiceInput: "Voice input", toggleSidebar: "Sidebar", genStopped: "Generation stopped.",
     versionMismatch: "versions differ: upload all the files", versionUnknown: "unknown (api/chat.js is old or missing)",
