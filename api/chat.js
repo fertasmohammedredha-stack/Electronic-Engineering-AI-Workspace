@@ -19,7 +19,7 @@ import crypto from "node:crypto";
 
 // Bump together with APP_VERSION in assets/lang.js on every delivery: the settings page compares the two,
 // which immediately shows when only SOME of the files were uploaded (a mixed deployment).
-const API_VERSION = "2026.10.21";
+const API_VERSION = "2026.10.22";
 
 const ASSISTANT_NAME = "ElectroRed AI";
 const CREATOR = "Fertas Mohammed Redha";
@@ -138,6 +138,7 @@ function retryAfterMs(res) {
 function normalizeTurns(msgs) {
   const out = [];
   for (const m of msgs) {
+    if (!m || typeof m.text !== "string" || !m.text.trim()) continue;   // an empty text part is a 400 from the provider
     const last = out[out.length - 1];
     if (last && last.role === m.role) last.text += "\n\n" + m.text; // providers want alternating turns
     else out.push({ role: m.role, text: m.text });
@@ -290,6 +291,23 @@ const MAX_B64_CHARS = 4400000;
 
 const httpErr = (status, message) => Object.assign(new Error(message), { status });
 
+// Providers answer "400 invalid argument" to text they can't encode: NUL/control characters, and half of an emoji
+// (a surrogate pair cut by a slice). Clean everything that reaches them.
+function sanitizeText(s) {
+  return String(s == null ? "" : s)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "\uFFFD");
+}
+// A file must start like the format it claims to be (so a renamed .txt or a damaged download never reaches the AI).
+const MAGIC = { "image/jpeg": /^\/9j\//, "image/png": /^iVBORw0KGgo/, "image/webp": /^UklGR/, "image/gif": /^R0lGOD/ };
+function looksLikeMime(mime, b64) {
+  if (mime === "application/pdf") {
+    try { return Buffer.from(b64.slice(0, 1400), "base64").toString("latin1").includes("%PDF-"); } catch { return false; }
+  }
+  return !!MAGIC[mime] && MAGIC[mime].test(b64);
+}
+const SERVER_FAIL = "⚠️\u2063 ";   // invisible marker: the page recognises server failure notices (never saved as an answer)
+
 // ---- Firebase ID token verification (no dependencies: Node's crypto + Google's public keys) ----
 const JWKS_URL = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 let jwks = { keys: new Map(), expires: 0 };
@@ -369,20 +387,23 @@ function clientIp(req) {
 // ---- Input validation: only well-formed, size-limited fields get through ----
 function validVisual(v, kind) {
   if (!v || typeof v.data !== "string" || v.data.length > MAX_B64_CHARS) return false;
-  return kind === "pdf" ? v.mimeType === "application/pdf" : /^image\/(jpeg|png|webp|gif)$/.test(v.mimeType);
+  const typeOk = kind === "pdf" ? v.mimeType === "application/pdf" : /^image\/(jpeg|png|webp|gif)$/.test(v.mimeType);
+  return typeOk && /^[A-Za-z0-9+/=\s]+$/.test(v.data.slice(0, 2000)) && looksLikeMime(v.mimeType, v.data);
 }
 function cleanInput(body) {
   const b = body && typeof body === "object" ? body : {};
-  const message = typeof b.message === "string" ? b.message : "";
-  if (message.length > MAX_MESSAGE_CHARS) throw httpErr(413, "message_too_long");
-  const history = Array.isArray(b.history) ? b.history.slice(-200) : [];
+  const rawMessage = typeof b.message === "string" ? b.message : "";
+  if (rawMessage.length > MAX_MESSAGE_CHARS) throw httpErr(413, "message_too_long");
+  const message = sanitizeText(rawMessage);
+  const history = (Array.isArray(b.history) ? b.history.slice(-200) : [])
+    .map(h => (h && typeof h === "object" && typeof h.text === "string") ? { ...h, text: sanitizeText(h.text) } : h);
 
   let attachment;
   const a = b.attachment;
   if (a && typeof a === "object") {
-    const name = String(a.name || "file").slice(0, 200);
+    const name = sanitizeText(String(a.name || "file").slice(0, 200));
     if (a.kind === "text") {
-      attachment = { kind: "text", name, text: typeof a.text === "string" ? a.text.slice(0, 20000) : "" };
+      attachment = { kind: "text", name, text: typeof a.text === "string" ? sanitizeText(a.text.slice(0, 20000)) : "" };
       if (Array.isArray(a.images)) {
         attachment.images = a.images.slice(0, 8).filter(i => validVisual(i, "image")).map(i => ({ data: i.data, mimeType: i.mimeType }));
       }
@@ -454,8 +475,8 @@ export default async function handler(req, res) {
     pdfOnly = true;
   }
 
-  if (!effectiveMessage && !visuals) return res.status(400).json({ error: "Missing message" });
-  if (!effectiveMessage) {
+  if (!effectiveMessage.trim() && !visuals) return res.status(400).json({ error: "Missing message" });
+  if (!effectiveMessage.trim()) {
     effectiveMessage = attachment.kind === "pdf"
       ? "لخّص هذا الملف واشرح أهم النقاط من منظور إلكتروني، وساعد الطالب فيه."
       : "صف هذه الصورة بالتفصيل من منظور إلكتروني (دارة، مكونات، قيم، مسائل مكتوبة...) وساعد الطالب فيها.";
@@ -480,9 +501,9 @@ export default async function handler(req, res) {
   const fitsGroq = sysFull.length + effectiveMessage.length + charsOf(full.turns) <= GROQ_REQUEST_CHARS;
   const groqHasRoom = sysFull.length + effectiveMessage.length < GROQ_REQUEST_CHARS - 1500; // otherwise the message alone would blow Groq's minute budget
 
-  const job = (provider, key) => {
+  const job = (provider, key, safe = false) => {
     const useFull = provider === "gemini";
-    const { turns, message: msg } = foldLastUserTurn((useFull ? full : small).turns, effectiveMessage);
+    const { turns, message: msg } = foldLastUserTurn(safe ? [] : (useFull ? full : small).turns, effectiveMessage);
     const system = useFull ? sysFull : sysSmall;
     return provider === "groq" ? streamGroq(key, system, turns, msg)
       : provider === "groq_vision" ? streamGroqVision(key, system, turns, msg, visuals?.slice(0, 3)) // Groq vision: max 3 images
@@ -509,13 +530,15 @@ export default async function handler(req, res) {
   let clientGone = false;
   if (typeof res.on === "function") res.on("close", () => { clientGone = true; });
   for (const [provider, key] of attempts) {
-    for (let retry = 0; retry <= RETRY_DELAYS_MS.length; retry++) {
+    let safe = false;   // "safe mode": ask again with only the current message (and file), no conversation history
+    for (let retry = 0; retry <= RETRY_DELAYS_MS.length + 1; retry++) {
       try {
-        for await (const token of job(provider, key)) { if (clientGone) break; res.write(token); }
+        for await (const token of job(provider, key, safe)) { if (clientGone) break; res.write(token); }
         return res.end();
       } catch (e) {
         const transient = /_503|_overloaded/i.test(e.message);
         console.error(`[${provider}] failed (retry ${retry}):`, e.message);
+        if (/_400/.test(e.message) && !safe && (full.turns.length || small.turns.length)) { safe = true; console.error(`[${provider}] 400: retrying without the conversation history`); continue; }
         if (transient && retry < RETRY_DELAYS_MS.length) { await new Promise(r => setTimeout(r, RETRY_DELAYS_MS[retry])); continue; }
         errors.push(`${provider}: ${e.message}`);
         break;
@@ -523,6 +546,12 @@ export default async function handler(req, res) {
     }
   }
   console.error("All providers failed:", errors);
-  res.write("⚠️ All providers are currently unavailable." + (SHOW_DEBUG ? `\n(debug: ${errors.join(" | ") || "no API keys matched"})` : ""));
+  const all400 = errors.length > 0 && errors.every(x => /_400/.test(x));
+  const ar = req.body && req.body.lang === "ar";
+  const ctxInfo = `request: ${attachment ? attachment.kind : "text"}${visuals ? " " + Math.round(visuals.reduce((n, v) => n + v.data.length * 0.75, 0) / 1024) + "KB" : ""}, history ${full.turns.length}`;
+  res.write(SERVER_FAIL + (all400
+    ? (ar ? "تعذّرت معالجة هذا الطلب (خطأ 400 من الذكاء الاصطناعي). غالباً الملف غير قابل للقراءة: تالف، أو محمي بكلمة سر، أو بصيغة غير معتادة. جرّب ملفاً آخر، أو حوّل الصفحات إلى صور، أو أعد صياغة السؤال."
+           : "The AI couldn't process this request (error 400). This usually means the file can't be read: damaged, password-protected or an unusual format. Try another file, export the pages as images, or rephrase the question.")
+    : "All providers are currently unavailable.") + (SHOW_DEBUG ? `\n(debug: ${errors.join(" | ") || "no API keys matched"} | ${ctxInfo})` : ""));
   res.end();
 }
