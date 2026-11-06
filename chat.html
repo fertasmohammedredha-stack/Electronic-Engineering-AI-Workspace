@@ -1083,6 +1083,12 @@ async function attachFile(file){
     }
   } else if(isPdf){
     if(file.size > MAX_PDF_BYTES){ alert(getLang()==='ar' ? 'حجم PDF كبير (الحد 2.5 ميجا).' : 'PDF too large (2.5MB max).'); return; }
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const head = new TextDecoder('latin1').decode(bytes.subarray(0, 1024));
+    if(!head.includes('%PDF-')){ alert(getLang()==='ar' ? 'هذا الملف ليس PDF صالحاً (قد يكون تالفاً أو بصيغة أخرى مُسمّاة .pdf).' : "This isn't a valid PDF (it may be damaged, or another format renamed to .pdf)."); return; }
+    if(/\/Encrypt\b/.test(new TextDecoder('latin1').decode(bytes.subarray(Math.max(0, bytes.length - 4096))) + head)){
+      alert(getLang()==='ar' ? 'هذا الـ PDF محمي بكلمة سر، ولا يمكن قراءته. أزل الحماية ثم أعد المحاولة.' : 'This PDF is password-protected and can\'t be read. Remove the protection and try again.'); return;
+    }
     const dataUrl = await readAsDataURL(file);
     pendingAttachment = { kind: 'pdf', dataUrl, data: dataUrl.split(',')[1], mimeType: 'application/pdf', name: file.name };
     showAttachmentPreview();
@@ -1296,8 +1302,9 @@ function formatWait(sec, ar){
   if(sec >= 120)  return Math.ceil(sec / 60) + (ar ? ' دقيقة' : ' min');
   return sec + (ar ? ' ثانية' : ' s');
 }
-function httpError(status, retryAfter){
+function httpError(status, retryAfter, code){
   const ar = getLang() === 'ar';
+  if(status === 400 && code === 'bad_attachment') return userError(ar ? 'تعذّرت قراءة هذا الملف: يبدو تالفاً أو ليس بالصيغة التي يدّعيها. جرّب ملفاً آخر.' : "That file couldn't be read: it looks damaged or isn't the format it claims to be. Try another file.", status);
   if(status === 413) return userError(ar ? 'الملف أو الرسالة كبيرة جداً للإرسال. جرّب أصغر.' : 'The file or message is too large to send. Try a smaller one.', status);
   if(status === 504 || status === 408) return userError(ar ? 'انتهت مهلة الخادم. جرّب مرة ثانية أو بملف أصغر.' : 'The server timed out. Try again, or with a smaller file.', status);
   if(status === 401) return userError(ar ? 'انتهت جلستك. سجّل الدخول من جديد.' : 'Your session expired. Please sign in again.', status);
@@ -1388,7 +1395,8 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
     let res = await callApi(currentUser ? await getIdToken() : null);
     if(res.status === 401 && currentUser) res = await callApi(await getIdToken(true)); // token may have just expired: retry once with a fresh one
     if(!res.ok){
-      const err = httpError(res.status, parseInt(res.headers.get('retry-after'), 10) || 0);
+      let errCode = ''; try { errCode = ((await res.clone().json()) || {}).error || ''; } catch(_){}
+      const err = httpError(res.status, parseInt(res.headers.get('retry-after'), 10) || 0, errCode);
       const serverVersion = res.headers.get('x-app-version');
       if(serverVersion && serverVersion !== CLIENT_VERSION){ // a mixed deployment is the usual reason the same page "worked yesterday"
         err.userMessage += ' ' + L('(نسخة الموقع ' + CLIENT_VERSION + ' لا تطابق الخادم ' + serverVersion + ': ارفع كل الملفات)', '(site version ' + CLIENT_VERSION + ' differs from the server ' + serverVersion + ': upload all the files)');
@@ -1414,7 +1422,7 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
     if(!full.trim()) throw userError(ar ? 'لم يصل رد من النموذج. حاول مرة ثانية.' : 'The model returned an empty reply. Please try again.');
 
     // The server reports "every provider failed" as plain text: show it, but don't save or remember it as an answer.
-    if(full.startsWith('⚠️ All providers are currently unavailable')){
+    if(full.startsWith('⚠️\u2063') || full.startsWith('⚠️ All providers are currently unavailable')){   // a failure notice written by the server
       if(!currentUser) rollbackGuestTurn();
       trackEvent('ai_response_error', { error: 'all_providers_unavailable' });
       return false;
