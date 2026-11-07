@@ -19,7 +19,7 @@ import crypto from "node:crypto";
 
 // Bump together with APP_VERSION in assets/lang.js on every delivery: the settings page compares the two,
 // which immediately shows when only SOME of the files were uploaded (a mixed deployment).
-const API_VERSION = "2026.10.22";
+const API_VERSION = "2026.10.23";
 
 const ASSISTANT_NAME = "ElectroRed AI";
 const CREATOR = "Fertas Mohammed Redha";
@@ -27,6 +27,11 @@ const CREATOR = "Fertas Mohammed Redha";
 const GROQ_MODEL = "openai/gpt-oss-120b"; // Groq's recommended replacement after llama-3.3-70b-versatile shut down (16 Aug 2026)
 const GROQ_VISION_MODEL = "qwen/qwen3.8-27b"; // confirmed against console.groq.com/docs/vision
 const GEMINI_MODEL = "gemini-3.8-flash"; // Google's own 404 told us to move here from 2.5-flash
+// When the main model answers "503 high demand", other models have their own capacity: try these next (comma-separated
+// env var GEMINI_FALLBACK_MODELS overrides the list; a name that doesn't exist just fails fast and the next one is tried).
+const GEMINI_FALLBACK_MODELS = (process.env.GEMINI_FALLBACK_MODELS || "gemini-flash-latest,gemini-flash-lite-latest").split(",").map(s => s.trim()).filter(Boolean);
+const RETRY_SCALE = Number(process.env.RETRY_SCALE) || 1;                          // tests shrink the waits
+const REQUEST_DEADLINE_MS = Number(process.env.REQUEST_DEADLINE_MS) || 200000;     // never start a new attempt after this (the platform limit is higher)
 
 // ---- Provider timeouts: how long we wait for a provider to START answering before trying the next one ----
 const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 110000; // PDFs/images can take a long time before the first word (the model reads the whole file first)
@@ -256,19 +261,19 @@ async function* streamGroqVision(key, system, turns, message, visuals) {
 }
 
 // Gemini (text + images + PDF — inlineData works for any supported mimeType)
-async function* streamGemini(key, system, turns, message, visuals) {
+async function* streamGemini(key, system, turns, message, visuals, model = GEMINI_MODEL, timeoutMs = GEMINI_TIMEOUT_MS) {
   const parts = [{ text: message }];
   for (const v of visuals || []) parts.push({ inlineData: { mimeType: v.mimeType, data: v.data } });
   const contents = [
     ...turns.map(h => ({ role: h.role === "bot" ? "model" : "user", parts: [{ text: h.text }] })),
     { role: "user", parts }
   ];
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`;
   const res = await fetchWithStartTimeout(url, {
     method: "POST",
     headers: { "x-goog-api-key": key, "Content-Type": "application/json" },
     body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents })
-  }, GEMINI_TIMEOUT_MS, "gemini");
+  }, timeoutMs, "gemini");
   for await (const json of streamSSE(res, "gemini", key)) {
     // Newer Gemini models can return several parts (e.g. "thought" parts): keep ALL answer text, skip the thoughts.
     const token = (json.candidates?.[0]?.content?.parts || [])
@@ -501,18 +506,23 @@ export default async function handler(req, res) {
   const fitsGroq = sysFull.length + effectiveMessage.length + charsOf(full.turns) <= GROQ_REQUEST_CHARS;
   const groqHasRoom = sysFull.length + effectiveMessage.length < GROQ_REQUEST_CHARS - 1500; // otherwise the message alone would blow Groq's minute budget
 
-  const job = (provider, key, safe = false) => {
+  const job = (provider, key, safe = false, model = GEMINI_MODEL) => {
     const useFull = provider === "gemini";
     const { turns, message: msg } = foldLastUserTurn(safe ? [] : (useFull ? full : small).turns, effectiveMessage);
     const system = useFull ? sysFull : sysSmall;
     return provider === "groq" ? streamGroq(key, system, turns, msg)
       : provider === "groq_vision" ? streamGroqVision(key, system, turns, msg, visuals?.slice(0, 3)) // Groq vision: max 3 images
-      : streamGemini(key, system, turns, msg, visuals);
+      : streamGemini(key, system, turns, msg, visuals, model, model === GEMINI_MODEL ? GEMINI_TIMEOUT_MS : Math.min(GEMINI_TIMEOUT_MS, 60000));
   };
 
-  const G = ordered(geminiKeys).map(k => ["gemini", k]);
-  const Q = ordered(groqKeys).map(k => ["groq", k]);
-  const QV = ordered(groqKeys).map(k => ["groq_vision", k]);
+  // [provider, key, model, waits between retries]. Gemini: the main model first (patient: a 503 "high demand" often
+  // lasts several seconds), then each fallback model (its own capacity pool) — and only the first key of a model gets
+  // retries, because "high demand" is about the model, not the key.
+  const models = [GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS.filter(m => m !== GEMINI_MODEL)];
+  const G = [];
+  models.forEach((m, mi) => ordered(geminiKeys).forEach((k, ki) => G.push(["gemini", k, m, ki === 0 ? (mi === 0 ? [1000, 2500, 5000] : [1500]) : []])));
+  const Q = ordered(groqKeys).map(k => ["groq", k, null, [700, 1500]]);
+  const QV = ordered(groqKeys).map(k => ["groq_vision", k, null, [700, 1500]]);
 
   const attempts = !visuals
     ? (fitsGroq ? [...Q, ...G] : [...G, ...(groqHasRoom ? Q : [])])
@@ -522,36 +532,39 @@ export default async function handler(req, res) {
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
   res.setHeader("Transfer-Encoding", "chunked");
 
-  // Kept short on purpose: Vercel's free (Hobby) plan caps serverless functions at ~10s,
-  // so: a couple of quick retries for transient 503s, then fail fast.
-  const RETRY_DELAYS_MS = [700, 1500];
+  const t0 = Date.now();
   const errors = [];
   // The student pressed Stop (or closed the tab): remember it so we stop reading — and stop the provider.
   let clientGone = false;
   if (typeof res.on === "function") res.on("close", () => { clientGone = true; });
-  for (const [provider, key] of attempts) {
+  for (const [provider, key, model, delays] of attempts) {
+    if (Date.now() - t0 > REQUEST_DEADLINE_MS) { errors.push(`${provider}: skipped_deadline`); break; }
     let safe = false;   // "safe mode": ask again with only the current message (and file), no conversation history
-    for (let retry = 0; retry <= RETRY_DELAYS_MS.length + 1; retry++) {
+    for (let retry = 0; retry <= delays.length + 1; retry++) {
       try {
-        for await (const token of job(provider, key, safe)) { if (clientGone) break; res.write(token); }
+        for await (const token of job(provider, key, safe, model || GEMINI_MODEL)) { if (clientGone) break; res.write(token); }
         return res.end();
       } catch (e) {
         const transient = /_503|_overloaded/i.test(e.message);
-        console.error(`[${provider}] failed (retry ${retry}):`, e.message);
+        console.error(`[${provider}${model ? " " + model : ""}] failed (retry ${retry}):`, e.message);
         if (/_400/.test(e.message) && !safe && (full.turns.length || small.turns.length)) { safe = true; console.error(`[${provider}] 400: retrying without the conversation history`); continue; }
-        if (transient && retry < RETRY_DELAYS_MS.length) { await new Promise(r => setTimeout(r, RETRY_DELAYS_MS[retry])); continue; }
-        errors.push(`${provider}: ${e.message}`);
+        if (transient && retry < delays.length && Date.now() - t0 + delays[retry] < REQUEST_DEADLINE_MS) { await new Promise(r => setTimeout(r, delays[retry] * RETRY_SCALE)); continue; }
+        errors.push(`${provider}${model && model !== GEMINI_MODEL ? " (" + model + ")" : ""}: ${e.message}`);
         break;
       }
     }
   }
   console.error("All providers failed:", errors);
   const all400 = errors.length > 0 && errors.every(x => /_400/.test(x));
+  const busy = !all400 && errors.length > 0 && errors.every(x => /_503|_429|_overloaded|timeout_no_answer|skipped_deadline/.test(x));
   const ar = req.body && req.body.lang === "ar";
   const ctxInfo = `request: ${attachment ? attachment.kind : "text"}${visuals ? " " + Math.round(visuals.reduce((n, v) => n + v.data.length * 0.75, 0) / 1024) + "KB" : ""}, history ${full.turns.length}`;
   res.write(SERVER_FAIL + (all400
     ? (ar ? "تعذّرت معالجة هذا الطلب (خطأ 400 من الذكاء الاصطناعي). غالباً الملف غير قابل للقراءة: تالف، أو محمي بكلمة سر، أو بصيغة غير معتادة. جرّب ملفاً آخر، أو حوّل الصفحات إلى صور، أو أعد صياغة السؤال."
            : "The AI couldn't process this request (error 400). This usually means the file can't be read: damaged, password-protected or an unusual format. Try another file, export the pages as images, or rephrase the question.")
-    : "All providers are currently unavailable.") + (SHOW_DEBUG ? `\n(debug: ${errors.join(" | ") || "no API keys matched"} | ${ctxInfo})` : ""));
+    : busy
+      ? (ar ? "الذكاء الاصطناعي مشغول جداً الآن (ضغط طلبات مرتفع عند مزوّد الخدمة) وجرّبنا عدة نماذج ومحاولات. انتظر دقيقة ثم أعد المحاولة. ملاحظة: الصور وملفات PDF يقرؤها مزوّد واحد فقط، أما الأسئلة النصية فلها بدائل."
+             : "The AI service is very busy right now (high demand on the provider's side) and several models and retries were tried. Wait a minute and try again. Note: images and PDFs can only be read by one provider; plain text questions have fallbacks.")
+      : "All providers are currently unavailable.") + (SHOW_DEBUG ? `\n(debug: ${errors.join(" | ") || "no API keys matched"} | ${ctxInfo})` : ""));
   res.end();
 }
