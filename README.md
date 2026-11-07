@@ -29,7 +29,7 @@ A web address can't contain spaces or capital letters, so "ElectroRed AI.vercel.
 
 ## Vercel → Settings → Environment Variables
 - `GROQ_API_KEY_1` … and `GEMINI_API_KEY_1` … (Gemini is REQUIRED for images and PDFs)
-- optional: `FIREBASE_PROJECT_ID` (default `electronic-engineering-ai`), `RATE_USER_PER_MIN`, `RATE_GUEST_PER_MIN`, `RATE_GUEST_PER_DAY`, `SHOW_DEBUG_ERRORS=0` (hide technical error text)
+- optional: `GEMINI_FALLBACK_MODELS` (comma-separated, tried when the main Gemini model answers "503 high demand"; default `gemini-flash-latest,gemini-flash-lite-latest`), `FIREBASE_PROJECT_ID` (default `electronic-engineering-ai`), `RATE_USER_PER_MIN`, `RATE_GUEST_PER_MIN`, `RATE_GUEST_PER_DAY`, `SHOW_DEBUG_ERRORS=0` (hide technical error text)
 
 ## Firebase Console
 - Authentication → Sign-in method: **Google** and **Email/Password** enabled
