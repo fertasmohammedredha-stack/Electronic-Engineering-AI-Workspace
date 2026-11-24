@@ -23,6 +23,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="assets/filegen.js"></script>
+<script src="assets/pdftools.js"></script>
 <script src="assets/brand.js"></script>
 <style>
   .bubble.bot{text-align:start;}
@@ -115,6 +116,10 @@
   .ex-p{font-size:12.5px; color:var(--ink-soft); line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
   .bubble.bot.error{border-color:color-mix(in srgb, var(--danger) 55%, var(--line)); background:color-mix(in srgb, var(--danger) 8%, var(--surface));}
   .wait-hint{font-size:13px; color:var(--ink-soft); margin-inline-start:6px;}
+  .pdf-range{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-soft); margin-inline-start:10px; flex-wrap:wrap;}
+  .pdf-range input{width:64px; background:var(--bg); border:1px solid var(--line-strong); border-radius:6px; padding:4px 6px; color:var(--ink); font:inherit;}
+  .pdf-range[hidden]{display:none;}
+  @media (max-width:600px){ .pdf-range{flex-basis:100%; margin-inline-start:0;} }
   .stopped-note{display:block; margin-top:8px; font-size:12px; color:var(--ink-soft);}
   .kbd-btn{margin-inline-start:0;}
   .chat-topbar .guest-countdown{margin-inline-start:0;}
@@ -222,6 +227,8 @@ let unsubChats = null;
 let unsubMessages = null;
 let isStreaming = false;     // true while a reply is being written into the page
 let activeCtrl = null;       // AbortController of the request in flight (for Stop)
+let attachBusy = false;      // a big PDF is being compressed: sending waits until it is ready
+let compressSeq = 0;         // bumped when the student removes the file mid-compression, so the late result is thrown away
 let stopRequested = false;   // true | 'discard' once the student pressed Stop (or left the chat)
 
 // ---- the real generation state drives the logo, the tab icon, the send/stop button and aria-busy ----
@@ -925,7 +932,7 @@ function addBubble(role, text, scroll = true, attachment = null){
 // pendingAttachment: { kind:'image'|'pdf'|'text', dataUrl?, data?(base64), mimeType?, text?, name }
 let pendingAttachment = null;
 
-function showAttachmentPreview(){
+function showAttachmentPreviewBase(){
   const img = document.getElementById('previewImg');
   const nameEl = document.getElementById('previewName');
   document.getElementById('imagePreview').classList.remove('hidden');
@@ -947,7 +954,8 @@ function showAttachmentPreview(){
 const TEXT_FILE_RE = /\.(txt|csv|tsv|md|json|xml|ya?ml|ini|log|tex|m|mdl|py|c|h|cpp|cc|hpp|ino|asm|s|v|sv|vhd|vhdl|cir|sp|net|lib|sub|asc|kicad_sch|kicad_pcb|js|ts|java|html|css)$/i;
 // Closed project formats can't be read from the browser — say so clearly instead of failing silently.
 const CLOSED_FORMAT_RE = /\.(pdsprj|pdsclip|dsn|opj|ms\d+|msm|pkt|pka|slx|mlx|dwg)$/i;
-const MAX_PDF_BYTES = 2.5 * 1024 * 1024; // Vercel rejects request bodies over ~4.5 MB and base64 adds a third
+const MAX_PDF_BYTES = 2.5 * 1024 * 1024;        // a PDF up to this size is sent as it is (the AI reads the file itself)
+const MAX_BIG_PDF_BYTES = 80 * 1024 * 1024;     // bigger ones are compressed in the browser first (text + a few page pictures); this is the memory limit (Vercel rejects request bodies over ~4.5 MB)
 const readAsDataURL = file => new Promise((resolve, reject) => {
   const r = new FileReader();
   r.onload = () => resolve(r.result);
@@ -1037,8 +1045,56 @@ document.getElementById('fileInput').addEventListener('change', async (e)=>{
 });
 
 // One entry point for every way of adding a file: the picker, drag & drop and paste.
+function showAttachmentPreview(){ showAttachmentPreviewBase(); renderPdfControls(); }
+
+// A compressed PDF shows what is being sent and lets the student pick the page range.
+function renderPdfControls(){
+  const box = document.getElementById('imagePreview'); if(!box) return;
+  let form = document.getElementById('pdfRange');
+  const meta = pendingAttachment && pendingAttachment.pdf;
+  if(!meta){ if(form) form.hidden = true; return; }
+  if(!form){
+    form = document.createElement('form'); form.id = 'pdfRange'; form.className = 'pdf-range';
+    form.innerHTML = '<label><span data-pdf="pages"></span> <input id="pdfFrom" type="number" min="1" inputmode="numeric" aria-label="from"> – <input id="pdfTo" type="number" min="1" inputmode="numeric" aria-label="to"></label> <button type="submit" class="s-btn" data-pdf="apply"></button>';
+    form.addEventListener('submit', e => {
+      e.preventDefault(); const m = pendingAttachment && pendingAttachment.pdf; if(!m) return;
+      compressPdf(m.file, { from: document.getElementById('pdfFrom').value, to: document.getElementById('pdfTo').value });
+    });
+    box.appendChild(form);
+  }
+  form.querySelector('[data-pdf="pages"]').textContent = tr('pdfPages'); form.querySelector('[data-pdf="apply"]').textContent = tr('pdfApply');
+  const f = document.getElementById('pdfFrom'), t = document.getElementById('pdfTo');
+  f.max = t.max = meta.total; f.value = meta.from; t.value = meta.to; form.hidden = false;
+  const n = (pendingAttachment.images || []).length;
+  document.getElementById('previewName').textContent = getLang()==='ar'
+    ? '📄 ' + pendingAttachment.name + ' · ' + meta.total + ' صفحة ← ' + (meta.scanned ? 'صور فقط (مستند ممسوح)' : 'نص الصفحات ' + meta.from + '–' + meta.textTo) + ' + ' + n + ' صور'
+    : '📄 ' + pendingAttachment.name + ' · ' + meta.total + ' pages → ' + (meta.scanned ? 'pictures only (scanned)' : 'text of pages ' + meta.from + '–' + meta.textTo) + ' + ' + n + ' pictures';
+}
+// Big PDFs: read in the browser, send the text of the chosen pages + a few small page pictures (20 MB becomes about 2 MB).
+async function compressPdf(file, range){
+  attachBusy = true; const mySeq = ++compressSeq;
+  const box = document.getElementById('imagePreview'), nameEl = document.getElementById('previewName'), img = document.getElementById('previewImg');
+  box.classList.remove('hidden'); if(img) img.style.display = 'none'; nameEl.style.display = '';
+  const form = document.getElementById('pdfRange'); if(form) form.hidden = true;
+  nameEl.textContent = '⏳ ' + tr('pdfBusy') + ' ' + file.name;
+  try {
+    const r = await PdfTools.process(file, { from: range && range.from, to: range && range.to, onProgress: p => { nameEl.textContent = '⏳ ' + tr('pdfBusy') + ' ' + file.name + ' (' + p.done + '/' + p.of + ')'; } });
+    if(mySeq !== compressSeq) return;     // the student removed the file while it was being compressed
+    pendingAttachment = { kind: 'text', text: r.text, name: file.name, images: r.images.map(i => ({ data: i.data, mimeType: i.mimeType })),
+      pdf: { file, total: r.total, from: r.from, to: r.to, textTo: r.textTo, scanned: r.scanned } };
+    showAttachmentPreview();
+  } catch(err){
+    if(mySeq !== compressSeq) return;
+    console.error('PDF compression failed:', err);
+    pendingAttachment = null; box.classList.add('hidden');
+    const m = (err && (err.name + ' ' + err.message)) || '';
+    alert(/Password/i.test(m) ? tr('pdfPassword') : /dynamically imported|Failed to fetch|NetworkError|Load failed|import/i.test(m) ? tr('pdfNoNet') : tr('pdfUnreadable'));
+  } finally { if(mySeq === compressSeq) attachBusy = false; }
+}
+
 async function attachFile(file){
   if(!file) return;
+  if(attachBusy){ toast(tr('pdfWait')); return; }
   if(document.getElementById('fileBtn').disabled){ toast(tr('guestNoFiles')); return; }
   if(CLOSED_FORMAT_RE.test(file.name)){
     alert(getLang()==='ar'
@@ -1082,16 +1138,24 @@ async function attachFile(file){
       alert(getLang()==='ar' ? 'تعذرت قراءة الصورة (جرّب JPG أو PNG).' : "Couldn't read this image (try JPG or PNG).");
     }
   } else if(isPdf){
-    if(file.size > MAX_PDF_BYTES){ alert(getLang()==='ar' ? 'حجم PDF كبير (الحد 2.5 ميجا).' : 'PDF too large (2.5MB max).'); return; }
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    const head = new TextDecoder('latin1').decode(bytes.subarray(0, 1024));
-    if(!head.includes('%PDF-')){ alert(getLang()==='ar' ? 'هذا الملف ليس PDF صالحاً (قد يكون تالفاً أو بصيغة أخرى مُسمّاة .pdf).' : "This isn't a valid PDF (it may be damaged, or another format renamed to .pdf)."); return; }
-    if(/\/Encrypt\b/.test(new TextDecoder('latin1').decode(bytes.subarray(Math.max(0, bytes.length - 4096))) + head)){
-      alert(getLang()==='ar' ? 'هذا الـ PDF محمي بكلمة سر، ولا يمكن قراءته. أزل الحماية ثم أعد المحاولة.' : 'This PDF is password-protected and can\'t be read. Remove the protection and try again.'); return;
-    }
-    const dataUrl = await readAsDataURL(file);
-    pendingAttachment = { kind: 'pdf', dataUrl, data: dataUrl.split(',')[1], mimeType: 'application/pdf', name: file.name };
-    showAttachmentPreview();
+    if(file.size > MAX_BIG_PDF_BYTES){ alert(tr('pdfTooBig')); return; }
+    attachBusy = true;                        // sending waits while the file is checked / compressed (the typed text must not leave without it)
+    const mySeq = compressSeq; let handedOff = false;
+    try {
+      // Only the start and the end of the file are needed for these checks (an 80 MB PDF must not be loaded whole just for them).
+      const head = new TextDecoder('latin1').decode(new Uint8Array(await file.slice(0, 1024).arrayBuffer()));
+      const tail = new TextDecoder('latin1').decode(new Uint8Array(await file.slice(Math.max(0, file.size - 4096)).arrayBuffer()));
+      if(!head.includes('%PDF-')){ alert(getLang()==='ar' ? 'هذا الملف ليس PDF صالحاً (قد يكون تالفاً أو بصيغة أخرى مُسمّاة .pdf).' : "This isn't a valid PDF (it may be damaged, or another format renamed to .pdf)."); return; }
+      if(/\/Encrypt\b/.test(tail + head)){ alert(tr('pdfPassword')); return; }
+      if(file.size > MAX_PDF_BYTES){ handedOff = true; await compressPdf(file); return; }      // big: text + a few page pictures instead of the whole file
+      const dataUrl = await readAsDataURL(file);
+      if(mySeq !== compressSeq) return;                                                         // removed while it was being read
+      pendingAttachment = { kind: 'pdf', dataUrl, data: dataUrl.split(',')[1], mimeType: 'application/pdf', name: file.name };
+      showAttachmentPreview();
+      // In the background, read the first part of the text: if the main AI is busy the server can still answer from it.
+      const mine = pendingAttachment;
+      if(window.PdfTools) PdfTools.quickText(file, 6000).then(t => { if(t) mine.fallbackText = t; }).catch(() => {});
+    } finally { if(!handedOff && mySeq === compressSeq) attachBusy = false; }
   } else if(isText){
     try {
       const text = await file.slice(0, 200000).text();       // the first 200 KB is far more than the AI reads
@@ -1269,7 +1333,7 @@ document.addEventListener('paste', async e => {
 });
 
 document.getElementById('removeImage').addEventListener('click', ()=>{
-  pendingAttachment = null;
+  pendingAttachment = null; compressSeq++; attachBusy = false;
   document.getElementById('imagePreview').classList.add('hidden');
 });
 
@@ -1334,7 +1398,7 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
   // (2) an oversized request can be refused without losing what the student typed or attached.
   const payload = JSON.stringify({
     message: text, lang: getLang(),
-    attachment: attachment ? { kind: attachment.kind, data: attachment.data, mimeType: attachment.mimeType, text: attachment.text, name: attachment.name, images: attachment.images } : undefined,
+    attachment: attachment ? { kind: attachment.kind, data: attachment.data, mimeType: attachment.mimeType, text: attachment.text, name: attachment.name, images: attachment.images, fallbackText: attachment.fallbackText } : undefined,
     history
   });
   if(new Blob([payload]).size > MAX_REQUEST_BYTES){
@@ -1486,6 +1550,7 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
 }
 
 window.sendMessage = async function(){
+  if(attachBusy){ toast(tr('pdfWait')); return; }
   if(isStreaming) return;
   const input = document.getElementById('msgInput');
   const text = input.value.trim();
