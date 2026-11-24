@@ -1,7 +1,7 @@
 // Shared bilingual dictionary — used by index.html and chat.html
 // Build stamp. Bump it (together with API_VERSION in api/chat.js) on every delivery: the settings page shows both,
 // so a half-uploaded deployment is obvious at a glance.
-const APP_VERSION = "2026.10.23";
+const APP_VERSION = "2026.10.24";
 
 const DICT = {
   ar: {
@@ -54,6 +54,9 @@ const DICT = {
     scNewChat: "محادثة جديدة", scSearch: "البحث في المحادثات", scSidebar: "إظهار / إخفاء القائمة الجانبية",
     scAttach: "إرفاق ملف", scDrop: "سحب وإفلات ملف في أي مكان بالصفحة", scPaste: "لصق صورة أو لقطة شاشة في حقل الكتابة",
     scCopyAnswer: "نسخ آخر إجابة", scCopyCode: "نسخ آخر كود", scFocus: "الانتقال إلى حقل الكتابة", scHelp: "عرض هذه القائمة",
+    pdfPages: "الصفحات", pdfApply: "تطبيق", pdfWait: "انتظر حتى ينتهي تجهيز الملف.", pdfBusy: "جاري ضغط الـ PDF…",
+    pdfTooBig: "حجم الـ PDF كبير جداً (الحد 80 ميجا).", pdfUnreadable: "تعذّرت قراءة هذا الـ PDF (قد يكون تالفاً). جرّب ملفاً آخر.",
+    pdfPassword: "هذا الـ PDF محمي بكلمة سر، ولا يمكن قراءته. أزل الحماية ثم أعد المحاولة.", pdfNoNet: "تعذّر تحميل أداة قراءة الـ PDF. تحقق من الاتصال وأعد المحاولة.",
     agreePre: "بمتابعتك فإنك توافق على", andWord: "و", openChat: "افتح المحادثة",
     stopGen: "إيقاف التوليد", sendMsg: "إرسال", attachFile: "إرفاق ملف", voiceInput: "إدخال صوتي", toggleSidebar: "القائمة الجانبية", genStopped: "تم إيقاف التوليد.",
     versionMismatch: "النسختان مختلفتان: ارفع كل الملفات", versionUnknown: "غير معروفة (ملف api/chat.js قديم أو غير مرفوع)",
@@ -108,6 +111,9 @@ const DICT = {
     scNewChat: "New chat", scSearch: "Search chats", scSidebar: "Show / hide the sidebar",
     scAttach: "Attach a file", scDrop: "Drag & drop a file anywhere on the page", scPaste: "Paste a picture or screenshot into the message box",
     scCopyAnswer: "Copy the last answer", scCopyCode: "Copy the last code block", scFocus: "Jump to the message box", scHelp: "Show this list",
+    pdfPages: "Pages", pdfApply: "Apply", pdfWait: "Wait until the file has been prepared.", pdfBusy: "Compressing the PDF…",
+    pdfTooBig: "That PDF is too large (80 MB max).", pdfUnreadable: "This PDF couldn't be read (it may be damaged). Try another file.",
+    pdfPassword: "This PDF is password-protected and can't be read. Remove the protection and try again.", pdfNoNet: "Couldn't load the PDF reader. Check your connection and try again.",
     agreePre: "By continuing you agree to the", andWord: "and", openChat: "Open chat",
     stopGen: "Stop generating", sendMsg: "Send", attachFile: "Attach a file", voiceInput: "Voice input", toggleSidebar: "Sidebar", genStopped: "Generation stopped.",
     versionMismatch: "versions differ: upload all the files", versionUnknown: "unknown (api/chat.js is old or missing)",
