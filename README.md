@@ -56,3 +56,6 @@ Edit the `UPDATES` list at the top of the script in `index.html` — add one obj
 
 ## On every delivery
 Bump `APP_VERSION` (assets/lang.js) and `API_VERSION` (api/chat.js) to the same value.
+
+## Big PDFs
+`assets/pdftools.js` (pdf.js, loaded from jsDelivr only when needed) compresses a PDF larger than 2.5 MB (up to 80 MB) in the browser: the text of the chosen pages (about 19k characters) plus up to 6 small page pictures (8 for scanned PDFs). The student can pick the page range. PDFs up to 2.5 MB are still sent as they are, together with the first ~6k characters of text, which the server uses to answer through Groq (with a notice) when every Gemini model is busy.
