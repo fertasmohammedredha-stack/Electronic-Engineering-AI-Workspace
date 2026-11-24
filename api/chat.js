@@ -19,7 +19,7 @@ import crypto from "node:crypto";
 
 // Bump together with APP_VERSION in assets/lang.js on every delivery: the settings page compares the two,
 // which immediately shows when only SOME of the files were uploaded (a mixed deployment).
-const API_VERSION = "2026.10.23";
+const API_VERSION = "2026.10.24";
 
 const ASSISTANT_NAME = "ElectroRed AI";
 const CREATOR = "Fertas Mohammed Redha";
@@ -415,6 +415,7 @@ function cleanInput(body) {
     } else if (a.kind === "image" || a.kind === "pdf") {
       if (!validVisual(a, a.kind)) throw httpErr(400, "bad_attachment");
       attachment = { kind: a.kind, name, data: a.data, mimeType: a.mimeType };
+      if (a.kind === "pdf" && typeof a.fallbackText === "string") attachment.fallbackText = sanitizeText(a.fallbackText.slice(0, 8000));
     } else {
       throw httpErr(400, "bad_attachment");
     }
@@ -487,6 +488,12 @@ export default async function handler(req, res) {
       : "صف هذه الصورة بالتفصيل من منظور إلكتروني (دارة، مكونات، قيم، مسائل مكتوبة...) وساعد الطالب فيها.";
   }
 
+  // If the main AI is busy, Groq can still answer from the FIRST PART of the file's text (it cannot read PDFs or hold a long text).
+  const degradedSource = attachment?.kind === "text" ? attachment.text : attachment?.kind === "pdf" ? (attachment.fallbackText || "") : "";
+  const degradedMessage = (message.trim() ? message : (attachment?.kind === "pdf" ? "لخّص هذا الملف واشرح أهم النقاط من منظور إلكتروني، وساعد الطالب فيه." : ""))
+    + (message.trim() || attachment?.kind === "pdf" ? "\n\n" : "")
+    + `--- Attached file (first part only): ${attachment?.name || "file"} ---\n${(degradedSource || "").slice(0, 5200)}`;
+
   const groqKeys = getKeyPool("GROQ_API_KEY");
   const geminiKeys = getKeyPool("GEMINI_API_KEY");
   if (!groqKeys.length && !geminiKeys.length) {
@@ -506,9 +513,9 @@ export default async function handler(req, res) {
   const fitsGroq = sysFull.length + effectiveMessage.length + charsOf(full.turns) <= GROQ_REQUEST_CHARS;
   const groqHasRoom = sysFull.length + effectiveMessage.length < GROQ_REQUEST_CHARS - 1500; // otherwise the message alone would blow Groq's minute budget
 
-  const job = (provider, key, safe = false, model = GEMINI_MODEL) => {
+  const job = (provider, key, safe = false, model = GEMINI_MODEL, degraded = false) => {
     const useFull = provider === "gemini";
-    const { turns, message: msg } = foldLastUserTurn(safe ? [] : (useFull ? full : small).turns, effectiveMessage);
+    const { turns, message: msg } = foldLastUserTurn(safe ? [] : (useFull ? full : small).turns, degraded ? degradedMessage : effectiveMessage);
     const system = useFull ? sysFull : sysSmall;
     return provider === "groq" ? streamGroq(key, system, turns, msg)
       : provider === "groq_vision" ? streamGroqVision(key, system, turns, msg, visuals?.slice(0, 3)) // Groq vision: max 3 images
@@ -529,6 +536,15 @@ export default async function handler(req, res) {
     : pdfOnly ? G
     : [...G, ...(groqHasRoom ? QV : [])];
 
+  // Last resort for files: when every Gemini model failed, answer from the first part of the file's text with Groq.
+  if (degradedSource.trim().length > 200 && groqKeys.length && !attempts.some(x => x[0] === "groq")) {
+    ordered(groqKeys).forEach(k => attempts.push(["groq", k, null, [700, 1500], true]));
+  }
+  const arLang = req.body && req.body.lang === "ar";
+  const DEGRADED_NOTICE = arLang
+    ? "ℹ️ الخدمة الرئيسية مشغولة الآن، لذلك بُني هذا الجواب على الجزء الأول من ملفك فقط (نحو 5 آلاف حرف).\n\n"
+    : "ℹ️ The main AI service is busy right now, so this answer is based only on the first part of your file (about 5,000 characters).\n\n";
+
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
   res.setHeader("Transfer-Encoding", "chunked");
 
@@ -537,12 +553,17 @@ export default async function handler(req, res) {
   // The student pressed Stop (or closed the tab): remember it so we stop reading — and stop the provider.
   let clientGone = false;
   if (typeof res.on === "function") res.on("close", () => { clientGone = true; });
-  for (const [provider, key, model, delays] of attempts) {
+  for (const [provider, key, model, delays, degraded] of attempts) {
     if (Date.now() - t0 > REQUEST_DEADLINE_MS) { errors.push(`${provider}: skipped_deadline`); break; }
     let safe = false;   // "safe mode": ask again with only the current message (and file), no conversation history
     for (let retry = 0; retry <= delays.length + 1; retry++) {
       try {
-        for await (const token of job(provider, key, safe, model || GEMINI_MODEL)) { if (clientGone) break; res.write(token); }
+        let announced = false;
+        for await (const token of job(provider, key, safe, model || GEMINI_MODEL, !!degraded)) {
+          if (clientGone) break;
+          if (degraded && !announced) { announced = true; res.write(DEGRADED_NOTICE); }
+          res.write(token);
+        }
         return res.end();
       } catch (e) {
         const transient = /_503|_overloaded/i.test(e.message);
