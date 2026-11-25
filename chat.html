@@ -1434,6 +1434,7 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
     if(!res.body) throw userError(ar ? 'لم يصل رد من الخادم.' : 'No response came back from the server.');
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
+    const expectEnd = res.headers.get('x-er-end') === '1';   // newer servers end every finished answer with an invisible mark
     let full = '';
     while(true){
       let chunk;
@@ -1447,6 +1448,8 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
       document.getElementById('chatScroll').scrollTop = 999999;
     }
     if(stopRequested === 'discard' || (stopped && !full.trim())) throw Object.assign(new Error('stopped'), { stopped: true });
+    const END_MARK = '\u2060\u2063\u2060', sawEnd = full.includes(END_MARK);
+    full = full.split(END_MARK).join('');
     if(!full.trim()) throw userError(ar ? 'لم يصل رد من النموذج. حاول مرة ثانية.' : 'The model returned an empty reply. Please try again.');
 
     // The server reports "every provider failed" as plain text: show it, but don't save or remember it as an answer.
@@ -1454,6 +1457,13 @@ async function runTurn({ text, attachment, history, showUser, oldBot = null, onA
       if(!currentUser) rollbackGuestTurn();
       trackEvent('ai_response_error', { error: 'all_providers_unavailable' });
       return false;
+    }
+
+    // The connection ended without the server's end mark: the answer was cut (network drop or a platform time limit). Say so.
+    if(expectEnd && !sawEnd && !stopped){
+      full += ar ? '\n\n⚠️ انقطعت الإجابة قبل اكتمالها (انقطاع في الاتصال أو انتهاء مهلة الخادم). اكتب «أكمل» لتحصل على البقية.' : '\n\n⚠️ The answer was cut off before it finished (a lost connection or a server time limit). Write "continue" to get the rest.';
+      renderBotContent(botBubble, full);
+      trackEvent('ai_response_error', { error: 'cut_off_no_end_mark' });
     }
 
     // 3) Save the reply.
