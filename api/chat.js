@@ -243,7 +243,7 @@ async function* streamSSE(res, errPrefix, key) {
 
 const toOpenAITurns = turns => turns.map(h => ({ role: h.role === "bot" ? "assistant" : "user", content: h.text }));
 
-async function* streamGroq(key, system, turns, message) {
+async function* streamGroq(key, system, turns, message, meta = {}) {
   const messages = [{ role: "system", content: system }, ...toOpenAITurns(turns), { role: "user", content: message }];
   const res = await fetchWithStartTimeout("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
@@ -252,12 +252,13 @@ async function* streamGroq(key, system, turns, message) {
   }, GROQ_TIMEOUT_MS, "groq");
   for await (const json of streamSSE(res, "groq", key)) {
     const token = json.choices?.[0]?.delta?.content;
+    if (json.choices?.[0]?.finish_reason) meta.finish = json.choices[0].finish_reason;
     if (token) yield token;
   }
 }
 
 // Groq vision (images only — its image_url part doesn't accept PDFs)
-async function* streamGroqVision(key, system, turns, message, visuals) {
+async function* streamGroqVision(key, system, turns, message, visuals, meta = {}) {
   const content = [{ type: "text", text: message }];
   for (const v of visuals || []) content.push({ type: "image_url", image_url: { url: `data:${v.mimeType};base64,${v.data}` } });
   const messages = [{ role: "system", content: system }, ...toOpenAITurns(turns), { role: "user", content }];
@@ -268,12 +269,13 @@ async function* streamGroqVision(key, system, turns, message, visuals) {
   }, GROQ_TIMEOUT_MS, "groq_vision");
   for await (const json of streamSSE(res, "groq_vision", key)) {
     const token = json.choices?.[0]?.delta?.content;
+    if (json.choices?.[0]?.finish_reason) meta.finish = json.choices[0].finish_reason;
     if (token) yield token;
   }
 }
 
 // Gemini (text + images + PDF — inlineData works for any supported mimeType)
-async function* streamGemini(key, system, turns, message, visuals, model = GEMINI_MODEL, timeoutMs = GEMINI_TIMEOUT_MS) {
+async function* streamGemini(key, system, turns, message, visuals, model = GEMINI_MODEL, timeoutMs = GEMINI_TIMEOUT_MS, meta = {}) {
   const parts = [{ text: message }];
   for (const v of visuals || []) parts.push({ inlineData: { mimeType: v.mimeType, data: v.data } });
   const contents = [
@@ -287,6 +289,9 @@ async function* streamGemini(key, system, turns, message, visuals, model = GEMIN
     body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents })
   }, timeoutMs, "gemini");
   for await (const json of streamSSE(res, "gemini", key)) {
+    // WHY the model stopped (STOP = normal; MAX_TOKENS, SAFETY, RECITATION, ... = the answer is incomplete or blocked)
+    if (json.candidates?.[0]?.finishReason) meta.finish = json.candidates[0].finishReason;
+    if (json.promptFeedback?.blockReason) meta.finish = "BLOCKED_" + json.promptFeedback.blockReason;
     // Newer Gemini models can return several parts (e.g. "thought" parts): keep ALL answer text, skip the thoughts.
     const token = (json.candidates?.[0]?.content?.parts || [])
       .filter(p => !p.thought && typeof p.text === "string")
@@ -306,6 +311,16 @@ const SHOW_DEBUG = process.env.SHOW_DEBUG_ERRORS !== "0";                   // s
 const MAX_MESSAGE_CHARS = 12000;
 const MAX_B64_CHARS = 4400000;
 
+// A finished answer ends with this invisible mark; the page strips it. No mark = the connection was cut (e.g. a platform time limit).
+const END_MARK = "\u2060\u2063\u2060";
+function stopNotice(finish, ar) {
+  if (!finish || /^stop$/i.test(finish)) return "";
+  const f = String(finish), dbg = SHOW_DEBUG ? ` (${f})` : "";
+  if (/^(MAX_TOKENS|length)$/i.test(f)) return ar ? `\n\n⚠️ بلغت الإجابة الحدّ الأقصى للطول فتوقفت${dbg}. اكتب «أكمل» لتحصل على البقية.` : `\n\n⚠️ The answer reached the maximum length and stopped${dbg}. Write "continue" to get the rest.`;
+  if (/RECITATION/i.test(f)) return ar ? `\n\n⚠️ توقّف النموذج في منتصف الإجابة لأنه اعتبر المقطع نصاً محمياً بحقوق النشر${dbg}. يحدث هذا كثيراً مع صور صفحات الكتب. اطلب تلخيصاً بأسلوبك أو شرح فكرة محددة بدل نقل النص.` : `\n\n⚠️ The model stopped mid-answer because it judged the passage to be copyrighted text${dbg}. This often happens with photos of book pages. Ask for a summary in your own words, or for one specific idea explained, instead of copying the text.`;
+  if (/SAFETY|BLOCK|PROHIBITED|SPII|IMAGE_SAFETY/i.test(f)) return ar ? `\n\n⚠️ أوقف مزوّد الخدمة الإجابة بسبب مرشّح السلامة${dbg}. أعد صياغة السؤال أو جرّب صورة أخرى.` : `\n\n⚠️ The provider stopped the answer with its safety filter${dbg}. Rephrase the question or try another image.`;
+  return ar ? `\n\n⚠️ توقفت الإجابة مبكراً قبل اكتمالها${dbg}. اكتب «أكمل» أو أعد المحاولة.` : `\n\n⚠️ The answer stopped early${dbg}. Write "continue" or try again.`;
+}
 const httpErr = (status, message) => Object.assign(new Error(message), { status });
 
 // Providers answer "400 invalid argument" to text they can't encode: NUL/control characters, and half of an emoji
@@ -519,13 +534,13 @@ export default async function handler(req, res) {
   const fitsGroq = sysFull.length + effectiveMessage.length + charsOf(full.turns) <= GROQ_REQUEST_CHARS;
   const groqHasRoom = sysFull.length + effectiveMessage.length < GROQ_REQUEST_CHARS - 1500; // otherwise the message alone would blow Groq's minute budget
 
-  const job = (provider, key, safe = false, model = GEMINI_MODEL) => {
+  const job = (provider, key, safe = false, model = GEMINI_MODEL, meta = {}) => {
     const useFull = provider === "gemini";
     const { turns, message: msg } = foldLastUserTurn(safe ? [] : (useFull ? full : small).turns, effectiveMessage);
     const system = useFull ? sysFull : sysSmall;
-    return provider === "groq" ? streamGroq(key, system, turns, msg)
-      : provider === "groq_vision" ? streamGroqVision(key, system, turns, msg, visuals?.slice(0, 3)) // Groq vision: max 3 images
-      : streamGemini(key, system, turns, msg, visuals, model, model === GEMINI_MODEL ? GEMINI_TIMEOUT_MS : Math.min(GEMINI_TIMEOUT_MS, 60000));
+    return provider === "groq" ? streamGroq(key, system, turns, msg, meta)
+      : provider === "groq_vision" ? streamGroqVision(key, system, turns, msg, visuals?.slice(0, 3), meta) // Groq vision: max 3 images
+      : streamGemini(key, system, turns, msg, visuals, model, model === GEMINI_MODEL ? GEMINI_TIMEOUT_MS : Math.min(GEMINI_TIMEOUT_MS, 60000), meta);
   };
 
   // [provider, key, model, waits between retries]. Gemini: the main model first (patient: a 503 "high demand" often
@@ -544,6 +559,8 @@ export default async function handler(req, res) {
 
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
   res.setHeader("Transfer-Encoding", "chunked");
+  res.setHeader("X-ER-End", "1");        // tells the page that a finished answer ends with END_MARK (so a cut connection can be noticed)
+  const ar = req.body && req.body.lang === "ar";
 
   const t0 = Date.now();
   const errors = [];
@@ -554,10 +571,23 @@ export default async function handler(req, res) {
     if (Date.now() - t0 > REQUEST_DEADLINE_MS) { errors.push(`${provider}: skipped_deadline`); break; }
     let safe = false;   // "safe mode": ask again with only the current message (and file), no conversation history
     for (let retry = 0; retry <= delays.length + 1; retry++) {
+      const meta = {}; let sent = 0;
       try {
-        for await (const token of job(provider, key, safe, model || GEMINI_MODEL)) { if (clientGone) break; res.write(token); }
+        for await (const token of job(provider, key, safe, model || GEMINI_MODEL, meta)) { if (clientGone) break; sent += token.length; res.write(token); }
+        if (!clientGone) {
+          if (!sent) throw new Error(`${provider}_empty_${meta.finish || "no_reason"}`);   // nothing came back (blocked?): try the next provider
+          const note = stopNotice(meta.finish, ar);
+          if (note) { console.error(`[${provider}] stopped early: ${meta.finish}`); res.write(note); }
+          res.write(END_MARK);
+        }
         return res.end();
       } catch (e) {
+        if (sent) {          // the connection broke AFTER the student already saw part of the answer: do NOT start a second answer
+          console.error(`[${provider}${model ? " " + model : ""}] broke mid-answer after ${sent} chars:`, e.message);
+          res.write(ar ? "\n\n⚠️ انقطع الاتصال بالذكاء الاصطناعي قبل اكتمال الإجابة. اكتب «أكمل» لتحصل على البقية، أو أعد توليد الرد." : "\n\n⚠️ The connection to the AI was lost before the answer was finished. Write \"continue\" to get the rest, or regenerate the reply.");
+          res.write(END_MARK);
+          return res.end();
+        }
         const transient = /_503|_overloaded/i.test(e.message);
         console.error(`[${provider}${model ? " " + model : ""}] failed (retry ${retry}):`, e.message);
         if (/_400/.test(e.message) && !safe && (full.turns.length || small.turns.length)) { safe = true; console.error(`[${provider}] 400: retrying without the conversation history`); continue; }
@@ -570,7 +600,6 @@ export default async function handler(req, res) {
   console.error("All providers failed:", errors);
   const all400 = errors.length > 0 && errors.every(x => /_400/.test(x));
   const busy = !all400 && errors.length > 0 && errors.every(x => /_503|_429|_overloaded|timeout_no_answer|skipped_deadline/.test(x));
-  const ar = req.body && req.body.lang === "ar";
   const ctxInfo = `request: ${attachment ? attachment.kind : "text"}${visuals ? " " + Math.round(visuals.reduce((n, v) => n + v.data.length * 0.75, 0) / 1024) + "KB" : ""}, history ${full.turns.length}`;
   res.write(SERVER_FAIL + (all400
     ? (ar ? "تعذّرت معالجة هذا الطلب (خطأ 400 من الذكاء الاصطناعي). غالباً الملف غير قابل للقراءة: تالف، أو محمي بكلمة سر، أو بصيغة غير معتادة. جرّب ملفاً آخر، أو حوّل الصفحات إلى صور، أو أعد صياغة السؤال."
