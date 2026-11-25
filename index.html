@@ -229,16 +229,12 @@
 //   title / text : { ar, en }
 const UPDATES = [
   // ----- Coming next (remove or edit freely — these are plans, not promises) -----
-  { tag: "soon",
-    title: { ar: "محاكاة تفاعلية داخل المحادثة", en: "Interactive simulations in the chat" },
-    text:  { ar: "قانون أوم، مقسّم الجهد ودارات RC بمنزلقات تتحكم بها وتشاهد النتيجة مباشرة.",
-             en: "Ohm's law, voltage dividers and RC circuits with sliders you control and results you see instantly." } },
 
   // ----- Released (newest first) -----
   { date: "2026-10", tag: "new",
-    title: { ar: "ملفات PDF الكبيرة (حتى 80 ميجا)", en: "Big PDFs (up to 80 MB)" },
-    text:  { ar: "يُضغط الـ PDF الكبير داخل متصفحك: يُرسَل نص الصفحات التي تختارها مع صور لبضع صفحات (وليس الملف كاملاً)، ويمكنك تحديد نطاق الصفحات. وإذا كانت الخدمة الرئيسية مشغولة يجيب الموقع من الجزء الأول من الملف مع تنبيه واضح.",
-             en: "A big PDF is compressed inside your browser: the text of the pages you choose is sent together with pictures of a few pages (not the whole file), and you can pick the page range. If the main AI is busy, the site answers from the first part of the file and says so clearly." } },
+    title: { ar: "محاكاة تفاعلية مبسّطة داخل المحادثة", en: "Simplified interactive simulations in the chat" },
+    text:  { ar: "مقسّم الجهد، مرشحات RC، رنين RLC، المقوّمات، مكبّرات العمليات، منظّم زينر واستقطاب BJT: مخطط الدارة ومنحنيات ومنزلقات تغيّر القيم وتريك النتيجة مباشرة. محاكٍ تعليمي مبسّط (ليس SPICE أو Proteus)، فالأرقام تقريبية.",
+             en: "Voltage divider, RC filters, RLC resonance, rectifiers, op-amp stages, zener regulator and BJT bias: a schematic, plots and sliders that change the values and show the result live. A simplified teaching simulator (not SPICE or Proteus), so numbers are approximate." } },
   { date: "2026-10", tag: "new",
     title: { ar: "اختصارات لوحة المفاتيح والسحب واللصق", en: "Keyboard shortcuts, drag & drop and paste" },
     text:  { ar: "أفلت ملفاً في أي مكان بالصفحة، وألصق لقطة شاشة مباشرة، واضغط ? لترى كل الاختصارات: Enter للإرسال، ↑ لتعديل آخر رسالة، Ctrl+K للبحث، Esc للإيقاف وغيرها.",
@@ -324,7 +320,7 @@ const CONTENT = {
       ["warn","مساعدة Proteus وMultisim","أرفق لقطة شاشة أو ملف netlist واحصل على مساعدة في إيجاد الأخطاء."],
       ["img","فهم المخططات والملفات","صور، PDF، Word، PowerPoint، Excel، وملفات نصية وكود."],
       ["doc","التقارير والتصدير","أنشئ ملفات Word وPDF وExcel وPowerPoint، أو صدّر أي رد بضغطة."]],
-    note:"ElectroRed AI يقرأ لقطات الشاشة والملفات المصدَّرة ويشرحها؛ لكنه لا يشغّل المحاكاة بنفسه ولا يفتح ملفات المشاريع المغلقة مثل ‎.pdsprj.",
+    note:"ElectroRed AI يقرأ لقطات الشاشة والملفات المصدَّرة ويشرحها؛ وفيه محاكٍ تعليمي مبسّط لدارات قياسية، لكنه لا يشغّل SPICE أو Proteus أو Multisim ولا يفتح ملفات المشاريع المغلقة مثل ‎.pdsprj.",
     fk:"WHY", fh:"مبني لطريقة تفكيرك، لا لطريقة تفكير الآلة",
     fp:"كل ميزة مصمّمة حول احتياج حقيقي لطالب إلكترونيك، من أول سنة لحد التخرج.",
     features:[["شرح خطوة بخطوة","يفكك أي درس أو تمرين إلى خطوات مرتبة مع مثال محلول."],
@@ -347,7 +343,7 @@ const CONTENT = {
       ["warn","Proteus & Multisim help","Attach a screenshot or a netlist export and get help finding the mistake."],
       ["img","Diagrams & files","Images, PDF, Word, PowerPoint, Excel, plus text and code files."],
       ["doc","Reports & exports","Create Word, PDF, Excel and PowerPoint files, or export any reply in one tap."]],
-    note:"ElectroRed AI reads and explains screenshots and exported files; it does not run simulations itself and cannot open closed project files such as .pdsprj.",
+    note:"ElectroRed AI reads and explains screenshots and exported files; it has a small simplified simulator for standard circuits, but it does not run SPICE, Proteus or Multisim and cannot open closed project files such as .pdsprj.",
     fk:"WHY", fh:"Built around how you think, not how a model thinks",
     fp:"Every feature answers a real need for an electronics student, from year one to graduation.",
     features:[["Step-by-step explanations","Breaks down any lesson into ordered steps with a solved example."],
