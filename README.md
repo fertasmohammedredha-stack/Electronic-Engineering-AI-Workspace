@@ -57,5 +57,5 @@ Edit the `UPDATES` list at the top of the script in `index.html` — add one obj
 ## On every delivery
 Bump `APP_VERSION` (assets/lang.js) and `API_VERSION` (api/chat.js) to the same value.
 
-## Big PDFs
-`assets/pdftools.js` (pdf.js, loaded from jsDelivr only when needed) compresses a PDF larger than 2.5 MB (up to 80 MB) in the browser: the text of the chosen pages (about 19k characters) plus up to 6 small page pictures (8 for scanned PDFs). The student can pick the page range. PDFs up to 2.5 MB are still sent as they are, together with the first ~6k characters of text, which the server uses to answer through Groq (with a notice) when every Gemini model is busy.
+## Interactive simulations
+`assets/sim.js` is a small circuit engine (modified nodal analysis; R, C, L, V/I sources, diode, zener, NPN BJT, op-amp; operating point, transient, AC sweep, DC sweep). `assets/simui.js` holds the templates (divider, RC low/high-pass, RC/RL step, series RLC, half/full-wave rectifier, inverting/non-inverting op-amp, zener regulator, BJT bias, and a generic `netlist` fallback), the SVG schematics and plots, and the slider widget. The AI writes a `~~~electrored-sim` block with JSON (see `SIM_SECTION` in `api/chat.js`, added to the prompt only for circuit questions); the page validates it and draws the widget. It is a **simplified teaching simulator, not SPICE**: ideal-ish models, no Early effect, no temperature or noise.
